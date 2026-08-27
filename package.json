@@ -1,0 +1,13 @@
+{
+  "name": "sagg-akustik-hesap",
+  "version": "1.0.0",
+  "description": "Binaların Gürültüye Karşı Korunması Hakkında Yönetmelik ve eklerine göre bina akustiği hesap aracı",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "python3 -m http.server 8080"
+  },
+  "keywords": ["akustik", "ses-yalitimi", "yonetmelik", "TS-EN-12354", "bina-akustigi"],
+  "license": "MIT"
+}

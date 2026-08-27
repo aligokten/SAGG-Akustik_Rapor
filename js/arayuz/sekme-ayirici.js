@@ -1,0 +1,182 @@
+/**
+ * sekme-ayirici.js — Ayırıcı elemanlarda (düşey/yatay) hava doğuşlu ses
+ * yalıtımı: TS EN 12354-1 yan yollu hesap ve EK-3 Tablo 3.2 değerlendirmesi.
+ */
+
+import { kacis, sayi, secenekler, uygunlukRozeti, sinifRozeti } from './ortak.js';
+import { EK2_TABLO_2_1, GURULTULULUK_DERECELERI, HASSASIYET_DERECELERI } from '../veri/yonetmelik.js';
+import { DUVARLAR, DOSEMELER, DOGRAMALAR, SIVALAR, GIYDIRME_KABUKLAR } from '../veri/malzemeler.js';
+import { BIRLESIM_TIPLERI } from '../cekirdek/kij.js';
+
+const MEKANLAR = EK2_TABLO_2_1.mekanlar;
+const YAPI_ELEMANLARI = [...DUVARLAR, ...DOSEMELER];
+
+export function ciz(durum, sonuclar) {
+  const kayitlar = durum.ayiricilar;
+  return `
+  <section class="kart">
+    <div class="kart-baslik">
+      <h2>Ayırıcı elemanlarda hava doğuşlu ses yalıtımı</h2>
+      <button class="dugme" data-eylem="ekle-ayirici">+ Ayırıcı eleman ekle</button>
+    </div>
+    <div class="bilgi">
+      Hesap TS EN 12354-1'in basitleştirilmiş (tek sayılı) modeline göre yapılır: doğrudan yol (Dd) ile
+      her yan eleman için üç yan yol (Ff, Fd, Df) enerjik olarak toplanarak <b>R′w</b> bulunur, ardından
+      <b>DnT,w = R′w + 10·lg(0,32·V/S)</b> ile yönetmeliğin göstergesine dönüştürülür.
+      Sonuç <b>EK-3 Tablo 3.2</b> ile karşılaştırılır.
+    </div>
+    ${kayitlar.length === 0
+      ? '<div class="bos-durum">Henüz ayırıcı eleman tanımlanmadı. Yukarıdaki düğmeyle ekleyin.</div>'
+      : kayitlar.map((a, i) => kart(a, i, sonuclar.ayiricilar[i])).join('')}
+  </section>`;
+}
+
+function kart(a, i, h) {
+  const y = `ayiricilar.${i}`;
+  const d = h.degerlendirme;
+  return `
+  <section class="kart">
+    <div class="kart-baslik">
+      <div style="flex:1">
+        <input data-yol="${y}.ad" value="${kacis(a.ad)}" style="font-weight:700;font-size:15px;border:0;background:transparent;padding:2px 0">
+      </div>
+      <div class="satir-eylem">
+        <button class="dugme acik kucuk" data-eylem="kopyala-ayirici" data-idx="${i}">Kopyala</button>
+        <button class="dugme acik kucuk" data-eylem="sil-ayirici" data-idx="${i}">Sil</button>
+      </div>
+    </div>
+
+    <h3>Mekânlar ve geometri</h3>
+    <div class="izgara">
+      <div class="alan"><label>Gürültü kaynağı mekân</label>
+        <select data-yol="${y}.kaynakMekanId">${mekanSecenekleri(a.kaynakMekanId)}</select>
+        <span class="ipucu">Gürültülülük derecesi: <b>${kacis(GURULTULULUK_DERECELERI[d?.kaynakMekan?.gurultululuk] || '—')}</b></span></div>
+      <div class="alan"><label>Alıcı (korunan) mekân</label>
+        <select data-yol="${y}.aliciMekanId">${mekanSecenekleri(a.aliciMekanId)}</select>
+        <span class="ipucu">Hassasiyet derecesi: <b>${kacis(HASSASIYET_DERECELERI[d?.aliciMekan?.hassasiyet] || '—')}</b></span></div>
+      <div class="alan"><label>Ayırıcı elemanın ortak alanı S (m²)</label>
+        <input type="number" step="0.1" min="0.1" data-yol="${y}.S" data-tur="sayi" value="${a.S}"></div>
+      <div class="alan"><label>Alıcı mekân hacmi V (m³)</label>
+        <input type="number" step="1" min="1" data-yol="${y}.V" data-tur="sayi" value="${a.V}"></div>
+    </div>
+
+    <h3 style="margin-top:18px">Ayırıcı eleman</h3>
+    <div class="izgara">
+      <div class="alan"><label>Yapı elemanı</label>
+        <select data-yol="${y}.elemanId">${secenekler(YAPI_ELEMANLARI, a.elemanId, { gruplu: true })}</select></div>
+      <div class="alan"><label>Sıva</label>
+        <select data-yol="${y}.sivaId">${secenekler(SIVALAR, a.sivaId)}</select></div>
+      <div class="alan"><label>Sıvalı yüz sayısı</label>
+        <select data-yol="${y}.sivaliYuzSayisi" data-tur="sayi">
+          ${[0, 1, 2].map((n) => `<option value="${n}"${n === a.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}
+        </select></div>
+      <div class="alan"><label>Giydirme kabuk</label>
+        <select data-yol="${y}.giydirmeId">${secenekler(GIYDIRME_KABUKLAR, a.giydirmeId)}</select>
+        <span class="ipucu">ΔRw = ${sayi(h.giydirme?.dRw ?? 0, 0)} dB</span></div>
+      <div class="alan"><label>Beyan edilmiş Rw (dB) — isteğe bağlı</label>
+        <input type="number" step="0.1" data-yol="${y}.RwBeyan" data-tur="sayiVeyaNull" value="${a.RwBeyan ?? ''}" placeholder="laboratuvar değeri">
+        <span class="ipucu">Girilirse kestirim yerine bu değer kullanılır.</span></div>
+    </div>
+    <div class="izgara dar" style="margin-top:10px">
+      <div class="alan"><label>Alan kütlesi m′</label><input readonly value="${sayi(h.ana.mAlan, 0)} kg/m²"></div>
+      <div class="alan"><label>Eleman Rw (${kacis(h.ana.kaynak)})</label><input readonly value="${sayi(h.ana.Rw)} dB"></div>
+      <div class="alan"><label>Ayırıcı elemanın toplam Rw'si</label><input readonly value="${sayi(h.RwAyirici)} dB"></div>
+    </div>
+
+    <div class="izgara" style="margin-top:12px">
+      <div class="alan"><label><input type="checkbox" data-yol="${y}.kapiVar" data-tur="bool" ${a.kapiVar ? 'checked' : ''} style="width:auto;margin-right:6px">Ayırıcı elemanda kapı var</label></div>
+      ${a.kapiVar ? `
+      <div class="alan"><label>Kapı</label>
+        <select data-yol="${y}.kapiId">${secenekler(DOGRAMALAR.filter((x) => x.grup === 'Kapı'), a.kapiId)}</select></div>
+      <div class="alan"><label>Kapı alanı (m²)</label>
+        <input type="number" step="0.1" min="0" data-yol="${y}.kapiAlani" data-tur="sayi" value="${a.kapiAlani}"></div>
+      ` : ''}
+    </div>
+    ${h.kapiBilgi ? `<div class="bilgi sari">Kapı (Rw ${sayi(h.kapiBilgi.Rw, 0)} dB, ${sayi(h.kapiBilgi.S)} m²) nedeniyle ayırıcı elemanın bileşik Rw'si <b>${sayi(h.RwAyirici)} dB</b>'e düşmüştür.</div>` : ''}
+
+    <h3 style="margin-top:18px">Yan elemanlar (yan yol iletimi)</h3>
+    <div class="tablo-sar"><table>
+      <thead><tr>
+        <th>Yan eleman</th><th>Yapı elemanı</th><th>Sıva</th><th class="sayi">Yüz</th>
+        <th class="sayi">m′ (kg/m²)</th><th class="sayi">Rw (dB)</th><th>Giydirme</th>
+        <th class="sayi">lf (m)</th><th>Birleşim</th><th>Esnek</th><th></th>
+      </tr></thead>
+      <tbody>
+      ${(a.yanElemanlar || []).map((ye, j) => {
+        const yy = `${y}.yanElemanlar.${j}`;
+        const hy = h.yanElemanlar[j];
+        return `<tr>
+          <td><input data-yol="${yy}.ad" value="${kacis(ye.ad)}" style="min-width:130px"></td>
+          <td><select data-yol="${yy}.elemanId" style="min-width:190px">${secenekler(YAPI_ELEMANLARI, ye.elemanId, { gruplu: true })}</select></td>
+          <td><select data-yol="${yy}.sivaId" style="min-width:150px">${secenekler(SIVALAR, ye.sivaId)}</select></td>
+          <td><select data-yol="${yy}.sivaliYuzSayisi" data-tur="sayi" style="min-width:60px">${[0, 1, 2].map((n) => `<option value="${n}"${n === ye.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}</select></td>
+          <td class="sayi">${sayi(hy.mKaynak, 0)}</td>
+          <td class="sayi">${sayi(hy.RwKaynak)}</td>
+          <td><select data-yol="${yy}.giydirmeId" style="min-width:170px">${secenekler(GIYDIRME_KABUKLAR, ye.giydirmeId)}</select></td>
+          <td><input type="number" step="0.1" min="0.1" data-yol="${yy}.lf" data-tur="sayi" value="${ye.lf}" style="width:75px"></td>
+          <td><select data-yol="${yy}.birlesim">${Object.values(BIRLESIM_TIPLERI).map((b) =>
+                `<option value="${b.kod}"${b.kod === ye.birlesim ? ' selected' : ''}>${b.kod}</option>`).join('')}</select></td>
+          <td style="text-align:center"><input type="checkbox" data-yol="${yy}.esnekBaglanti" data-tur="bool" ${ye.esnekBaglanti ? 'checked' : ''} style="width:auto"></td>
+          <td><button class="dugme acik kucuk" data-eylem="sil-yan" data-idx="${i}" data-alt="${j}">Sil</button></td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table></div>
+    <button class="dugme acik kucuk" data-eylem="ekle-yan" data-idx="${i}">+ Yan eleman ekle</button>
+    <p class="soluk" style="font-size:12px">
+      lf: ayırıcı eleman ile yan elemanın birleşim uzunluğu. Birleşim tipi <b>T</b> (yan eleman ayırıcıda
+      sonlanıyor) veya <b>X</b> (yan eleman ayırıcıdan sürekli geçiyor). Titreşim azaltma indisi Kij,
+      TS EN 12354-1 Ek-E bağıntıları ile hesaplanır.
+    </p>
+
+    ${sonucBolumu(h)}
+  </section>`;
+}
+
+function sonucBolumu(h) {
+  const d = h.degerlendirme;
+  const s = h.sonuc;
+  return `
+  <div class="sonuc-kutusu${d && !d.uygun ? ' uygunsuz' : ''}">
+    <div class="olcut"><span class="etiket">Doğrudan yol (Dd)</span><span class="buyuk-deger">${sayi(s.Dd)} <small>dB</small></span></div>
+    <div class="olcut"><span class="etiket">Yan yollu R′w</span><span class="buyuk-deger">${sayi(s.RwAksan)} <small>dB</small></span></div>
+    <div class="olcut"><span class="etiket">DnT,w (hesaplanan)</span><span class="buyuk-deger">${sayi(s.DnTw)} <small>dB</small></span></div>
+    <div class="olcut"><span class="etiket">Gereken (${kacis(d?.hedefSinif ?? '—')} sınıfı)</span><span class="buyuk-deger">${d ? sayi(d.gereken, 0) : '—'} <small>dB</small></span></div>
+    <div class="olcut"><span class="etiket">Elde edilen sınıf</span><span>${sinifRozeti(d?.eldeEdilenSinif)}</span></div>
+    <div class="olcut"><span class="etiket">Sonuç</span><span>${uygunlukRozeti(d)}${d && Number.isFinite(d.fark) ? ` <small>(${d.fark >= 0 ? '+' : ''}${sayi(d.fark)} dB)</small>` : ''}</span></div>
+  </div>
+  <p class="soluk" style="font-size:12px">Yan yollar nedeniyle kayıp: <b>${sayi(s.yanYolKaybi)} dB</b> · Gereksinim kaynağı: ${kacis(d?.kaynak || '—')}</p>
+
+  <details>
+    <summary>Ses iletim yollarının payları</summary>
+    <div class="tablo-sar"><table>
+      <thead><tr><th>Yol</th><th class="sayi">R (dB)</th><th class="sayi">Pay (%)</th></tr></thead>
+      <tbody>${s.yollar.map((yy) =>
+        `<tr><td>${kacis(yy.ad)}</td><td class="sayi">${sayi(yy.R)}</td><td class="sayi">${sayi(yy.payYuzde, 1)}</td></tr>`).join('')}</tbody>
+    </table></div>
+    <p class="soluk" style="font-size:12px">En büyük paya sahip yol iyileştirilmeden toplam yalıtım anlamlı biçimde artmaz.</p>
+  </details>
+
+  ${d ? `<details><summary>${kacis(d.kaynak)} — sınıf değerleri</summary>
+    <div class="tablo-sar"><table>
+      <thead><tr><th>Sınıf</th>${Object.keys(d.satir).map((k) => `<th class="sayi">${k}</th>`).join('')}</tr></thead>
+      <tbody><tr><td>DnT,w en az (dB)</td>${Object.values(d.satir).map((v) => `<td class="sayi">${v}</td>`).join('')}</tr></tbody>
+    </table></div>
+    <p class="soluk" style="font-size:12px">Satır anahtarı: ${kacis(d.anahtar)} (kaynak gürültülülük – alıcı hassasiyet). ${kacis(d.dogrulama)}</p>
+  </details>` : ''}`;
+}
+
+function mekanSecenekleri(secili) {
+  const gruplar = new Map();
+  for (const m of MEKANLAR) {
+    if (!gruplar.has(m.binaTuru)) gruplar.set(m.binaTuru, []);
+    gruplar.get(m.binaTuru).push(m);
+  }
+  const adlar = { konut: 'Konut', otel: 'Konaklama', okul: 'Eğitim', hastane: 'Sağlık', ofis: 'Büro', ticari: 'Ticari' };
+  return Array.from(gruplar.entries()).map(([bt, liste]) =>
+    `<optgroup label="${kacis(adlar[bt] || bt)}">` +
+    liste.map((m) => `<option value="${kacis(m.id)}"${m.id === secili ? ' selected' : ''}>${kacis(m.ad)}</option>`).join('') +
+    '</optgroup>').join('');
+}
+
+export { mekanSecenekleri };
