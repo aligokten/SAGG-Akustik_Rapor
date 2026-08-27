@@ -4,6 +4,7 @@
 değişik: 01/07/2018 – 30465) ve eklerine göre bina akustiği hesabı yapan Türkçe web aracı.
 
 **▶ Canlı sürüm: <https://aligokten.github.io/SAGG-Akustik_Rapor/>**
+*(Bağlantının çalışması için Pages'in bir kez açılması gerekir — bkz. [Yayın](#yayın).)*
 
 Alman *KS-Schallschutzrechner*'ın (Kalksandstein, DIN 4109) yaptığı işi Türkiye mevzuatı için
 karşılayacak biçimde tasarlanmıştır: yapı elemanlarının ses yalıtım başarımını **yan yol iletimini de
@@ -172,10 +173,31 @@ projenin uçtan uca hesabını kapsar.
 
 ## Yayın
 
-`main` ya da geliştirme dalına yapılan her itmede `.github/workflows/pages.yml` önce hesap çekirdeği
-testlerini çalıştırır, testler geçerse depoyu olduğu gibi GitHub Pages'e yayınlar. Deponun
-**Settings → Pages → Source** ayarının **GitHub Actions** olması yeterlidir; ayrıca bir derleme
-yapılandırması gerekmez.
+`.github/workflows/pages.yml`, dala yapılan her itmede önce hesap çekirdeği testlerini çalıştırır;
+testler geçerse depoyu olduğu gibi GitHub Pages'e yayınlar. Derleme yapılandırması gerekmez.
+
+### Tek seferlik kurulum
+
+Pages'in depo ayarlarından **bir kez** açılması gerekir — bunu iş akışı kendi başına yapamaz, çünkü
+`GITHUB_TOKEN` kullanıcı depolarında Pages sitesi *oluşturma* yetkisine sahip değildir
+(`Resource not accessible by integration`).
+
+1. **Settings → Pages** sayfasını açın.
+2. **Build and deployment → Source** ayarını **GitHub Actions** yapın.
+3. **Actions → GitHub Pages yayını → Run workflow** ile iş akışını yeniden çalıştırın
+   (ya da yeni bir itme yapın).
+
+Bunun ardından site <https://aligokten.github.io/SAGG-Akustik_Rapor/> adresinde yayına girer ve
+sonraki her itmede otomatik güncellenir.
+
+### Kurulum yapmadan denemek
+
+Pages açılana kadar uygulama, GitHub'daki dosyaları doğru MIME türleriyle sunan bir aynadan
+çalıştırılabilir:
+
+```
+https://raw.githack.com/aligokten/SAGG-Akustik_Rapor/claude/ks-schallschutzrechner-turkish-lgtwfl/index.html
+```
 
 ## Lisans
 

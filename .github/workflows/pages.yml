@@ -38,7 +38,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-        # Depoda Pages kapalıysa iş akışı belirtecini kullanarak açmayı dener.
+        # Depoda Pages kapalıysa açmayı dener. Kullanıcı depolarında iş akışı
+        # belirtecinin Pages sitesi oluşturma yetkisi yoktur; bu durumda adım
+        # "Resource not accessible by integration" ile düşer ve Pages'in bir kez
+        # Settings → Pages → Source: GitHub Actions ile açılması gerekir.
         with:
           enablement: true
       - name: Statik dosyaları paketle
