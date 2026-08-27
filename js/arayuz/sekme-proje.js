@@ -1,7 +1,7 @@
 /** sekme-proje.js — Proje künyesi, hedef sınıf ve hesap ayarları. */
 
-import { kacis, sayi, secenekler, sinifRozeti, uygunlukRozeti } from './ortak.js';
-import { BINA_TURLERI, SINIFLAR, ASGARI_SINIFLAR, SURUM, EK2_TABLO_2_2 } from '../veri/yonetmelik.js';
+import { kacis, secenekler, sinifRozeti } from './ortak.js';
+import { BINA_TURLERI, SINIFLAR, ASGARI_SINIFLAR, EK2_TABLO_2_2 } from '../veri/yonetmelik.js';
 import { MODELLER } from '../cekirdek/kutle-kanunu.js';
 
 const DURUMLAR = {
@@ -10,7 +10,7 @@ const DURUMLAR = {
   esasliTadilat: 'Mevcut binada esaslı tadilat',
 };
 
-export function ciz(durum, sonuclar) {
+export function ciz(durum) {
   const p = durum.proje;
   const asgari = ASGARI_SINIFLAR[p.durum] || 'C';
 
@@ -92,47 +92,5 @@ export function ciz(durum, sonuclar) {
     </div>
   </section>
 
-  ${ozet(durum, sonuclar)}
   `;
-}
-
-function ozet(durum, s) {
-  const say = (a) => a.length;
-  return `
-  <section class="kart">
-    <div class="kart-baslik"><h2>Proje özeti</h2></div>
-    <div class="tablo-sar"><table>
-      <thead><tr><th>Bileşen</th><th class="sayi">Adet</th><th class="sayi">Uygun</th><th>Durum</th></tr></thead>
-      <tbody>
-        ${satir('Ayırıcı elemanlar (hava doğuşlu ses)', s.ayiricilar)}
-        ${satir('Döşemeler (darbe sesi)', s.darbeler)}
-        ${satir('Cepheler', s.cepheler)}
-        ${satir('Hacimler (reverberasyon)', s.hacimler)}
-      </tbody>
-    </table></div>
-    <div class="sonuc-kutusu${s.tumUygun ? '' : ' uygunsuz'}">
-      <div class="olcut"><span class="etiket">Belirleyici akustik performans sınıfı</span>
-        <span>${sinifRozeti(s.genelSinif)} <b style="font-size:15px;margin-left:6px">${s.genelSinif ? `${s.genelSinif} sınıfı` : 'hesaplanmadı'}</b></span></div>
-      <div class="olcut"><span class="etiket">Hedef sınıf</span><span class="buyuk-deger">${kacis(durum.proje.hedefSinif)}</span></div>
-      <div class="olcut"><span class="etiket">Genel durum</span>
-        <span>${s.toplamBilesen === 0
-          ? '<span class="rozet notr">bileşen girilmedi</span>'
-          : (s.tumUygun ? '<span class="rozet uygun">Tüm bileşenler sağlıyor</span>'
-                        : `<span class="rozet uygunsuz">${say(s.uygunsuzlar)} bileşen sağlamıyor</span>`)}</span></div>
-    </div>
-    ${s.uygunsuzlar.length ? `<div class="bilgi sari"><b>Sağlanmayan bileşenler:</b> ${s.uygunsuzlar.map(kacis).join(' · ')}</div>` : ''}
-    <p class="soluk" style="font-size:12px;margin-top:12px">
-      Veri sürümü ${kacis(SURUM.veriSurumu)} — ${kacis(SURUM.dogrulama)}
-    </p>
-  </section>`;
-}
-
-function satir(ad, liste) {
-  const uygun = liste.filter((x) => x.degerlendirme?.uygun).length;
-  const degerlendirilen = liste.filter((x) => x.degerlendirme).length;
-  const rozet = degerlendirilen === 0
-    ? '<span class="rozet notr">—</span>'
-    : (uygun === degerlendirilen ? '<span class="rozet uygun">tamamı sağlıyor</span>'
-                                 : '<span class="rozet uygunsuz">eksik var</span>');
-  return `<tr><td>${kacis(ad)}</td><td class="sayi">${liste.length}</td><td class="sayi">${uygun}/${degerlendirilen}</td><td>${rozet}</td></tr>`;
 }

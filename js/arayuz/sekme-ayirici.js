@@ -16,10 +16,10 @@ export function ciz(durum, sonuclar) {
   return `
   <section class="kart">
     <div class="kart-baslik">
-      <h2>Ayırıcı elemanlarda hava doğuşlu ses yalıtımı</h2>
+      <h3>Tanımlı ayırıcı elemanlar <span class="rozet notr yalin">${kayitlar.length}</span></h3>
       <button class="dugme" data-eylem="ekle-ayirici">+ Ayırıcı eleman ekle</button>
     </div>
-    <div class="bilgi">
+    <div class="bilgi-kutu">
       Hesap TS EN 12354-1'in basitleştirilmiş (tek sayılı) modeline göre yapılır: doğrudan yol (Dd) ile
       her yan eleman için üç yan yol (Ff, Fd, Df) enerjik olarak toplanarak <b>R′w</b> bulunur, ardından
       <b>DnT,w = R′w + 10·lg(0,32·V/S)</b> ile yönetmeliğin göstergesine dönüştürülür.
@@ -38,7 +38,7 @@ function kart(a, i, h) {
   <section class="kart">
     <div class="kart-baslik">
       <div style="flex:1">
-        <input data-yol="${y}.ad" value="${kacis(a.ad)}" style="font-weight:700;font-size:15px;border:0;background:transparent;padding:2px 0">
+        <input data-yol="${y}.ad" value="${kacis(a.ad)}" class="baslik-girdi">
       </div>
       <div class="satir-eylem">
         <button class="dugme acik kucuk" data-eylem="kopyala-ayirici" data-idx="${i}">Kopyala</button>
@@ -92,7 +92,7 @@ function kart(a, i, h) {
         <input type="number" step="0.1" min="0" data-yol="${y}.kapiAlani" data-tur="sayi" value="${a.kapiAlani}"></div>
       ` : ''}
     </div>
-    ${h.kapiBilgi ? `<div class="bilgi sari">Kapı (Rw ${sayi(h.kapiBilgi.Rw, 0)} dB, ${sayi(h.kapiBilgi.S)} m²) nedeniyle ayırıcı elemanın bileşik Rw'si <b>${sayi(h.RwAyirici)} dB</b>'e düşmüştür.</div>` : ''}
+    ${h.kapiBilgi ? `<div class="bilgi-kutu sari">Kapı (Rw ${sayi(h.kapiBilgi.Rw, 0)} dB, ${sayi(h.kapiBilgi.S)} m²) nedeniyle ayırıcı elemanın bileşik Rw'si <b>${sayi(h.RwAyirici)} dB</b>'e düşmüştür.</div>` : ''}
 
     <h3 style="margin-top:18px">Yan elemanlar (yan yol iletimi)</h3>
     <div class="tablo-sar"><table>
@@ -137,13 +137,13 @@ function sonucBolumu(h) {
   const d = h.degerlendirme;
   const s = h.sonuc;
   return `
-  <div class="sonuc-kutusu${d && !d.uygun ? ' uygunsuz' : ''}">
-    <div class="olcut"><span class="etiket">Doğrudan yol (Dd)</span><span class="buyuk-deger">${sayi(s.Dd)} <small>dB</small></span></div>
-    <div class="olcut"><span class="etiket">Yan yollu R′w</span><span class="buyuk-deger">${sayi(s.RwAksan)} <small>dB</small></span></div>
-    <div class="olcut"><span class="etiket">DnT,w (hesaplanan)</span><span class="buyuk-deger">${sayi(s.DnTw)} <small>dB</small></span></div>
-    <div class="olcut"><span class="etiket">Gereken (${kacis(d?.hedefSinif ?? '—')} sınıfı)</span><span class="buyuk-deger">${d ? sayi(d.gereken, 0) : '—'} <small>dB</small></span></div>
-    <div class="olcut"><span class="etiket">Elde edilen sınıf</span><span>${sinifRozeti(d?.eldeEdilenSinif)}</span></div>
-    <div class="olcut"><span class="etiket">Sonuç</span><span>${uygunlukRozeti(d)}${d && Number.isFinite(d.fark) ? ` <small>(${d.fark >= 0 ? '+' : ''}${sayi(d.fark)} dB)</small>` : ''}</span></div>
+  <div class="sonuc-serit${d && !d.uygun ? ' uygunsuz' : ''}">
+    <div class="hucre"><span class="etiket">Doğrudan yol (Dd)</span><span class="deger">${sayi(s.Dd)} <small>dB</small></span></div>
+    <div class="hucre"><span class="etiket">Yan yollu R′w</span><span class="deger">${sayi(s.RwAksan)} <small>dB</small></span></div>
+    <div class="hucre one-cikan"><span class="etiket">DnT,w (hesaplanan)</span><span class="deger">${sayi(s.DnTw)} <small>dB</small></span></div>
+    <div class="hucre"><span class="etiket">Gereken (${kacis(d?.hedefSinif ?? '—')} sınıfı)</span><span class="deger">${d ? sayi(d.gereken, 0) : '—'} <small>dB</small></span></div>
+    <div class="hucre"><span class="etiket">Elde edilen sınıf</span><span>${sinifRozeti(d?.eldeEdilenSinif)}</span></div>
+    <div class="hucre"><span class="etiket">Sonuç</span><span>${uygunlukRozeti(d)}${d && Number.isFinite(d.fark) ? ` <small>(${d.fark >= 0 ? '+' : ''}${sayi(d.fark)} dB)</small>` : ''}</span></div>
   </div>
   <p class="soluk" style="font-size:12px">Yan yollar nedeniyle kayıp: <b>${sayi(s.yanYolKaybi)} dB</b> · Gereksinim kaynağı: ${kacis(d?.kaynak || '—')}</p>
 

@@ -16,10 +16,10 @@ export function ciz(durum, sonuclar) {
   return `
   <section class="kart">
     <div class="kart-baslik">
-      <h2>Cephe (dış yapı elemanı) ses yalıtımı</h2>
+      <h3>Tanımlı cepheler <span class="rozet notr yalin">${kayitlar.length}</span></h3>
       <button class="dugme" data-eylem="ekle-cephe">+ Cephe ekle</button>
     </div>
-    <div class="bilgi">
+    <div class="bilgi-kutu">
       TS EN 12354-3: cephenin bileşik yalıtımı, yüzeysel elemanların alanları ve küçük elemanların
       Dn,e,w değerleri ile bulunur; ardından
       <b>D2m,nT,w = R′w,bileşik + ΔLfs + 10·lg(V/(6·T₀·S))</b> hesaplanır.
@@ -40,7 +40,7 @@ function kart(c, i, h) {
   return `
   <section class="kart">
     <div class="kart-baslik">
-      <div style="flex:1"><input data-yol="${y}.ad" value="${kacis(c.ad)}" style="font-weight:700;font-size:15px;border:0;background:transparent;padding:2px 0"></div>
+      <div style="flex:1"><input data-yol="${y}.ad" value="${kacis(c.ad)}" class="baslik-girdi"></div>
       <div class="satir-eylem">
         <button class="dugme acik kucuk" data-eylem="kopyala-cephe" data-idx="${i}">Kopyala</button>
         <button class="dugme acik kucuk" data-eylem="sil-cephe" data-idx="${i}">Sil</button>
@@ -114,14 +114,14 @@ function kart(c, i, h) {
     </table></div>
     <button class="dugme acik kucuk" data-eylem="ekle-kucuk" data-idx="${i}">+ Küçük eleman ekle</button>
 
-    <div class="sonuc-kutusu${d && !d.uygun ? ' uygunsuz' : ''}">
-      <div class="olcut"><span class="etiket">Bileşik R′w</span><span class="buyuk-deger">${sayi(s.RwBilesik)} <small>dB</small></span></div>
-      <div class="olcut"><span class="etiket">Cephe alanı S</span><span class="buyuk-deger">${sayi(s.S)} <small>m²</small></span></div>
-      <div class="olcut"><span class="etiket">ΔLfs + hacim terimi</span><span class="buyuk-deger">${sayi(s.dLfs + s.hacimTerimi)} <small>dB</small></span></div>
-      <div class="olcut"><span class="etiket">D2m,nT,w (hesaplanan)</span><span class="buyuk-deger">${sayi(s.D2mnTw)} <small>dB</small></span></div>
-      <div class="olcut"><span class="etiket">Gereken (${kacis(d?.hedefSinif ?? '—')} sınıfı)</span><span class="buyuk-deger">${d ? sayi(d.gereken, 0) : '—'} <small>dB</small></span></div>
-      <div class="olcut"><span class="etiket">Elde edilen sınıf</span><span>${sinifRozeti(d?.eldeEdilenSinif)}</span></div>
-      <div class="olcut"><span class="etiket">Sonuç</span><span>${uygunlukRozeti(d)}${d && Number.isFinite(d.fark) ? ` <small>(${d.fark >= 0 ? '+' : ''}${sayi(d.fark)} dB)</small>` : ''}</span></div>
+    <div class="sonuc-serit${d && !d.uygun ? ' uygunsuz' : ''}">
+      <div class="hucre"><span class="etiket">Bileşik R′w</span><span class="deger">${sayi(s.RwBilesik)} <small>dB</small></span></div>
+      <div class="hucre"><span class="etiket">Cephe alanı S</span><span class="deger">${sayi(s.S)} <small>m²</small></span></div>
+      <div class="hucre"><span class="etiket">ΔLfs + hacim terimi</span><span class="deger">${sayi(s.dLfs + s.hacimTerimi)} <small>dB</small></span></div>
+      <div class="hucre one-cikan"><span class="etiket">D2m,nT,w (hesaplanan)</span><span class="deger">${sayi(s.D2mnTw)} <small>dB</small></span></div>
+      <div class="hucre"><span class="etiket">Gereken (${kacis(d?.hedefSinif ?? '—')} sınıfı)</span><span class="deger">${d ? sayi(d.gereken, 0) : '—'} <small>dB</small></span></div>
+      <div class="hucre"><span class="etiket">Elde edilen sınıf</span><span>${sinifRozeti(d?.eldeEdilenSinif)}</span></div>
+      <div class="hucre"><span class="etiket">Sonuç</span><span>${uygunlukRozeti(d)}${d && Number.isFinite(d.fark) ? ` <small>(${d.fark >= 0 ? '+' : ''}${sayi(d.fark)} dB)</small>` : ''}</span></div>
     </div>
     <p class="soluk" style="font-size:12px">
       Bilgi: 30 dBA iç gürültü hedefi için gereken kaba yalıtım farkı ${sayi(gerekliFizik, 0)} dB'dir

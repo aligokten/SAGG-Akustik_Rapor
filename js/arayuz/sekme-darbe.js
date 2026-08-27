@@ -13,10 +13,10 @@ export function ciz(durum, sonuclar) {
   return `
   <section class="kart">
     <div class="kart-baslik">
-      <h2>Döşemelerde darbe sesi yalıtımı</h2>
+      <h3>Tanımlı döşemeler <span class="rozet notr yalin">${kayitlar.length}</span></h3>
       <button class="dugme" data-eylem="ekle-darbe">+ Döşeme ekle</button>
     </div>
-    <div class="bilgi">
+    <div class="bilgi-kutu">
       TS EN 12354-2 basitleştirilmiş modeli: <b>L′n,w = Ln,w,eq − ΔLw + K</b>. Çıplak döşemenin
       Ln,w,eq değeri alan kütlesinden (164 − 35·lg m′) kestirilir, yüzer şap/şiltenin ΔLw'si düşülür,
       yan yol düzeltmesi K eklenir. Sonuç <b>L′nT,w = L′n,w − 10·lg(0,032·V)</b> ile yönetmelik
@@ -35,7 +35,7 @@ function kart(k, i, h) {
   return `
   <section class="kart">
     <div class="kart-baslik">
-      <div style="flex:1"><input data-yol="${y}.ad" value="${kacis(k.ad)}" style="font-weight:700;font-size:15px;border:0;background:transparent;padding:2px 0"></div>
+      <div style="flex:1"><input data-yol="${y}.ad" value="${kacis(k.ad)}" class="baslik-girdi"></div>
       <div class="satir-eylem">
         <button class="dugme acik kucuk" data-eylem="kopyala-darbe" data-idx="${i}">Kopyala</button>
         <button class="dugme acik kucuk" data-eylem="sil-darbe" data-idx="${i}">Sil</button>
@@ -73,14 +73,14 @@ function kart(k, i, h) {
         <span class="ipucu">Asma tavanın darbe sesi kazancı (dB)</span></div>
     </div>
 
-    <div class="sonuc-kutusu${d && !d.uygun ? ' uygunsuz' : ''}">
-      <div class="olcut"><span class="etiket">Çıplak döşeme Ln,w,eq</span><span class="buyuk-deger">${sayi(s.LnwEq)} <small>dB</small></span></div>
-      <div class="olcut"><span class="etiket">ΔLw (kaplama)</span><span class="buyuk-deger">−${sayi(s.dLwToplam)} <small>dB</small></span></div>
-      <div class="olcut"><span class="etiket">K (yan yol)</span><span class="buyuk-deger">+${sayi(s.K)} <small>dB</small></span></div>
-      <div class="olcut"><span class="etiket">L′nT,w (hesaplanan)</span><span class="buyuk-deger">${sayi(s.LnTw)} <small>dB</small></span></div>
-      <div class="olcut"><span class="etiket">İzin verilen (${kacis(d?.hedefSinif ?? '—')} sınıfı)</span><span class="buyuk-deger">${d ? sayi(d.gereken, 0) : '—'} <small>dB</small></span></div>
-      <div class="olcut"><span class="etiket">Elde edilen sınıf</span><span>${sinifRozeti(d?.eldeEdilenSinif)}</span></div>
-      <div class="olcut"><span class="etiket">Sonuç</span><span>${uygunlukRozeti(d)}${d && Number.isFinite(d.fark) ? ` <small>(${d.fark >= 0 ? '+' : ''}${sayi(d.fark)} dB)</small>` : ''}</span></div>
+    <div class="sonuc-serit${d && !d.uygun ? ' uygunsuz' : ''}">
+      <div class="hucre"><span class="etiket">Çıplak döşeme Ln,w,eq</span><span class="deger">${sayi(s.LnwEq)} <small>dB</small></span></div>
+      <div class="hucre"><span class="etiket">ΔLw (kaplama)</span><span class="deger">−${sayi(s.dLwToplam)} <small>dB</small></span></div>
+      <div class="hucre"><span class="etiket">K (yan yol)</span><span class="deger">+${sayi(s.K)} <small>dB</small></span></div>
+      <div class="hucre one-cikan"><span class="etiket">L′nT,w (hesaplanan)</span><span class="deger">${sayi(s.LnTw)} <small>dB</small></span></div>
+      <div class="hucre"><span class="etiket">İzin verilen (${kacis(d?.hedefSinif ?? '—')} sınıfı)</span><span class="deger">${d ? sayi(d.gereken, 0) : '—'} <small>dB</small></span></div>
+      <div class="hucre"><span class="etiket">Elde edilen sınıf</span><span>${sinifRozeti(d?.eldeEdilenSinif)}</span></div>
+      <div class="hucre"><span class="etiket">Sonuç</span><span>${uygunlukRozeti(d)}${d && Number.isFinite(d.fark) ? ` <small>(${d.fark >= 0 ? '+' : ''}${sayi(d.fark)} dB)</small>` : ''}</span></div>
     </div>
 
     ${d ? `<details><summary>${kacis(d.kaynak)} — sınıf değerleri</summary>

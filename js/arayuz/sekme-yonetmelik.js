@@ -18,7 +18,7 @@ export function ciz() {
   return `
   <section class="kart">
     <div class="kart-baslik">
-      <h2>Yönetmelik verileri</h2>
+      <h3>Sınır değer tabloları</h3>
       <div class="satir-eylem">
         <button class="dugme acik kucuk" data-eylem="yonetmelik-disa">JSON olarak indir</button>
         <label class="dugme acik kucuk" for="yonetmelik-ice">JSON yükle</label>

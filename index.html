@@ -1,59 +1,56 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-tema="acik">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAGG Akustik Hesap — Binaların Gürültüye Karşı Korunması Yönetmeliği</title>
-<meta name="description" content="Binaların Gürültüye Karşı Korunması Hakkında Yönetmelik ve eklerine göre hava doğuşlu ses, darbe sesi, cephe yalıtımı ve reverberasyon hesabı.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d7f6f'/%3E%3Ctext x='16' y='22' font-size='16' font-family='sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3EdB%3C/text%3E%3C/svg%3E">
+<title>SAGG Akustik Hesap Aracı — Binaların Gürültüye Karşı Korunması Yönetmeliği</title>
+<meta name="description" content="Binaların Gürültüye Karşı Korunması Hakkında Yönetmelik ve eklerine göre hava doğuşlu ses, darbe sesi, cephe yalıtımı ve reverberasyon hesabı yapan Türkçe akustik dashboard.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f766e'/%3E%3Ctext x='16' y='22' font-size='15' font-family='sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3EdB%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/stil.css">
 </head>
 <body>
 
-<header class="ust-bant">
-  <div class="marka">
-    <span class="logo">SAGG</span>
-    <div>
-      <h1>Akustik Hesap Aracı</h1>
-      <p>Binaların Gürültüye Karşı Korunması Hakkında Yönetmelik (RG 31/05/2017 – 30082) ve ekleri</p>
+<div class="kabuk">
+
+  <aside class="yan-cubuk" id="yan-cubuk">
+    <div class="yan-marka">
+      <span class="logo">SAGG</span>
+      <div>
+        <div class="ad">Akustik Hesap</div>
+        <div class="alt">Gürültü Yönetmeliği</div>
+      </div>
     </div>
-  </div>
-  <div class="ust-eylemler">
-    <button type="button" id="btn-kaydet" class="dugme ikincil">Projeyi indir</button>
-    <label class="dugme ikincil" for="dosya-ac">Proje aç</label>
-    <input type="file" id="dosya-ac" accept="application/json" hidden>
-    <button type="button" id="btn-ornek" class="dugme ikincil">Örnek proje</button>
-    <button type="button" id="btn-sifirla" class="dugme ikincil tehlike">Sıfırla</button>
-  </div>
-</header>
 
-<div class="uyari-bandi" id="dogrulama-uyarisi">
-  <strong>Doğrulama uyarısı:</strong>
-  Yönetmelik eklerindeki sınır değerleri bu araçta düzenlenebilir bir veri katmanında tutulur ve
-  <em>TASLAK</em> olarak işaretlenmiştir. Resmî işlem öncesinde <b>Yönetmelik Verileri</b> sekmesinden
-  değerleri Resmî Gazete metniyle karşılaştırınız.
-  <button type="button" class="kapat" aria-label="Kapat">&times;</button>
+    <nav class="yan-menu" id="yan-menu" role="tablist"></nav>
+
+    <div class="yan-alt">
+      <div class="satir"><span>Yöntem</span><span>TS EN 12354</span></div>
+      <div class="satir"><span>Veri sürümü</span><span id="veri-surumu">—</span></div>
+    </div>
+  </aside>
+
+  <div class="govde">
+    <header class="ust-cubuk">
+      <button type="button" class="dugme acik simgeli menu-dugme" id="btn-menu" aria-label="Menü"></button>
+      <div class="baslik">
+        <h1 id="ust-baslik">Panel</h1>
+        <div class="yol" id="ust-yol">Akustik performans genel görünümü</div>
+      </div>
+      <div class="ust-eylemler">
+        <button type="button" class="dugme acik simgeli" id="btn-tema" aria-label="Temayı değiştir" title="Açık / koyu tema"></button>
+        <button type="button" class="dugme acik" id="btn-ornek">Örnek proje</button>
+        <label class="dugme acik" for="dosya-ac">Proje aç</label>
+        <input type="file" id="dosya-ac" accept="application/json" hidden>
+        <button type="button" class="dugme" id="btn-kaydet">Projeyi indir</button>
+        <button type="button" class="dugme tehlike" id="btn-sifirla">Sıfırla</button>
+      </div>
+    </header>
+
+    <main class="icerik" id="icerik"></main>
+  </div>
+
 </div>
-
-<nav class="sekmeler" role="tablist">
-  <button class="sekme etkin" data-sekme="proje" role="tab">1. Proje</button>
-  <button class="sekme" data-sekme="ayirici" role="tab">2. Ayırıcı elemanlar</button>
-  <button class="sekme" data-sekme="darbe" role="tab">3. Darbe sesi</button>
-  <button class="sekme" data-sekme="cephe" role="tab">4. Cephe</button>
-  <button class="sekme" data-sekme="reverberasyon" role="tab">5. Reverberasyon</button>
-  <button class="sekme" data-sekme="yonetmelik" role="tab">Yönetmelik verileri</button>
-  <button class="sekme" data-sekme="rapor" role="tab">Rapor</button>
-</nav>
-
-<main id="icerik"></main>
-
-<footer class="alt-bant">
-  <p>
-    Hesap yöntemi: TS EN 12354-1/-2/-3 (basitleştirilmiş, tek sayılı model) ve Sabine bağıntısı.
-    Bu araç bir ön tasarım ve kontrol aracıdır; yönetmelik kapsamındaki akustik proje ve raporlar
-    yetkili akustik uzmanının sorumluluğundadır.
-  </p>
-</footer>
 
 <script type="module" src="js/uygulama.js"></script>
 </body>

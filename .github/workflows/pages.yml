@@ -1,0 +1,46 @@
+# Uygulamayı GitHub Pages üzerinde yayınlar.
+# Derleme adımı yoktur; depo kökü olduğu gibi yayımlanır.
+name: GitHub Pages yayını
+
+on:
+  push:
+    branches: [claude/ks-schallschutzrechner-turkish-lgtwfl, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  testler:
+    name: Hesap çekirdeği testleri
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Testleri çalıştır
+        run: node --test test/*.test.js
+
+  yayinla:
+    name: Pages'e yayınla
+    needs: testler
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.yayin.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - name: Statik dosyaları paketle
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - id: yayin
+        uses: actions/deploy-pages@v4

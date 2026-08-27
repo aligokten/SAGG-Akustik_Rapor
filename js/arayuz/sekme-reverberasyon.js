@@ -15,10 +15,10 @@ export function ciz(durum, sonuclar) {
   return `
   <section class="kart">
     <div class="kart-baslik">
-      <h2>Reverberasyon (çınlama) süresi</h2>
+      <h3>Tanımlı hacimler <span class="rozet notr yalin">${kayitlar.length}</span></h3>
       <button class="dugme" data-eylem="ekle-hacim">+ Hacim ekle</button>
     </div>
-    <div class="bilgi">
+    <div class="bilgi-kutu">
       Sabine bağıntısı: <b>T = 0,161·V / (Σ Sᵢ·αᵢ + Σ Aₙ + 4·m·V)</b>.
       Değerlendirme, 500–1000–2000 Hz ortalaması üzerinden <b>EK-5</b> gereksinimleriyle yapılır.
       Hava soğurması hesaba dahildir.
@@ -39,7 +39,7 @@ function kart(k, i, h) {
   return `
   <section class="kart">
     <div class="kart-baslik">
-      <div style="flex:1"><input data-yol="${y}.ad" value="${kacis(k.ad)}" style="font-weight:700;font-size:15px;border:0;background:transparent;padding:2px 0"></div>
+      <div style="flex:1"><input data-yol="${y}.ad" value="${kacis(k.ad)}" class="baslik-girdi"></div>
       <div class="satir-eylem">
         <button class="dugme acik kucuk" data-eylem="kopyala-hacim" data-idx="${i}">Kopyala</button>
         <button class="dugme acik kucuk" data-eylem="sil-hacim" data-idx="${i}">Sil</button>
@@ -103,11 +103,11 @@ function kart(k, i, h) {
       </tbody>
     </table></div>
 
-    <div class="sonuc-kutusu${d && !d.uygun ? ' uygunsuz' : ''}">
-      <div class="olcut"><span class="etiket">T (500–2000 Hz ort.)</span><span class="buyuk-deger">${sayi(s.Torta, 2)} <small>s</small></span></div>
-      <div class="olcut"><span class="etiket">İzin verilen en çok</span><span class="buyuk-deger">${d?.Tmax != null ? sayi(d.Tmax, 2) : '—'} <small>s</small></span></div>
-      <div class="olcut"><span class="etiket">Sonuç</span><span>${uygunlukRozeti(d ? { ...d, gereken: d.Tmax ?? NaN } : null)}</span></div>
-      ${ilave > 0 ? `<div class="olcut"><span class="etiket">Gereken ilave soğurma</span><span class="buyuk-deger">${sayi(ilave)} <small>m² Sabine</small></span></div>` : ''}
+    <div class="sonuc-serit${d && !d.uygun ? ' uygunsuz' : ''}">
+      <div class="hucre one-cikan"><span class="etiket">T (500–2000 Hz ort.)</span><span class="deger">${sayi(s.Torta, 2)} <small>s</small></span></div>
+      <div class="hucre"><span class="etiket">İzin verilen en çok</span><span class="deger">${d?.Tmax != null ? sayi(d.Tmax, 2) : '—'} <small>s</small></span></div>
+      <div class="hucre"><span class="etiket">Sonuç</span><span>${uygunlukRozeti(d ? { ...d, gereken: d.Tmax ?? NaN } : null)}</span></div>
+      ${ilave > 0 ? `<div class="hucre"><span class="etiket">Gereken ilave soğurma</span><span class="deger">${sayi(ilave)} <small>m² Sabine</small></span></div>` : ''}
     </div>
     ${d ? `<p class="soluk" style="font-size:12px">Kaynak: ${kacis(d.kaynak)} — ${kacis(d.dogrulama)}</p>` : ''}
   </section>`;

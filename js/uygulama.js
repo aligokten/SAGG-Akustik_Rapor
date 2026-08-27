@@ -4,8 +4,10 @@
  */
 
 import { $, $$, sayiOku, yeniId } from './arayuz/ortak.js';
+import { simge } from './arayuz/simgeler.js';
 import * as D from './durum.js';
 import { projeyiHesapla } from './hesap.js';
+import * as sekmePanel from './arayuz/sekme-panel.js';
 import * as sekmeProje from './arayuz/sekme-proje.js';
 import * as sekmeAyirici from './arayuz/sekme-ayirici.js';
 import * as sekmeDarbe from './arayuz/sekme-darbe.js';
@@ -15,7 +17,7 @@ import * as sekmeYonetmelik from './arayuz/sekme-yonetmelik.js';
 import * as sekmeRapor from './arayuz/sekme-rapor.js';
 import {
   EK2_TABLO_2_1, EK3_TABLO_3_1, EK3_TABLO_3_2, EK3_TABLO_3_3,
-  EK4_TABLO_4_1, EK5_REVERBERASYON, veriPaketi,
+  EK4_TABLO_4_1, EK5_REVERBERASYON, veriPaketi, SURUM,
 } from './veri/yonetmelik.js';
 
 const YONETMELIK_DEPO = 'sagg-akustik-yonetmelik-v1';
@@ -25,7 +27,38 @@ const YONETMELIK_TABLOLARI = {
 };
 
 let durum = D.yukle() || D.ornekProje();
-let etkinSekme = 'proje';
+let etkinSekme = 'panel';
+
+const TEMA_DEPO = 'sagg-akustik-tema';
+
+/**
+ * Kenar çubuğu menüsü. `sayim`, o bölümdeki bileşen sayısını verir;
+ * `eksik` ise gereksinimi sağlamayan bileşen sayısını verir.
+ */
+const SEKMELER = [
+  { grup: 'Genel', id: 'panel',   ad: 'Panel',              simge: '▤',
+    baslik: 'Panel', yol: 'Akustik performans genel görünümü' },
+  { id: 'proje',   ad: 'Proje künyesi',      simge: '▣',
+    baslik: 'Proje künyesi', yol: 'Künye, hedef sınıf ve hesap ayarları' },
+
+  { grup: 'Hesaplar', id: 'ayirici', ad: 'Ayırıcı elemanlar', simge: '▥',
+    baslik: 'Ayırıcı elemanlarda hava doğuşlu ses yalıtımı', yol: 'TS EN 12354-1 · DnT,w · EK-3 Tablo 3.2',
+    sayim: (d) => d.ayiricilar.length, eksik: (s) => s.ayiricilar.filter((x) => x.degerlendirme && !x.degerlendirme.uygun).length },
+  { id: 'darbe',   ad: 'Darbe sesi',         simge: '▤',
+    baslik: 'Döşemelerde darbe sesi yalıtımı', yol: "TS EN 12354-2 · L'nT,w · EK-3 Tablo 3.3",
+    sayim: (d) => d.darbeler.length, eksik: (s) => s.darbeler.filter((x) => x.degerlendirme && !x.degerlendirme.uygun).length },
+  { id: 'cephe',   ad: 'Cephe',              simge: '▦',
+    baslik: 'Cephede (dış yapı elemanı) ses yalıtımı', yol: 'TS EN 12354-3 · D2m,nT,w · EK-3 Tablo 3.1',
+    sayim: (d) => d.cepheler.length, eksik: (s) => s.cepheler.filter((x) => x.degerlendirme && !x.degerlendirme.uygun).length },
+  { id: 'reverberasyon', ad: 'Reverberasyon', simge: '◍',
+    baslik: 'Reverberasyon (çınlama) süresi', yol: 'Sabine bağıntısı · EK-5',
+    sayim: (d) => d.hacimler.length, eksik: (s) => s.hacimler.filter((x) => x.degerlendirme && !x.degerlendirme.uygun).length },
+
+  { grup: 'Çıktı', id: 'yonetmelik', ad: 'Yönetmelik verileri', simge: '⚖',
+    baslik: 'Yönetmelik verileri', yol: 'EK-2 – EK-5 sınır değerleri · düzenlenebilir' },
+  { id: 'rapor',   ad: 'Akustik rapor',      simge: '🖹',
+    baslik: 'Akustik rapor', yol: 'Yazdırılabilir özet çıktı' },
+];
 
 /* ── Durum yolu okuma / yazma ───────────────────────────────────────── */
 
@@ -192,7 +225,8 @@ function ciz() {
   const sonuclar = projeyiHesapla(durum);
   const kok = $('#icerik');
   const cizimler = {
-    proje: () => sekmeProje.ciz(durum, sonuclar),
+    panel: () => sekmePanel.ciz(durum, sonuclar),
+    proje: () => sekmeProje.ciz(durum),
     ayirici: () => sekmeAyirici.ciz(durum, sonuclar),
     darbe: () => sekmeDarbe.ciz(durum, sonuclar),
     cephe: () => sekmeCephe.ciz(durum, sonuclar),
@@ -200,20 +234,95 @@ function ciz() {
     yonetmelik: () => sekmeYonetmelik.ciz(),
     rapor: () => sekmeRapor.ciz(durum, sonuclar),
   };
-  kok.innerHTML = (cizimler[etkinSekme] || cizimler.proje)();
-  $$('.sekme').forEach((b) => b.classList.toggle('etkin', b.dataset.sekme === etkinSekme));
+  kok.innerHTML = (cizimler[etkinSekme] || cizimler.panel)();
+  menuyuCiz(sonuclar);
+  ustBasligiCiz();
+  kok.scrollTop = 0;
   D.kaydet(durum);
+}
+
+/** Kenar çubuğu menüsünü, bileşen sayaçlarıyla birlikte çizer. */
+function menuyuCiz(sonuclar) {
+  const menu = $('#yan-menu');
+  menu.innerHTML = SEKMELER.map((sek) => {
+    const adet = sek.sayim ? sek.sayim(durum) : null;
+    const eksik = sek.eksik ? sek.eksik(sonuclar) : 0;
+    const rakam = adet == null ? ''
+      : `<span class="rakam${eksik ? ' uyar' : ''}" title="${eksik ? `${eksik} bileşen gereksinimi sağlamıyor` : `${adet} bileşen`}">${eksik ? `${eksik}!` : adet}</span>`;
+    return (sek.grup ? `<div class="yan-baslik">${sek.grup}</div>` : '') +
+      `<button class="sekme${sek.id === etkinSekme ? ' etkin' : ''}" data-sekme="${sek.id}" role="tab">
+         ${simge(sek.id)}
+         <span>${sek.ad}</span>${rakam}
+       </button>`;
+  }).join('');
+  const s = $('#veri-surumu');
+  if (s) s.textContent = SURUM.veriSurumu;
+}
+
+/** Üst çubuktaki başlık ve alt açıklamayı günceller. */
+function ustBasligiCiz() {
+  const sek = SEKMELER.find((x) => x.id === etkinSekme) || SEKMELER[0];
+  $('#ust-baslik').textContent = sek.baslik;
+  $('#ust-yol').textContent = sek.yol;
+  document.title = `${sek.baslik} — SAGG Akustik Hesap Aracı`;
+}
+
+/** Sekme değiştirir ve görünümü tazeler. */
+function sekmeyeGit(id) {
+  etkinSekme = id;
+  kenarCubuguKapat();
+  ciz();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ── Tema ───────────────────────────────────────────────────────────── */
+
+function temayiUygula(tema) {
+  document.documentElement.dataset.tema = tema;
+  const d = $('#btn-tema');
+  if (d) {
+    d.innerHTML = simge(tema === 'koyu' ? 'gunes' : 'ay');
+    d.title = tema === 'koyu' ? 'Açık temaya geç' : 'Koyu temaya geç';
+  }
+  try { localStorage.setItem(TEMA_DEPO, tema); } catch { /* yoksay */ }
+}
+
+function temayiBaslat() {
+  let tema = null;
+  try { tema = localStorage.getItem(TEMA_DEPO); } catch { /* yoksay */ }
+  if (!tema) {
+    tema = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'koyu' : 'acik';
+  }
+  temayiUygula(tema);
+}
+
+/* ── Kenar çubuğu (dar ekran) ───────────────────────────────────────── */
+
+function kenarCubuguAc() {
+  $('#yan-cubuk').classList.add('acik');
+  if (!$('.perde')) {
+    const perde = document.createElement('div');
+    perde.className = 'perde';
+    perde.addEventListener('click', kenarCubuguKapat);
+    document.body.appendChild(perde);
+  }
+}
+
+function kenarCubuguKapat() {
+  $('#yan-cubuk').classList.remove('acik');
+  $('.perde')?.remove();
 }
 
 /* ── Olay bağlama ───────────────────────────────────────────────────── */
 
 function olaylariBagla() {
-  // Sekme değiştirme
-  $$('.sekme').forEach((b) => b.addEventListener('click', () => {
-    etkinSekme = b.dataset.sekme;
-    ciz();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }));
+  $('#btn-menu').innerHTML = simge('menu');
+
+  // Sekme değiştirme (menü her çizimde yenilendiği için delege edilir)
+  $('#yan-menu').addEventListener('click', (e) => {
+    const b = e.target.closest('.sekme');
+    if (b) sekmeyeGit(b.dataset.sekme);
+  });
 
   // Girdi değişiklikleri (delege)
   document.addEventListener('input', (e) => {
@@ -261,6 +370,8 @@ function olaylariBagla() {
       const j = Number(dugme.dataset.alt);
       if (EYLEMLER[eylem]) { EYLEMLER[eylem](i, j); ciz(); return; }
 
+      if (eylem.startsWith('git-')) { sekmeyeGit(eylem.slice(4)); return; }
+      if (eylem === 'ornek-yukle') { durum = D.ornekProje(); ciz(); return; }
       if (eylem === 'yazdir') { window.print(); return; }
       if (eylem === 'yonetmelik-disa') { indir(veriPaketi(), 'yonetmelik-verileri.json'); return; }
       if (eylem === 'yonetmelik-varsayilan') {
@@ -276,6 +387,14 @@ function olaylariBagla() {
       $('#dogrulama-uyarisi').style.display = 'none';
     }
   });
+
+  $('#btn-tema').addEventListener('click', () => {
+    temayiUygula(document.documentElement.dataset.tema === 'koyu' ? 'acik' : 'koyu');
+  });
+  $('#btn-menu').addEventListener('click', () => {
+    $('#yan-cubuk').classList.contains('acik') ? kenarCubuguKapat() : kenarCubuguAc();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') kenarCubuguKapat(); });
 
   $('#btn-kaydet').addEventListener('click', () => {
     const ad = (durum.proje.ad || 'akustik-proje').replace(/[^\wğüşıöçĞÜŞİÖÇ -]/g, '').trim() || 'akustik-proje';
@@ -309,6 +428,7 @@ function planlaCizim() {
 
 /* ── Başlangıç ──────────────────────────────────────────────────────── */
 
+temayiBaslat();
 yonetmeligiYukle();
 olaylariBagla();
 ciz();

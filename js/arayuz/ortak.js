@@ -58,18 +58,18 @@ export function uygunlukRozeti(degerlendirme) {
     : '<span class="rozet uygunsuz">Sağlanmıyor</span>';
 }
 
-/** Akustik performans sınıfı rozeti. */
-export function sinifRozeti(sinif) {
-  const s = sinif || '—';
-  const sinif_ = sinif ? `sinif-${sinif}` : 'sinif-yok';
-  return `<span class="sinif-rozeti ${sinif_}" title="Akustik performans sınıfı">${kacis(s)}</span>`;
+/** Akustik performans sınıfı rozeti. `boyut` = 'buyuk' daha iri gösterir. */
+export function sinifRozeti(sinif, boyut = '') {
+  const metin = sinif || '—';
+  const renk = sinif ? `sinif-${sinif}` : 'sinif-yok';
+  return `<span class="sinif-rozeti ${renk}${boyut === 'buyuk' ? ' buyuk' : ''}" title="Akustik performans sınıfı">${kacis(metin)}</span>`;
 }
 
-/** Bir ölçüt kutucuğu. */
-export function olcut(etiket, deger, birim = '') {
-  return `<div class="olcut">
+/** Sonuç şeridinde bir hücre. */
+export function olcut(etiket, deger, birim = '', oneCikan = false) {
+  return `<div class="hucre${oneCikan ? ' one-cikan' : ''}">
     <span class="etiket">${kacis(etiket)}</span>
-    <span class="buyuk-deger">${kacis(deger)}${birim ? ` <small>${kacis(birim)}</small>` : ''}</span>
+    <span class="deger">${kacis(deger)}${birim ? ` <small>${kacis(birim)}</small>` : ''}</span>
   </div>`;
 }
 
