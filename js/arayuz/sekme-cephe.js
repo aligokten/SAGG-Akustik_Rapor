@@ -63,7 +63,7 @@ function kart(c, i, h) {
     <h3 style="margin-top:18px">Yüzeysel cephe elemanları</h3>
     <div class="tablo-sar"><table>
       <thead><tr><th>Ad</th><th>Tür</th><th>Eleman</th><th>Sıva</th><th class="sayi">Yüz</th>
-        <th class="sayi">S (m²)</th><th class="sayi">Rw (dB)</th><th>Beyan Rw</th><th class="sayi">Pay (%)</th><th></th></tr></thead>
+        <th class="sayi">S (m²)</th><th class="sayi">Yoğunluk</th><th class="sayi">Rw (dB)</th><th>Beyan Rw</th><th class="sayi">Pay (%)</th><th></th></tr></thead>
       <tbody>
       ${(c.elemanlar || []).map((e, j) => {
         const ey = `${y}.elemanlar.${j}`;
@@ -81,6 +81,7 @@ function kart(c, i, h) {
           <td>${duvarMi ? `<select data-yol="${ey}.sivaliYuzSayisi" data-tur="sayi">${[0, 1, 2].map((n) =>
                 `<option value="${n}"${n === e.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}</select>` : '<span class="soluk">—</span>'}</td>
           <td><input type="number" step="0.1" min="0" data-yol="${ey}.S" data-tur="sayi" value="${e.S}" style="width:80px"></td>
+          <td>${duvarMi ? `<input type="number" step="10" min="50" data-yol="${ey}.yogunlukBeyan" data-tur="sayiVeyaNull" value="${e.yogunlukBeyan ?? ''}" placeholder="${kacis(String(he._cozum.eleman?.yogunluk ?? '—'))}" style="width:88px">` : '<span class="soluk">—</span>'}</td>
           <td class="sayi">${sayi(he.Rw)}</td>
           <td><input type="number" step="0.1" data-yol="${ey}.RwBeyan" data-tur="sayiVeyaNull" value="${e.RwBeyan ?? ''}" style="width:85px" placeholder="—"></td>
           <td class="sayi">${pay ? sayi(pay.payYuzde, 1) : '—'}</td>

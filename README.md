@@ -78,6 +78,51 @@ arayüzdeki "Beyan edilmiş …" alanları bunun içindir.
 
 ---
 
+## Malzeme kütüphanesi
+
+**Malzeme kütüphanesi** ekranı tüm kayıtları hesaplanmış alan kütlesi ve kestirilen Rw ile birlikte
+listeler; üstteki arama kutusu tabloları anında süzer (arama Türkçe I/İ ve aksan duyarsızdır —
+`ipb 039`, `gorultu`, `dosem` gibi yazımlar da bulur).
+
+| Kategori | Kayıt | Kapsam |
+|---|---|---|
+| Duvar elemanları | 100 | Betonarme · dolu/harman tuğla · yatay ve düşey delikli tuğla · ısı yalıtımlı tuğla · akustik tuğla · **gazbeton G2/G3/G4** · **blok bims (hafif/standart/ağır)** · beton blok ve briket · alçı blok · cam tuğla · alçı levha duvar sistemleri (tek ve ikiz iskelet) |
+| Döşeme elemanları | 20 | Betonarme plak 100–250 mm · asmolen (gazbeton/bims/EPS dolgulu) · nervürlü · trapez sac kompozit · ahşap kirişli · CLT |
+| Yalıtım levhaları | 8 | **Knauf Insulation Mineral Plus IPB 039 / IPB 037** · taşyünü · camyünü · ahşap yünü · EPS/XPS (akustik uyarısıyla) |
+| Şap ve kaplamalar | 22 | Yapışık şap · yüzer şap (5–40 mm şilte) · kuru şap · lamine parke · LVT · halı · kauçuk-mantar |
+| Giydirme kabuk / asma tavan | 14 | Bağımsız iskeletli · elastik askılı · doğrudan bağlantılı · mantolama (EPS ve taşyünü) · asma tavanlar |
+| Pencere ve kapı | 24 | Tek/çift/üçlü cam · lamine akustik cam · çift kat pencere · iç kapı · akustik kapı Rw 32–45 · daire giriş kapısı |
+| Küçük elemanlar | 8 | Menfezler · panjur kutuları · tesisat geçişleri |
+| Soğurucu yüzey | 24 | Yapı yüzeyleri · kaplamalar · akustik tavan/panel · delikli levhalar · membran |
+| Nesne / kullanıcı | 8 | Kişi · koltuk · sıra · ofis bölmesi · hasta yatağı |
+
+### Malzeme değerlerini kendi ürününüze uyarlama
+
+Kütüphanedeki bloklar anma yoğunluklarıyla girilmiştir. Elinizdeki ürün farklıysa iki yol var:
+
+1. **Beyan edilmiş yoğunluk (kg/m³)** — alan kütlesi bundan yeniden hesaplanır, Rw kestirimi buna
+   göre değişir. Blok ürünlerde en pratik yol budur.
+2. **Beyan edilmiş Rw (dB)** — kestirimi tamamen devre dışı bırakır. Laboratuvar raporu olan
+   ürün ve sistemlerde bu kullanılmalıdır.
+
+### Boşluk dolgusu ve rezonans frekansı
+
+Giydirme kabuk ve bölme duvarlarda boşluk dolgusu ayrıca seçilir. Dolgunun hesaba iki etkisi olur:
+
+- **Rezonans frekansı f₀** — boşluğun kütle-yay-kütle rezonansı:
+  `f₀ = (1/2π)·√( κ·P₀/d · (1/m′₁ + 1/m′₂) )`, gözenekli dolguda κ = 1,0 (izotermal),
+  dolgusuz boşlukta κ = 1,4 (adyabatik). f₀ ne kadar düşükse giydirme o kadar etkilidir;
+  arayüz 80 / 125 / 200 Hz eşiklerine göre yorum verir.
+- **Dolgu cezası** — sistemin öngördüğü gözenekli dolgu yerine dolgusuz ya da sert köpük
+  (EPS/XPS) seçilirse boşluk sönümlenmediği için ΔRw'den muhafazakâr biçimde 4 dB düşülür.
+
+Bir yalıtım levhasının tek başına Rw değeri olmadığını unutmayın: akustik başarım, levhanın içinde
+yer aldığı **sistemin** ölçülmüş değeriyle tanımlanır. Kütüphanedeki levha kayıtları λ, kalınlık
+ve yangın sınıfı gibi üretici föyü verilerini taşır; akustik etkileri yalnızca yukarıdaki iki
+mekanizma üzerinden hesaba girer.
+
+---
+
 ## Kullanım
 
 Kurulum gerekmez — [canlı sürümü](https://aligokten.github.io/SAGG-Akustik_Rapor/) doğrudan
@@ -137,9 +182,10 @@ js/
     degerlendirme.js           Yönetmelik gereksinimleri ve sınıf belirleme
   veri/
     yonetmelik.js              ★ Yönetmelik ekleri — düzenlenebilir veri katmanı
-    malzemeler.js              Yapı elemanı ve malzeme kütüphanesi
+    malzemeler.js              ★ Malzeme kütüphanesi + eski kimlik göç haritası
   arayuz/
     sekme-panel.js             Panel (genel görünüm)
+    sekme-kutuphane.js         Malzeme kütüphanesi (aranabilir döküm)
     sekme-*.js                 Bölüm ekranları
     simgeler.js                Satır içi SVG simge seti
     ortak.js                   Arayüz yardımcıları
@@ -152,8 +198,9 @@ test/cekirdek.test.js          Hesap çekirdeği testleri
 npm test          # node --test test/*.test.js
 ```
 
-42 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi ve örnek
-projenin uçtan uca hesabını kapsar.
+72 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+projenin uçtan uca hesabını, kütüphane bütünlüğünü (yinelenen kimlik, yoğunluk aralıkları,
+çözülemeyen başvuru), eski projelerin kimlik göçünü ve rezonans frekansı modelini kapsar.
 
 ---
 

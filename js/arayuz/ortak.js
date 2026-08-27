@@ -91,6 +91,27 @@ export function secimAlani({ etiket, ad, liste, secili, ipucu = '', gruplu = fal
   </div>`;
 }
 
+/**
+ * Arama/filtre metnini normalleştirir.
+ *
+ * Türkçede `"IPB".toLocaleLowerCase('tr')` → `"ıpb"` olduğundan, kullanıcının
+ * yazdığı "ipb" ile ürün adındaki "IPB" eşleşmez. Bu nedenle küçük harfe
+ * çevirmek yetmez; Türkçeye özgü harfler ASCII karşılıklarına katlanır.
+ * Yan fayda olarak arama, aksan duyarsız hâle gelir ("gorultu" → "gürültü").
+ */
+const HARF_KATLAMA = {
+  'ı': 'i', 'İ': 'i', 'I': 'i', 'i': 'i',
+  'ş': 's', 'Ş': 's', 'ğ': 'g', 'Ğ': 'g',
+  'ü': 'u', 'Ü': 'u', 'ö': 'o', 'Ö': 'o', 'ç': 'c', 'Ç': 'c',
+  'â': 'a', 'Â': 'a', 'î': 'i', 'Î': 'i', 'û': 'u', 'Û': 'u',
+};
+
+export function aramaMetni(metin) {
+  return String(metin ?? '')
+    .replace(/[ıİIişŞğĞüÜöÖçÇâÂîÎûÛ]/g, (c) => HARF_KATLAMA[c] || c)
+    .toLowerCase();
+}
+
 /** Sayısal girdiyi güvenle okur. */
 export function sayiOku(deger, varsayilan = 0) {
   const s = String(deger).replace(',', '.');

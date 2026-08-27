@@ -14,16 +14,22 @@ import {
 } from './cekirdek/degerlendirme.js';
 import {
   DUVARLAR, DOSEMELER, DOGRAMALAR, SIVALAR, GIYDIRME_KABUKLAR,
-  SAP_KAPLAMALAR, SOGURUCULAR, NESNELER, KUCUK_ELEMANLAR,
+  SAP_KAPLAMALAR, SOGURUCULAR, NESNELER, KUCUK_ELEMANLAR, YALITIM_LEVHALARI,
   elemanAlanKutlesi, bul,
 } from './veri/malzemeler.js';
+import { rezonansFrekansi, rezonansYorumu } from './cekirdek/temel.js';
 
 /** Tüm yapı elemanları tek listede (duvar + döşeme). */
 export const TUM_ELEMANLAR = [...DUVARLAR, ...DOSEMELER];
 
 /**
  * Bir yapı elemanı tanımından alan kütlesi ve Rw'yi çözer.
- * @param {{elemanId:string, sivaId?:string, sivaliYuzSayisi?:number, RwBeyan?:number|null}} tanim
+ * @param {Object} tanim
+ * @param {string} tanim.elemanId
+ * @param {string} [tanim.sivaId]
+ * @param {number} [tanim.sivaliYuzSayisi]
+ * @param {number|null} [tanim.RwBeyan]        Beyan edilmiş Rw (dB)
+ * @param {number|null} [tanim.yogunlukBeyan]  Ürünün gerçek birim hacim ağırlığı (kg/m³)
  * @param {string} model Rw kestirim modeli
  */
 export function elemanCoz(tanim, model = 'en12354') {
@@ -32,7 +38,8 @@ export function elemanCoz(tanim, model = 'en12354') {
 
   const siva = bul(SIVALAR, tanim.sivaId || 'sivasiz');
   const sivaKutlesi = (siva?.mAlan || 0) * (tanim.sivaliYuzSayisi ?? 0);
-  const mAlan = elemanAlanKutlesi(eleman) + sivaKutlesi;
+  const yogunlukBeyan = Number.isFinite(tanim.yogunlukBeyan) ? tanim.yogunlukBeyan : null;
+  const mAlan = elemanAlanKutlesi(eleman, yogunlukBeyan) + sivaKutlesi;
 
   let Rw, kaynak;
   if (Number.isFinite(tanim.RwBeyan)) {
@@ -43,17 +50,54 @@ export function elemanCoz(tanim, model = 'en12354') {
     Rw = rwKestir(mAlan, model); kaynak = 'alan kütlesinden kestirim';
   }
 
-  return { ad: eleman.ad, eleman, mAlan, Rw, kaynak, sivaKutlesi };
+  return {
+    ad: eleman.ad, eleman, mAlan, Rw, kaynak, sivaKutlesi,
+    yogunluk: yogunlukBeyan ?? eleman.yogunluk,
+    yogunlukBeyanEdildi: yogunlukBeyan != null,
+  };
+}
+
+/**
+ * Bir giydirme kabuğu çözer: ΔRw, boşluk dolgusu ve rezonans frekansı.
+ * @param {string} giydirmeId
+ * @param {string|null} dolguId  Kullanıcının seçtiği boşluk dolgusu; yoksa
+ *                               sistemin öngördüğü dolgu kullanılır.
+ * @param {number} mTasiyici     Giydirmenin uygulandığı elemanın alan kütlesi
+ */
+export function giydirmeCoz(giydirmeId, dolguId, mTasiyici) {
+  const giydirme = bul(GIYDIRME_KABUKLAR, giydirmeId) || GIYDIRME_KABUKLAR[0];
+  const secilenDolguId = dolguId || giydirme.dolguOnerisi || 'yok';
+  const dolgu = bul(YALITIM_LEVHALARI, secilenDolguId) || YALITIM_LEVHALARI[0];
+
+  const gozenekli = !!dolgu.gozenekli;
+  const f0 = giydirme.bosluk > 0
+    ? rezonansFrekansi(giydirme.levhaKutlesi, mTasiyici, giydirme.bosluk, gozenekli)
+    : NaN;
+
+  // Sistemin öngördüğü dolgu gözenekliyken dolgusuz/sert dolgu seçilirse
+  // boşluk sönümlenmez; muhafazakâr bir ceza uygulanır.
+  const onerilenGozenekli = !!(bul(YALITIM_LEVHALARI, giydirme.dolguOnerisi || 'yok')?.gozenekli);
+  const dolguCezasi = (onerilenGozenekli && !gozenekli) ? -4 : 0;
+
+  return {
+    giydirme,
+    dolgu,
+    dRw: (giydirme.dRw || 0) + dolguCezasi,
+    dolguCezasi,
+    f0,
+    f0Yorum: rezonansYorumu(f0),
+  };
 }
 
 /** Bir ayırıcı elemanın hesabı. */
 export function ayiriciHesapla(a, proje) {
   const model = proje.rwModeli;
   const ana = elemanCoz(a, model);
-  const giydirme = bul(GIYDIRME_KABUKLAR, a.giydirmeId);
+  const giydirmeCozum = giydirmeCoz(a.giydirmeId, a.dolguId, ana.mAlan);
+  const giydirme = giydirmeCozum.giydirme;
 
   // Kapı varsa ayırıcı eleman bileşik hâle gelir.
-  let RwAyirici = ana.Rw + (giydirme?.dRw || 0);
+  let RwAyirici = ana.Rw + giydirmeCozum.dRw;
   let kapiBilgi = null;
   if (a.kapiVar) {
     const kapi = bul(DOGRAMALAR, a.kapiId);
@@ -69,8 +113,8 @@ export function ayiriciHesapla(a, proje) {
 
   const yanElemanlar = (a.yanElemanlar || []).map((y) => {
     const c = elemanCoz(y, model);
-    const g = bul(GIYDIRME_KABUKLAR, y.giydirmeId);
-    const dR = g?.dRw || 0;
+    const gc = giydirmeCoz(y.giydirmeId, y.dolguId, c.mAlan);
+    const dR = gc.dRw;
     return {
       ad: y.ad,
       RwKaynak: c.Rw, RwAlici: c.Rw,
@@ -80,7 +124,7 @@ export function ayiriciHesapla(a, proje) {
       // Giydirme kabuk yan elemanın her iki ucunda da varsayılır.
       dRFf: dR ? Math.min(2 * dR, 18) : 0,
       dRFd: dR, dRDf: dR,
-      _cozum: c, _giydirme: g,
+      _cozum: c, _giydirme: gc,
     };
   });
 
@@ -101,7 +145,7 @@ export function ayiriciHesapla(a, proje) {
     hedefSinif: proje.hedefSinif,
   });
 
-  return { kayit: a, ana, giydirme, kapiBilgi, RwAyirici, yanElemanlar, sonuc, degerlendirme };
+  return { kayit: a, ana, giydirme, giydirmeCozum, kapiBilgi, RwAyirici, yanElemanlar, sonuc, degerlendirme };
 }
 
 /** Bir döşemenin darbe sesi hesabı. */

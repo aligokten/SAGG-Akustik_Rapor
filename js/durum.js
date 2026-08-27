@@ -3,6 +3,7 @@
  */
 
 import { yeniId } from './arayuz/ortak.js';
+import { projeKimliklerinigGuncelle } from './veri/malzemeler.js';
 
 const DEPO_ANAHTARI = 'sagg-akustik-proje-v1';
 
@@ -45,7 +46,9 @@ export function yeniAyirici() {
     sivaId: 'alci-15',
     sivaliYuzSayisi: 2,
     RwBeyan: null,            // beyan edilmiş Rw varsa kestirimin yerine geçer
+    yogunlukBeyan: null,      // ürünün gerçek birim hacim ağırlığı (kg/m³)
     giydirmeId: 'yok',
+    dolguId: null,            // giydirme kabuk boşluk dolgusu (YALITIM_LEVHALARI)
     kapiVar: false,
     kapiId: 'kapi-ic-dolu',
     kapiAlani: 1.8,
@@ -56,10 +59,10 @@ export function yeniAyirici() {
 /** Tipik dört yan eleman (iki duvar + döşeme + tavan). */
 export function varsayilanYanElemanlar() {
   return [
-    { id: yeniId('y'), ad: 'Cephe duvarı', elemanId: 'tugla-d250', sivaId: 'cimento-20', sivaliYuzSayisi: 2, RwBeyan: null, lf: 2.8, birlesim: 'T', giydirmeId: 'yok', esnekBaglanti: false },
-    { id: yeniId('y'), ad: 'İç koridor duvarı', elemanId: 'tugla-d190', sivaId: 'cimento-20', sivaliYuzSayisi: 2, RwBeyan: null, lf: 2.8, birlesim: 'T', giydirmeId: 'yok', esnekBaglanti: false },
-    { id: yeniId('y'), ad: 'Alt döşeme', elemanId: 'ba-d-160', sivaId: 'alci-10', sivaliYuzSayisi: 1, RwBeyan: null, lf: 4.3, birlesim: 'X', giydirmeId: 'yok', esnekBaglanti: false },
-    { id: yeniId('y'), ad: 'Üst döşeme (tavan)', elemanId: 'ba-d-160', sivaId: 'alci-10', sivaliYuzSayisi: 1, RwBeyan: null, lf: 4.3, birlesim: 'X', giydirmeId: 'yok', esnekBaglanti: false },
+    { id: yeniId('y'), ad: 'Cephe duvarı', elemanId: 'ddt-240', sivaId: 'cimento-20', sivaliYuzSayisi: 2, RwBeyan: null, yogunlukBeyan: null, lf: 2.8, birlesim: 'T', giydirmeId: 'yok', dolguId: null, esnekBaglanti: false },
+    { id: yeniId('y'), ad: 'İç koridor duvarı', elemanId: 'ddt-190', sivaId: 'cimento-20', sivaliYuzSayisi: 2, RwBeyan: null, yogunlukBeyan: null, lf: 2.8, birlesim: 'T', giydirmeId: 'yok', dolguId: null, esnekBaglanti: false },
+    { id: yeniId('y'), ad: 'Alt döşeme', elemanId: 'ba-d-160', sivaId: 'alci-10', sivaliYuzSayisi: 1, RwBeyan: null, yogunlukBeyan: null, lf: 4.3, birlesim: 'X', giydirmeId: 'yok', dolguId: null, esnekBaglanti: false },
+    { id: yeniId('y'), ad: 'Üst döşeme (tavan)', elemanId: 'ba-d-160', sivaId: 'alci-10', sivaliYuzSayisi: 1, RwBeyan: null, yogunlukBeyan: null, lf: 4.3, birlesim: 'X', giydirmeId: 'yok', dolguId: null, esnekBaglanti: false },
   ];
 }
 
@@ -91,7 +94,7 @@ export function yeniCephe() {
     V: 40,
     bicim: 'duz',
     elemanlar: [
-      { id: yeniId('e'), ad: 'Dolu cephe duvarı', tur: 'duvar', elemanId: 'tugla-d250', sivaId: 'cimento-20', sivaliYuzSayisi: 2, RwBeyan: null, S: 9 },
+      { id: yeniId('e'), ad: 'Dolu cephe duvarı', tur: 'duvar', elemanId: 'ddt-240', sivaId: 'cimento-20', sivaliYuzSayisi: 2, RwBeyan: null, yogunlukBeyan: null, S: 9 },
       { id: yeniId('e'), ad: 'Pencere', tur: 'dograma', elemanId: 'pencere-6-16-4', RwBeyan: null, S: 4.5 },
     ],
     kucukElemanlar: [],
@@ -129,7 +132,7 @@ export function yukle() {
     const ham = localStorage.getItem(DEPO_ANAHTARI);
     if (!ham) return null;
     const d = JSON.parse(ham);
-    return d && d.proje ? d : null;
+    return d && d.proje ? projeKimliklerinigGuncelle(d) : null;
   } catch { return null; }
 }
 
@@ -153,15 +156,15 @@ export function ornekProje() {
   a1.ad = 'Daireler arası ayırıcı duvar (salon–yatak odası)';
   // Yalnızca ayırıcı duvarı ağırlaştırmak yetmez; yan yolu sınırlayan koridor
   // duvarına da giydirme kabuk uygulanmıştır.
-  a1.giydirmeId = 'ap-metal-50';
-  a1.yanElemanlar[1].giydirmeId = 'ap-metal-50';
+  a1.giydirmeId = 'ap-bagimsiz-50';
+  a1.yanElemanlar[1].giydirmeId = 'ap-bagimsiz-50';
   p.ayiricilar.push(a1);
 
   const a2 = yeniAyirici();
   a2.ad = 'Merdiven sahanlığı ile daire arası duvar (kapılı)';
   a2.kaynakMekanId = 'konut-merdiven';
   a2.aliciMekanId = 'konut-hol';
-  a2.elemanId = 'tugla-d250';
+  a2.elemanId = 'ddt-240';
   a2.S = 10; a2.V = 55;
   a2.kapiVar = true; a2.kapiId = 'daire-kapisi'; a2.kapiAlani = 2.0;
   p.ayiricilar.push(a2);

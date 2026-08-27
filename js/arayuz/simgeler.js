@@ -20,6 +20,8 @@ export const SIMGELER = {
   cephe: sar('<rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="10" height="7" rx="1"/><path d="M12 7v7"/><path d="M7 18h10"/>'),
   // Reverberasyon — yayılan ses dalgaları
   reverberasyon: sar('<path d="M6 9v6"/><path d="M10 6v12"/><path d="M14 8v8"/><path d="M18 5v14"/><path d="M2 11v2"/><path d="M22 11v2"/>'),
+  // Malzeme kütüphanesi — istiflenmiş katmanlar
+  kutuphane: sar('<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 16.5l9 5 9-5"/>'),
   // Yönetmelik — terazi
   yonetmelik: sar('<path d="M12 3v18"/><path d="M7 6h10"/><path d="M5 21h14"/><path d="M7 6l-3 6a3 3 0 0 0 6 0z"/><path d="M17 6l3 6a3 3 0 0 1-6 0z"/>'),
   // Rapor — onaylı belge

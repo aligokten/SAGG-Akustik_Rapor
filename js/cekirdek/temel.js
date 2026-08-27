@@ -108,3 +108,45 @@ export function LnTdenLn(LnTw, V, T0 = 0.5) {
 export function alanKutlesi(kalinlik, yogunluk, sivaTekYuz = 0, sivaliYuzSayisi = 0) {
   return (kalinlik / 1000) * yogunluk + sivaTekYuz * sivaliYuzSayisi;
 }
+
+/**
+ * Giydirme kabuk / bölme duvar boşluğunun rezonans (kütle-yay-kütle)
+ * frekansı f₀ (Hz).
+ *
+ *   f₀ = (1/2π)·√( s′ · (1/m′₁ + 1/m′₂) )        s′ = κ·P₀/d
+ *
+ *   m′₁ : giydirme levhasının alan kütlesi (kg/m²)
+ *   m′₂ : taşıyıcı elemanın alan kütlesi (kg/m²)
+ *   d   : boşluk derinliği (m)
+ *   P₀  : atmosfer basıncı, 101 325 Pa
+ *   κ   : gözenekli dolgulu boşlukta 1,0 (izotermal),
+ *         boş (dolgusuz) boşlukta 1,4 (adyabatik)
+ *
+ * f₀ ne kadar düşükse giydirme kabuk o kadar etkilidir. Tasarımda f₀'ın
+ * değerlendirme aralığının (100 Hz) belirgin biçimde altında kalması,
+ * uygulamada 80 Hz'in altı hedeflenir. f₀ 200 Hz'in üzerine çıktığında
+ * giydirme kabuk yalıtımı iyileştirmek yerine kötüleştirebilir.
+ *
+ * @param {number} mLevha  Giydirme levhasının alan kütlesi (kg/m²)
+ * @param {number} mTasiyici Taşıyıcı elemanın alan kütlesi (kg/m²)
+ * @param {number} boslukMm Boşluk derinliği (mm)
+ * @param {boolean} gozenekliDolgu Boşlukta gözenekli (mineral yün vb.) dolgu var mı
+ * @returns {number} f₀ (Hz)
+ */
+export function rezonansFrekansi(mLevha, mTasiyici, boslukMm, gozenekliDolgu = true) {
+  const d = (boslukMm || 0) / 1000;
+  if (!(d > 0) || !(mLevha > 0) || !(mTasiyici > 0)) return NaN;
+  const P0 = 101325;
+  const kappa = gozenekliDolgu ? 1.0 : 1.4;
+  const sDinamik = (kappa * P0) / d;
+  return Math.sqrt(sDinamik * (1 / mLevha + 1 / mTasiyici)) / (2 * Math.PI);
+}
+
+/** f₀ değerine göre tasarım yorumu. */
+export function rezonansYorumu(f0) {
+  if (!Number.isFinite(f0)) return { seviye: 'yok', metin: 'Hesaplanamadı' };
+  if (f0 <= 80)  return { seviye: 'iyi',  metin: 'Çok uygun — boşluk derinliği ve kütle yeterli' };
+  if (f0 <= 125) return { seviye: 'iyi',  metin: 'Uygun' };
+  if (f0 <= 200) return { seviye: 'orta', metin: 'Sınırda — boşluğu derinleştirmek ya da levhayı ağırlaştırmak iyileştirir' };
+  return { seviye: 'kotu', metin: 'Yüksek — bu giydirme kabuk yalıtımı kötüleştirebilir' };
+}

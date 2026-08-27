@@ -3,7 +3,7 @@
  * olay bağlama ve dosya işlemleri.
  */
 
-import { $, $$, sayiOku, yeniId } from './arayuz/ortak.js';
+import { $, $$, sayiOku, yeniId, aramaMetni } from './arayuz/ortak.js';
 import { simge } from './arayuz/simgeler.js';
 import * as D from './durum.js';
 import { projeyiHesapla } from './hesap.js';
@@ -13,6 +13,7 @@ import * as sekmeAyirici from './arayuz/sekme-ayirici.js';
 import * as sekmeDarbe from './arayuz/sekme-darbe.js';
 import * as sekmeCephe from './arayuz/sekme-cephe.js';
 import * as sekmeReverberasyon from './arayuz/sekme-reverberasyon.js';
+import * as sekmeKutuphane from './arayuz/sekme-kutuphane.js';
 import * as sekmeYonetmelik from './arayuz/sekme-yonetmelik.js';
 import * as sekmeRapor from './arayuz/sekme-rapor.js';
 import {
@@ -54,7 +55,9 @@ const SEKMELER = [
     baslik: 'Reverberasyon (çınlama) süresi', yol: 'Sabine bağıntısı · EK-5',
     sayim: (d) => d.hacimler.length, eksik: (s) => s.hacimler.filter((x) => x.degerlendirme && !x.degerlendirme.uygun).length },
 
-  { grup: 'Çıktı', id: 'yonetmelik', ad: 'Yönetmelik verileri', simge: '⚖',
+  { grup: 'Başvuru', id: 'kutuphane', ad: 'Malzeme kütüphanesi',
+    baslik: 'Malzeme kütüphanesi', yol: 'Yapı elemanları, yalıtım ürünleri ve yüzey kaplamaları' },
+  { id: 'yonetmelik', ad: 'Yönetmelik verileri', simge: '⚖',
     baslik: 'Yönetmelik verileri', yol: 'EK-2 – EK-5 sınır değerleri · düzenlenebilir' },
   { id: 'rapor',   ad: 'Akustik rapor',      simge: '🖹',
     baslik: 'Akustik rapor', yol: 'Yazdırılabilir özet çıktı' },
@@ -231,6 +234,7 @@ function ciz() {
     darbe: () => sekmeDarbe.ciz(durum, sonuclar),
     cephe: () => sekmeCephe.ciz(durum, sonuclar),
     reverberasyon: () => sekmeReverberasyon.ciz(durum, sonuclar),
+    kutuphane: () => sekmeKutuphane.ciz(durum),
     yonetmelik: () => sekmeYonetmelik.ciz(),
     rapor: () => sekmeRapor.ciz(durum, sonuclar),
   };
@@ -327,6 +331,7 @@ function olaylariBagla() {
   // Girdi değişiklikleri (delege)
   document.addEventListener('input', (e) => {
     const el = e.target;
+    if (el.dataset?.filtre === 'kutuphane') { kutuphaneyiSuz(el.value); return; }
     if (el.dataset?.yol) {
       yolAyarla(durum, el.dataset.yol, degerCoz(el));
       D.kaydet(durum);
@@ -418,6 +423,26 @@ function veriPaketiOzet() {
     paket[ad] = t.degerler ? { degerler: t.degerler } : { mekanlar: t.mekanlar };
   }
   return paket;
+}
+
+/**
+ * Malzeme kütüphanesi tablolarını metin filtresine göre süzer.
+ * Yeniden çizim yapılmaz; yalnızca satır görünürlüğü değiştirilir, böylece
+ * arama kutusundaki odak korunur.
+ */
+function kutuphaneyiSuz(metin) {
+  const arama = aramaMetni(metin).trim();
+  const parcalar = arama.split(/\s+/).filter(Boolean);
+  for (const kapsam of $$('[data-filtre-kapsam]')) {
+    let gorunen = 0;
+    for (const satir of $$('[data-filtre-satir]', kapsam)) {
+      const metni = satir.dataset.filtreSatir;
+      const uyar = parcalar.every((k) => metni.includes(k));
+      satir.style.display = uyar ? '' : 'none';
+      if (uyar) gorunen += 1;
+    }
+    kapsam.style.display = gorunen === 0 && parcalar.length ? 'none' : '';
+  }
 }
 
 let cizimZamani = null;

@@ -5,7 +5,7 @@
 
 import { kacis, sayi, secenekler, uygunlukRozeti, sinifRozeti } from './ortak.js';
 import { EK2_TABLO_2_1, GURULTULULUK_DERECELERI, HASSASIYET_DERECELERI } from '../veri/yonetmelik.js';
-import { DUVARLAR, DOSEMELER, DOGRAMALAR, SIVALAR, GIYDIRME_KABUKLAR } from '../veri/malzemeler.js';
+import { DUVARLAR, DOSEMELER, DOGRAMALAR, SIVALAR, GIYDIRME_KABUKLAR, YALITIM_LEVHALARI } from '../veri/malzemeler.js';
 import { BIRLESIM_TIPLERI } from '../cekirdek/kij.js';
 
 const MEKANLAR = EK2_TABLO_2_1.mekanlar;
@@ -70,13 +70,30 @@ function kart(a, i, h) {
         <select data-yol="${y}.sivaliYuzSayisi" data-tur="sayi">
           ${[0, 1, 2].map((n) => `<option value="${n}"${n === a.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}
         </select></div>
-      <div class="alan"><label>Giydirme kabuk</label>
-        <select data-yol="${y}.giydirmeId">${secenekler(GIYDIRME_KABUKLAR, a.giydirmeId)}</select>
-        <span class="ipucu">ΔRw = ${sayi(h.giydirme?.dRw ?? 0, 0)} dB</span></div>
+      <div class="alan"><label>Beyan edilmiş yoğunluk (kg/m³)</label>
+        <input type="number" step="10" min="50" data-yol="${y}.yogunlukBeyan" data-tur="sayiVeyaNull"
+               value="${a.yogunlukBeyan ?? ''}" placeholder="${kacis(String(h.ana.eleman?.yogunluk ?? '—'))} (kütüphane)">
+        <span class="ipucu">Ürününüzün gerçek birim hacim ağırlığı.</span></div>
       <div class="alan"><label>Beyan edilmiş Rw (dB) — isteğe bağlı</label>
         <input type="number" step="0.1" data-yol="${y}.RwBeyan" data-tur="sayiVeyaNull" value="${a.RwBeyan ?? ''}" placeholder="laboratuvar değeri">
         <span class="ipucu">Girilirse kestirim yerine bu değer kullanılır.</span></div>
     </div>
+
+    <h3 style="margin-top:18px">Giydirme kabuk</h3>
+    <div class="izgara">
+      <div class="alan"><label>Sistem</label>
+        <select data-yol="${y}.giydirmeId">${secenekler(GIYDIRME_KABUKLAR, a.giydirmeId, { gruplu: true })}</select>
+        <span class="ipucu">ΔRw = ${sayi(h.giydirmeCozum.dRw, 0)} dB${h.giydirmeCozum.dolguCezasi ? ` (dolgu cezası ${sayi(h.giydirmeCozum.dolguCezasi, 0)} dB dahil)` : ''}</span></div>
+      ${h.giydirmeCozum.giydirme.bosluk > 0 ? `
+      <div class="alan"><label>Boşluk dolgusu</label>
+        <select data-yol="${y}.dolguId">${secenekler(YALITIM_LEVHALARI, h.giydirmeCozum.dolgu.id, { gruplu: true })}</select>
+        <span class="ipucu">Boşluk derinliği ${sayi(h.giydirmeCozum.giydirme.bosluk, 0)} mm</span></div>
+      <div class="alan"><label>Rezonans frekansı f₀</label>
+        <input readonly value="${sayi(h.giydirmeCozum.f0, 0)} Hz">
+        <span class="ipucu" style="color:${{ iyi: 'var(--basari)', orta: 'var(--uyari)', kotu: 'var(--hata)' }[h.giydirmeCozum.f0Yorum.seviye] || 'var(--soluk)'}">${kacis(h.giydirmeCozum.f0Yorum.metin)}</span></div>
+      ` : ''}
+    </div>
+    ${h.giydirmeCozum.dolgu.not ? `<div class="bilgi-kutu${h.giydirmeCozum.dolguCezasi ? ' sari' : ''}"><b>${kacis(h.giydirmeCozum.dolgu.ad)}:</b> ${kacis(h.giydirmeCozum.dolgu.not)}</div>` : ''}
     <div class="izgara dar" style="margin-top:10px">
       <div class="alan"><label>Alan kütlesi m′</label><input readonly value="${sayi(h.ana.mAlan, 0)} kg/m²"></div>
       <div class="alan"><label>Eleman Rw (${kacis(h.ana.kaynak)})</label><input readonly value="${sayi(h.ana.Rw)} dB"></div>
@@ -98,7 +115,7 @@ function kart(a, i, h) {
     <div class="tablo-sar"><table>
       <thead><tr>
         <th>Yan eleman</th><th>Yapı elemanı</th><th>Sıva</th><th class="sayi">Yüz</th>
-        <th class="sayi">m′ (kg/m²)</th><th class="sayi">Rw (dB)</th><th>Giydirme</th>
+        <th class="sayi">Yoğunluk</th><th class="sayi">m′ (kg/m²)</th><th class="sayi">Rw (dB)</th><th>Giydirme</th>
         <th class="sayi">lf (m)</th><th>Birleşim</th><th>Esnek</th><th></th>
       </tr></thead>
       <tbody>
@@ -110,6 +127,8 @@ function kart(a, i, h) {
           <td><select data-yol="${yy}.elemanId" style="min-width:190px">${secenekler(YAPI_ELEMANLARI, ye.elemanId, { gruplu: true })}</select></td>
           <td><select data-yol="${yy}.sivaId" style="min-width:150px">${secenekler(SIVALAR, ye.sivaId)}</select></td>
           <td><select data-yol="${yy}.sivaliYuzSayisi" data-tur="sayi" style="min-width:60px">${[0, 1, 2].map((n) => `<option value="${n}"${n === ye.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}</select></td>
+          <td><input type="number" step="10" min="50" data-yol="${yy}.yogunlukBeyan" data-tur="sayiVeyaNull"
+                     value="${ye.yogunlukBeyan ?? ''}" placeholder="${kacis(String(hy._cozum.eleman?.yogunluk ?? '—'))}" style="width:88px"></td>
           <td class="sayi">${sayi(hy.mKaynak, 0)}</td>
           <td class="sayi">${sayi(hy.RwKaynak)}</td>
           <td><select data-yol="${yy}.giydirmeId" style="min-width:170px">${secenekler(GIYDIRME_KABUKLAR, ye.giydirmeId)}</select></td>
