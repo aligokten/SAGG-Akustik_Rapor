@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Testleri çalıştır
         run: node --test test/*.test.js
 
@@ -38,6 +38,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+        # Depoda Pages kapalıysa iş akışı belirtecini kullanarak açmayı dener.
+        with:
+          enablement: true
       - name: Statik dosyaları paketle
         uses: actions/upload-pages-artifact@v3
         with:
