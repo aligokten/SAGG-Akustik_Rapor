@@ -131,10 +131,15 @@ yerine **katman katman** kurulabilir — "Katmanlı yapıya geç" düğmesiyle g
 
 Üç katman türü:
 
-- **Masif tabaka** — kütüphaneden bir malzeme (ör. "G2 Gazbeton, 150 mm"), isteğe bağlı beyan yoğunluğu.
-- **Sıva** — tek yüzey sıvası.
+- **Masif tabaka** — serbest metin malzeme adı + kalınlık (mm) + yoğunluk (kg/m³). Sık kullanılan
+  malzemeler (G2/G3/G4 gazbeton, bims/tuğla, betonarme, Knauf mineral yün IPB 039 vb.) bir ön ayar
+  menüsünden tek tıkla doldurulabilir; alan yine de serbestçe düzenlenebilir.
+- **Sıva** — tek yüzey sıvası, aynı serbest ad/kalınlık/yoğunluk girişiyle.
 - **Boşluk / dolgu** — kalınlık (mm) ve boşluk dolgusu (Knauf IPB serisi, taşyünü, camyünü, EPS/XPS…).
   Bir boşluk katmanı, elemanı iki bağımsız kabuğa ayırır.
+
+Her katman listesinin üstünde, kalınlıkla orantılı renkli bir **katman şeridi** kalınlık dağılımını
+tek bakışta gösterir (aynı görsel hem düzenleyicide hem raporda kullanılır).
 
 **Hesap mantığı:**
 
@@ -155,24 +160,34 @@ yerine **katman katman** kurulabilir — "Katmanlı yapıya geç" düğmesiyle g
 Bu mantık `js/cekirdek/katmanli-eleman.js` içindedir ve façade (cephe) duvar elemanlarında da arka
 planda çalışır; cephe sekmesinde şimdilik yalnızca basit (tek satır) seçim arayüzü sunulur.
 
-## Oda geometrisi ve izometrik şema
+## Oda geometrisi, izometrik şema ve canlı 3B model
 
 Ayırıcı elemanlarda ve döşemelerde, alan/hacmi doğrudan girmek yerine **oda boyutlarından
-hesapla** moduna geçilebilir: derinlik (L), genişlik (W), yükseklik (H) ve — ayırıcı elemanlarda
-ayrıca — ayırıcının bulunduğu yüz (ön/arka/sol/sağ) girilir.
+hesapla** moduna geçilebilir: iki mekânın (Oda 1/kaynak, Oda 2/alıcı) **her biri bağımsız olarak**
+derinlik (L), genişlik (W), yükseklik (H) ile girilir — eşit boyutlu olmaları gerekmez — ve
+ayırıcının bulunduğu yüz seçilir: **ön / arka / sol / sağ duvar** ya da **taban / tavan döşemesi**.
 
-- Ayırıcı elemanın alanı S ve alıcı mekân hacmi V otomatik hesaplanır.
+- Ayırıcı elemanın alanı S ve alıcı mekân hacmi V, seçilen yüze göre otomatik hesaplanır. Taban/tavan
+  seçiminde S, iki odanın örtüşen taban izdüşümü (`min(L1,L2) × min(W1,W2)`) olarak bulunur.
 - Standart dört yan elemanın (iki yan duvar + taban + tavan) birleşim uzunluğu (lf) oda
-  boyutlarından otomatik türetilir — iki yan duvar için her zaman **H**, taban ve tavan için
-  ayırıcının kendi genişliği. Kullanıcının sonradan eklediği ek yan elemanlar bu otomasyondan
+  boyutlarından otomatik türetilir. Kullanıcının sonradan eklediği ek yan elemanlar bu otomasyondan
   etkilenmez, elle girilen lf'lerini korur.
-- İki mekânın da aynı boyutta olduğu varsayılır (simetrik daire planı).
-- Girilen boyutlarla **izometrik bir oda şeması** (`js/arayuz/oda-cizimi.js`, saf SVG, dış bağımlılık
-  yok) otomatik çizilir: ayırıcı eleman vurgulu, taban/tavan (yan yol) hafif tonlu. Bu şema hem
-  ayırıcı sekmesinde hem de yazdırılabilir raporda görünür.
+- Girilen boyutlarla **izometrik, döndürülebilir bir 3B oda şeması** (`js/arayuz/oda-cizimi.js`, saf
+  SVG, dış bağımlılık yok) otomatik çizilir: ayırıcı yüzey vurgulu, iki oda kendi boyutlarıyla ayrı
+  ayrı çizilir. Ayırıcı sekmesindeki "Canlı 3B model" kutusu fare/dokunmatikle **sürüklenerek
+  döndürülebilir**; aynı şema (o anki açıyla) yazdırılabilir rapora da statik olarak eklenir.
 
 Eksen kuralı, KS-Schallschutzrechner'in oda diyagramıyla doğrulanmıştır: L=6,12 m, W=3,03 m,
 H=2,62 m, ayırıcı "sol duvar"da iken hesaplanan S = 16,03 m² birebir eşleşir.
+
+### "Katmanlı Model v3" JSON içe aktarma
+
+Proje sekmesinden veya "Proje aç" ile, uyumlu bir üçüncü parti araçtan (`room1`/`room2`/
+`separatorFace`/`surfaces: {separator, f1..f4}` şemalı `.json`) dışa aktarılmış dosyalar doğrudan
+açılabilir — dosya biçimi otomatik tanınır (`js/veri/v3-donusturucu.js`) ve künye, oda ölçüleri,
+ayırıcı yönü, ayırıcı + dört yan yüzeyin katman reçeteleri SAGG proje biçimine dönüştürülerek
+içe aktarılır. İçe aktarma sonrası proje, bu araçtaki tüm özelliklerle (proje bazlı kayıt, canlı
+model, katman düzenleyici) normal şekilde düzenlenebilir.
 
 ## Kullanım
 

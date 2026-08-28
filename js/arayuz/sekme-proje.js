@@ -20,6 +20,8 @@ export function ciz(durum) {
     <div class="izgara">
       <div class="alan"><label for="pr-ad">Proje adı</label>
         <input id="pr-ad" data-yol="proje.ad" value="${kacis(p.ad)}" placeholder="Örn. Yeşil Vadi Konutları A Blok"></div>
+      <div class="alan"><label for="pr-kod">Rapor kodu</label>
+        <input id="pr-kod" data-yol="proje.kod" value="${kacis(p.kod)}" placeholder="Örn. ID1, DOS1"></div>
       <div class="alan"><label for="pr-ap">Ada / parsel</label>
         <input id="pr-ap" data-yol="proje.adaParsel" value="${kacis(p.adaParsel)}"></div>
       <div class="alan"><label for="pr-is">İşveren</label>
@@ -30,6 +32,17 @@ export function ciz(durum) {
         <input id="pr-au" data-yol="proje.akustikUzman" value="${kacis(p.akustikUzman)}"></div>
       <div class="alan"><label for="pr-ta">Tarih</label>
         <input id="pr-ta" type="date" data-yol="proje.tarih" value="${kacis(p.tarih)}"></div>
+    </div>
+  </section>
+
+  <section class="kart">
+    <div class="kart-baslik"><h2>Rapor antedi</h2></div>
+    <div class="bilgi-kutu">Yazdırılabilir raporun üst bilgisinde (letterhead) gösterilir.</div>
+    <div class="izgara">
+      <div class="alan"><label for="pr-sirket">Şirket / ofis adı</label>
+        <input id="pr-sirket" data-yol="proje.sirket" value="${kacis(p.sirket)}"></div>
+      <div class="alan"><label for="pr-unvan">Akustik uzmanın unvanı</label>
+        <input id="pr-unvan" data-yol="proje.unvan" value="${kacis(p.unvan)}" placeholder="Örn. D1 Temel Bina Akustiği Uzmanı"></div>
     </div>
   </section>
 

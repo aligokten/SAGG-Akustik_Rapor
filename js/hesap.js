@@ -72,10 +72,7 @@ export function elemanCoz(tanim, model = 'en12354') {
 export function elemanVeyaKatmanCoz(tanim, model = 'en12354') {
   if (tanim?.katmanlar && tanim.katmanlar.length > 0) {
     const r = katmanliElemaniCoz(tanim.katmanlar, {
-      malzemeBul: (id) => bul(TUM_ELEMANLAR, id),
-      sivaBul: (id) => bul(SIVALAR, id),
       dolguBul: (id) => bul(YALITIM_LEVHALARI, id),
-      alanKutlesiHesapla: elemanAlanKutlesi,
       model,
     });
 

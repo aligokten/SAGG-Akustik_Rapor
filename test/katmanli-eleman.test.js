@@ -1,5 +1,6 @@
 /**
- * katmanli-eleman.test.js — Çok katmanlı yapı elemanı hesabı testleri.
+ * katmanli-eleman.test.js — Çok katmanlı yapı elemanı hesabı testleri
+ * (serbest ad/kalınlık/yoğunluk alanlı katman şeması).
  */
 
 import { test } from 'node:test';
@@ -7,22 +8,20 @@ import assert from 'node:assert/strict';
 
 import { ikiKabukBonusu } from '../js/cekirdek/temel.js';
 import {
-  katmanliElemaniCoz, segmentleAyir, yeniKatman, katmanOzetMetni,
+  katmanliElemaniCoz, segmentleAyir, yeniKatman, katmanOzetMetni, katmanDizilimiMetni,
+  katmanAlanKutlesi,
 } from '../js/cekirdek/katmanli-eleman.js';
-import {
-  DUVARLAR, DOSEMELER, SIVALAR, YALITIM_LEVHALARI, bul, elemanAlanKutlesi,
-} from '../js/veri/malzemeler.js';
+import { YALITIM_LEVHALARI, bul } from '../js/veri/malzemeler.js';
 
 const yakin = (a, b, tol = 0.05) =>
   assert.ok(Math.abs(a - b) <= tol, `${a} ≈ ${b} bekleniyordu (tolerans ${tol})`);
 
-const TUM = [...DUVARLAR, ...DOSEMELER];
-const baglam = {
-  malzemeBul: (id) => bul(TUM, id),
-  sivaBul: (id) => bul(SIVALAR, id),
-  dolguBul: (id) => bul(YALITIM_LEVHALARI, id),
-  alanKutlesiHesapla: elemanAlanKutlesi,
-};
+const dolguBul = (id) => bul(YALITIM_LEVHALARI, id);
+const baglam = { dolguBul };
+
+const masif = (ad, kalinlik, yogunluk) => ({ tur: 'masif', ad, kalinlik, yogunluk });
+const siva = (ad, kalinlik, yogunluk) => ({ tur: 'siva', ad, kalinlik, yogunluk });
+const bosluk = (kalinlik, dolguId) => ({ tur: 'bosluk', kalinlik, dolguId });
 
 /* ── ikiKabukBonusu ───────────────────────────────────────────────── */
 
@@ -46,69 +45,97 @@ test('ikiKabukBonusu geçersiz girdide 0 döner', () => {
   assert.equal(ikiKabukBonusu(-5), 0);
 });
 
+/* ── katmanAlanKutlesi ────────────────────────────────────────────── */
+
+test('Masif ve sıva katmanları kalınlık×yoğunluktan kütle üretir', () => {
+  yakin(katmanAlanKutlesi(masif('Beton', 200, 2400)), 480);
+  yakin(katmanAlanKutlesi(siva('Alçı', 15, 1000)), 15);
+});
+
+test('Boşluk katmanının kütlesi sıfır kabul edilir', () => {
+  assert.equal(katmanAlanKutlesi(bosluk(50, 'yok')), 0);
+});
+
+test('Eksik/geçersiz sayısal alanlar kütleyi çökertmez, sıfır üretir', () => {
+  assert.equal(katmanAlanKutlesi({ tur: 'masif', ad: 'X', kalinlik: null, yogunluk: 400 }), 0);
+  assert.equal(katmanAlanKutlesi({ tur: 'masif', ad: 'X', kalinlik: 100 }), 0);
+});
+
 /* ── segmentleAyir ────────────────────────────────────────────────── */
 
 test('Boşluksuz katman listesi tek segmenttir', () => {
-  const s = segmentleAyir([{ tur: 'masif' }, { tur: 'siva' }]);
+  const s = segmentleAyir([masif('A', 100, 400), siva('B', 15, 1000)]);
   assert.equal(s.length, 1);
   assert.equal(s[0].length, 2);
 });
 
 test('Bir boşluk iki segment üretir', () => {
-  const s = segmentleAyir([{ tur: 'masif' }, { tur: 'bosluk' }, { tur: 'masif' }]);
+  const s = segmentleAyir([masif('A', 100, 400), bosluk(50, 'yok'), masif('B', 100, 400)]);
   assert.equal(s.length, 2);
-  assert.equal(s[0].length, 1);
-  assert.equal(s[1].length, 1);
 });
 
 test('Boş katman listesi tek boş segmenttir', () => {
-  const s = segmentleAyir([]);
-  assert.deepEqual(s, [[]]);
+  assert.deepEqual(segmentleAyir([]), [[]]);
 });
 
 /* ── katmanliElemaniCoz — tek kabuk ──────────────────────────────── */
 
 test('Boşluksuz katman listesi tek kabuk olarak değerlendirilir', () => {
-  const r = katmanliElemaniCoz([
-    { tur: 'masif', malzemeId: 'ba-d-150' },
-  ], baglam);
+  const r = katmanliElemaniCoz([masif('Betonarme', 150, 2400)], baglam);
   assert.equal(r.tur, 'tekKabuk');
-  yakin(r.mAlan, 0.15 * 2400);
+  yakin(r.mAlan, 360);
+  yakin(r.kalinlikToplam, 150);
   assert.equal(r.dRKavite, undefined);
 });
 
-test('Kullanıcının döşeme örneği tek kabuk olarak hesaplanır (yapışık katmanlar)', () => {
-  // 15 cm betonarme + 5 mm şilte (kütlesiz kabul, ayrı ΔLw modülünde ele
-  // alınır) + 7 cm şap + 2 cm seramik: burada yalnızca taşıyıcı döşemenin
-  // hava doğuşlu yalıtımı test edilir.
-  const r = katmanliElemaniCoz([{ tur: 'masif', malzemeId: 'ba-d-150' }], baglam);
-  assert.ok(Number.isFinite(r.Rw));
+test('DOS1 örneği (döşeme S katmanı) referans değerlerle birebir eşleşir', () => {
+  // Kaynak: SAGG_Akustik_Rapor_DOS1.pdf, Bölüm 2 — Ayırıcı eleman katmanları.
+  const r = katmanliElemaniCoz([
+    masif('Seramik kaplama', 20, 2200),
+    masif('Tesviye şapı', 70, 2000),
+    masif('Akustik şilte', 5, 75),
+    masif('Betonarme', 150, 2400),
+    siva('Çimento esaslı sıva', 20, 1800),
+    siva('Alçı sıva', 21, 1000),
+  ], baglam);
+  yakin(r.kalinlikToplam, 286, 0.1);
+  yakin(r.mAlan, 601.4, 0.1);
   assert.equal(r.tur, 'tekKabuk');
 });
 
-test('Sıva katmanları toplam kütleye eklenir', () => {
-  const sivasiz = katmanliElemaniCoz([{ tur: 'masif', malzemeId: 'ba-200' }], baglam);
-  const sivali = katmanliElemaniCoz([
-    { tur: 'siva', sivaId: 'alci-15' },
-    { tur: 'masif', malzemeId: 'ba-200' },
-    { tur: 'siva', sivaId: 'alci-15' },
+test('DOS1 örneği (F1 yan duvarı, mineral yün BAĞLI katman olarak) referansla birebir eşleşir', () => {
+  // Kaynak: aynı rapor, Bölüm 3 — F1: m′=245,4 kg/m², Rw=47,6 dB.
+  // Mineral yün burada 'masif' (bağlı) katman olarak girilmiştir; bu,
+  // referans aracın davranışıyla eşleşir (gerçek bir hava boşluğu
+  // modellenmez, yalnızca kütle katkısı hesaba girer).
+  const r = katmanliElemaniCoz([
+    siva('Alçı sıva', 22, 1200),
+    siva('Çimento esaslı sıva', 20, 1800),
+    masif('G2 gazbeton', 150, 400),
+    masif('Knauf mineral yün IPB 039', 50, 12.4),
+    masif('G2 gazbeton', 150, 400),
+    siva('Çimento esaslı sıva', 20, 1800),
+    siva('Alçı sıva', 22, 1200),
   ], baglam);
+  assert.equal(r.tur, 'tekKabuk');
+  yakin(r.mAlan, 245.4, 0.1);
+  yakin(r.Rw, 47.6, 0.1);
+});
+
+test('Sıva katmanları toplam kütleye eklenir', () => {
+  const sivasiz = katmanliElemaniCoz([masif('Beton', 200, 2400)], baglam);
+  const sivali = katmanliElemaniCoz([siva('Alçı', 15, 1000), masif('Beton', 200, 2400), siva('Alçı', 15, 1000)], baglam);
   yakin(sivali.mAlan, sivasiz.mAlan + 30);
   assert.ok(sivali.Rw > sivasiz.Rw);
 });
 
-test('Boş malzeme seçimi (malzemeId=null) sıfır kütle katkısı verir', () => {
-  const r = katmanliElemaniCoz([{ tur: 'masif', malzemeId: null }], baglam);
-  assert.equal(r.mAlan, 0);
-});
-
 /* ── katmanliElemaniCoz — iki kabuk ──────────────────────────────── */
 
-test('Boşluklu iki masif katman iki kabuk olarak ayrılır', () => {
+test('Boşluk türünde katman iki kabuğa ayırır (mineral yün DOLGU olarak)', () => {
   const r = katmanliElemaniCoz([
-    { tur: 'masif', malzemeId: 'gb-g2-150' },
-    { tur: 'bosluk', kalinlik: 50, dolguId: 'knauf-ipb039' },
-    { tur: 'masif', malzemeId: 'gb-g2-150' },
+    masif('G2 gazbeton', 150, 400),
+    bosluk(50, 'knauf-ipb039'),
+    masif('G2 gazbeton', 150, 400),
   ], baglam);
   assert.equal(r.tur, 'ikiKabuk');
   yakin(r.mA, 60); yakin(r.mB, 60);
@@ -118,65 +145,41 @@ test('Boşluklu iki masif katman iki kabuk olarak ayrılır', () => {
   assert.ok(r.Rw > r.RwTaban, 'iki kabuklu sistem taban değerinden iyi olmalı');
 });
 
-test('İki kabuklu sistemde toplam Rw, tek kabuklu (aynı kütleli) sistemden yüksektir', () => {
-  const ikiKabuk = katmanliElemaniCoz([
-    { tur: 'masif', malzemeId: 'gb-g2-150' },
-    { tur: 'bosluk', kalinlik: 50, dolguId: 'knauf-ipb039' },
-    { tur: 'masif', malzemeId: 'gb-g2-150' },
+test('Aynı malzeme BAĞLI (masif) girildiğinde bonus uygulanmaz, DOLGU (boşluk) girildiğinde uygulanır', () => {
+  const bagli = katmanliElemaniCoz([
+    masif('G2 gazbeton', 150, 400), masif('Mineral yün', 50, 12.4), masif('G2 gazbeton', 150, 400),
   ], baglam);
-  const tekKabukEsdeger = katmanliElemaniCoz([
-    { tur: 'masif', malzemeId: 'gb-g2-300' }, // aynı toplam kalınlık, boşluksuz
+  const dolgulu = katmanliElemaniCoz([
+    masif('G2 gazbeton', 150, 400), bosluk(50, 'knauf-ipb039'), masif('G2 gazbeton', 150, 400),
   ], baglam);
-  assert.ok(ikiKabuk.Rw > tekKabuk_veya_hata(tekKabukEsdeger));
-  function tekKabuk_veya_hata(x) { return x.Rw; }
+  assert.equal(bagli.tur, 'tekKabuk');
+  assert.equal(dolgulu.tur, 'ikiKabuk');
+  assert.ok(dolgulu.Rw > bagli.Rw, 'gerçek boşluk modeli daha yüksek Rw vermeli');
 });
 
 test('Dolgusuz (hava) boşluk, gözenekli dolguya göre daha düşük bonus verir', () => {
-  const dolgulu = katmanliElemaniCoz([
-    { tur: 'masif', malzemeId: 'gb-g2-150' },
-    { tur: 'bosluk', kalinlik: 50, dolguId: 'knauf-ipb039' },
-    { tur: 'masif', malzemeId: 'gb-g2-150' },
-  ], baglam);
-  const dolgusuz = katmanliElemaniCoz([
-    { tur: 'masif', malzemeId: 'gb-g2-150' },
-    { tur: 'bosluk', kalinlik: 50, dolguId: 'yok' },
-    { tur: 'masif', malzemeId: 'gb-g2-150' },
-  ], baglam);
+  const dolgulu = katmanliElemaniCoz([masif('A', 150, 400), bosluk(50, 'knauf-ipb039'), masif('A', 150, 400)], baglam);
+  const dolgusuz = katmanliElemaniCoz([masif('A', 150, 400), bosluk(50, 'yok'), masif('A', 150, 400)], baglam);
   assert.ok(dolgusuz.f0 > dolgulu.f0);
   assert.ok(dolgusuz.dRKavite <= dolgulu.dRKavite);
 });
 
 test('Daha derin boşluk daha yüksek Rw verir', () => {
-  const dar = katmanliElemaniCoz([
-    { tur: 'masif', malzemeId: 'gb-g2-150' },
-    { tur: 'bosluk', kalinlik: 20, dolguId: 'knauf-ipb039' },
-    { tur: 'masif', malzemeId: 'gb-g2-150' },
-  ], baglam);
-  const genis = katmanliElemaniCoz([
-    { tur: 'masif', malzemeId: 'gb-g2-150' },
-    { tur: 'bosluk', kalinlik: 100, dolguId: 'knauf-ipb039' },
-    { tur: 'masif', malzemeId: 'gb-g2-150' },
-  ], baglam);
+  const dar = katmanliElemaniCoz([masif('A', 150, 400), bosluk(20, 'knauf-ipb039'), masif('A', 150, 400)], baglam);
+  const genis = katmanliElemaniCoz([masif('A', 150, 400), bosluk(100, 'knauf-ipb039'), masif('A', 150, 400)], baglam);
   assert.ok(genis.Rw >= dar.Rw);
 });
 
 test('Birden fazla boşluk katmanı tek kabuğa düşer ve uyarı bayrağı taşır', () => {
   const r = katmanliElemaniCoz([
-    { tur: 'masif', malzemeId: 'gb-g2-100' },
-    { tur: 'bosluk', kalinlik: 30, dolguId: 'yok' },
-    { tur: 'masif', malzemeId: 'gb-g2-100' },
-    { tur: 'bosluk', kalinlik: 30, dolguId: 'yok' },
-    { tur: 'masif', malzemeId: 'gb-g2-100' },
+    masif('A', 100, 400), bosluk(30, 'yok'), masif('A', 100, 400), bosluk(30, 'yok'), masif('A', 100, 400),
   ], baglam);
   assert.equal(r.tur, 'tekKabuk');
   assert.equal(r.fazlaBoslukUyarisi, true);
 });
 
 test('Bir taraf boş (kütlesiz) ise iki kabuk modeli devreye girmez', () => {
-  const r = katmanliElemaniCoz([
-    { tur: 'bosluk', kalinlik: 50, dolguId: 'knauf-ipb039' },
-    { tur: 'masif', malzemeId: 'gb-g2-150' },
-  ], baglam);
+  const r = katmanliElemaniCoz([bosluk(50, 'knauf-ipb039'), masif('A', 150, 400)], baglam);
   assert.equal(r.tur, 'tekKabuk');
 });
 
@@ -197,16 +200,12 @@ test('yeniKatman her tür için geçerli varsayılan alanlar üretir', () => {
 });
 
 test('katmanOzetMetni okunabilir bir açıklama üretir', () => {
-  const metin = katmanOzetMetni(
-    { tur: 'masif', malzemeId: 'gb-g2-150' },
-    baglam.malzemeBul, baglam.sivaBul, baglam.dolguBul,
-  );
-  assert.match(metin, /Gazbeton/);
+  assert.match(katmanOzetMetni(masif('G2 gazbeton', 150, 400), dolguBul), /150 mm G2 gazbeton/);
+  assert.match(katmanOzetMetni(bosluk(50, 'knauf-ipb039'), dolguBul), /50 mm/);
+  assert.match(katmanOzetMetni(bosluk(50, 'knauf-ipb039'), dolguBul), /Knauf/);
+});
 
-  const bosluk = katmanOzetMetni(
-    { tur: 'bosluk', kalinlik: 50, dolguId: 'knauf-ipb039' },
-    baglam.malzemeBul, baglam.sivaBul, baglam.dolguBul,
-  );
-  assert.match(bosluk, /50 mm/);
-  assert.match(bosluk, /Knauf/);
+test('katmanDizilimiMetni katmanları "+" ile birleştirir', () => {
+  const metin = katmanDizilimiMetni([masif('Beton', 150, 2400), siva('Alçı', 15, 1000)], dolguBul);
+  assert.equal(metin, '150 mm Beton + 15 mm Alçı');
 });

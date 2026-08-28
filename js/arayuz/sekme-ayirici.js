@@ -123,6 +123,17 @@ function kart(a, i, h) {
 function geometriBolumu(y, a, h) {
   const g = a.geometri || { mod: 'hacim' };
   const boyutMi = g.mod === 'olculer';
+  const oda1 = g.oda1 || { L: 6, W: 3, H: 2.62 };
+  const oda2 = g.oda2 || { L: 6, W: 3, H: 2.62 };
+
+  const odaAlani = (etiket, yol, oda) => `
+    <div class="alan"><label>${kacis(etiket)}</label>
+      <div class="izgara dar" style="gap:6px">
+        <input type="number" step="0.01" min="0.1" data-yol="${yol}.L" data-tur="sayi" value="${oda.L}" title="Derinlik L (m)" placeholder="L">
+        <input type="number" step="0.01" min="0.1" data-yol="${yol}.W" data-tur="sayi" value="${oda.W}" title="Genişlik W (m)" placeholder="W">
+        <input type="number" step="0.01" min="0.1" data-yol="${yol}.H" data-tur="sayi" value="${oda.H}" title="Yükseklik H (m)" placeholder="H">
+      </div>
+      <span class="ipucu">L (derinlik) × W (genişlik) × H (yükseklik), metre</span></div>`;
 
   return `
   <h3 style="margin-top:18px">Geometri</h3>
@@ -140,27 +151,34 @@ function geometriBolumu(y, a, h) {
     <div class="alan"><label>Alıcı mekân hacmi V (m³)</label>
       <input type="number" step="1" min="1" data-yol="${y}.V" data-tur="sayi" value="${a.V}"></div>
   </div>` : `
-  <div class="izgara dar">
-    <div class="alan"><label>Derinlik L (m)</label>
-      <input type="number" step="0.01" min="0.1" data-yol="${y}.geometri.L" data-tur="sayi" value="${g.L}"></div>
-    <div class="alan"><label>Genişlik W (m)</label>
-      <input type="number" step="0.01" min="0.1" data-yol="${y}.geometri.W" data-tur="sayi" value="${g.W}"></div>
-    <div class="alan"><label>Yükseklik H (m)</label>
-      <input type="number" step="0.01" min="0.1" data-yol="${y}.geometri.H" data-tur="sayi" value="${g.H}"></div>
+  <div class="izgara">
+    ${odaAlani('Oda 1 / Kaynak boyutları', `${y}.geometri.oda1`, oda1)}
+    ${odaAlani('Oda 2 / Alıcı boyutları', `${y}.geometri.oda2`, oda2)}
     <div class="alan"><label>Ayırıcı elemanın bulunduğu yüz</label>
       <select data-yol="${y}.geometri.yon">
         ${Object.entries(YON_ADLARI).map(([k, v]) => `<option value="${k}"${k === g.yon ? ' selected' : ''}>${kacis(v)}</option>`).join('')}
-      </select></div>
+      </select>
+      <span class="ipucu">Oda boyutları farklıysa, paylaşılan ayırıcı yüzey iki odanın örtüşen (küçük olan) kısmıyla sınırlanır.</span></div>
   </div>
   <div class="izgara dar" style="margin-top:8px">
     <div class="alan"><label>Hesaplanan S</label><input readonly value="${h.geo ? sayi(h.geo.S) + ' m²' : '—'}"></div>
-    <div class="alan"><label>Hesaplanan V</label><input readonly value="${h.geo ? sayi(h.geo.V) + ' m³' : '—'}"></div>
+    <div class="alan"><label>Alıcı mekân hacmi (hesaplanan)</label><input readonly value="${h.geo ? sayi(h.geo.V) + ' m³' : '—'}"></div>
+    <div class="alan"><label>Kaynak mekân hacmi (bilgi)</label><input readonly value="${h.geo ? sayi(h.geo.V1) + ' m³' : '—'}"></div>
   </div>
   <div class="bilgi-kutu">
-    İki mekânın da aynı boyutta olduğu varsayılır (simetrik daire planı). Standart dört yan elemanın
-    birleşim uzunluğu (lf) bu boyutlardan otomatik hesaplanır — bkz. aşağıdaki şema.
+    Standart dört yan elemanın birleşim uzunluğu (lf) bu boyutlardan otomatik hesaplanır — bkz. aşağıdaki şema.
+    DnT,w hesabında alıcı (Oda 2) mekânın kendi hacmi kullanılır.
   </div>
-  ${h.geo ? `<div style="max-width:640px;margin:10px auto">${odaSVG(g, { oda1Adi: 'Kaynak mekân', oda2Adi: 'Alıcı mekân' })}</div>` : ''}
+  ${h.geo ? `
+  <div class="canli-model">
+    <div class="canli-model-baslik">
+      <span class="canli-model-nokta"></span> Canlı 3B model
+      <span class="soluk" style="font-weight:500;margin-left:auto;font-size:11.5px">Döndürmek için sürükleyin</span>
+    </div>
+    <div class="oda-svg-sarmalayici" data-yol-tabani="${y}.geometri" data-oda1-adi="Oda 1" data-oda2-adi="Oda 2">
+      ${odaSVG(g, { oda1Adi: 'Oda 1', oda2Adi: 'Oda 2' })}
+    </div>
+  </div>` : ''}
   `}`;
 }
 

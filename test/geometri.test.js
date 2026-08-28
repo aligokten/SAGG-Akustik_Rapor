@@ -1,6 +1,6 @@
 /**
- * geometri.test.js — Oda boyutlarından (L×W×H) alan, hacim ve birleşim
- * uzunluğu hesabı testleri.
+ * geometri.test.js — Bağımsız oda boyutlarından (Oda1/Oda2 L×W×H) alan,
+ * hacim ve birleşim uzunluğu hesabı testleri.
  */
 
 import { test } from 'node:test';
@@ -13,69 +13,88 @@ import { ayiriciHesapla, darbeHesapla } from '../js/hesap.js';
 const yakin = (a, b, tol = 0.01) =>
   assert.ok(Math.abs(a - b) <= tol, `${a} ≈ ${b} bekleniyordu (tolerans ${tol})`);
 
-/* ── geometriHesapla ──────────────────────────────────────────────── */
+const oda = (L, W, H) => ({ L, W, H });
+
+/* ── geometriHesapla — geçersiz girdi ─────────────────────────────── */
 
 test('Geçersiz veya eksik boyutlarda null döner', () => {
   assert.equal(geometriHesapla({}), null);
-  assert.equal(geometriHesapla({ L: 0, W: 3, H: 2.6 }), null);
-  assert.equal(geometriHesapla({ L: 5, W: -1, H: 2.6 }), null);
-  assert.equal(geometriHesapla({ L: 5, W: 3 }), null); // H eksik
+  assert.equal(geometriHesapla({ oda1: oda(0, 3, 2.6), oda2: oda(5, 3, 2.6) }), null);
+  assert.equal(geometriHesapla({ oda1: oda(5, 3, 2.6), oda2: oda(5, -1, 2.6) }), null);
+  assert.equal(geometriHesapla({ oda1: oda(5, 3, 2.6) }), null); // oda2 eksik
 });
 
-test('Yön verilmezse döşeme (yatay) olarak S = L×W hesaplanır', () => {
-  const r = geometriHesapla({ L: 6, W: 3, H: 2.6 });
-  yakin(r.V, 46.8);
-  yakin(r.S, 18);
+/* ── Referans doğrulama (yüklenen PDF raporlarından) ─────────────── */
+
+test('DOS1 örneği: taban (döşeme) ayırıcı — S ve V referansla birebir eşleşir', () => {
+  const r = geometriHesapla({ oda1: oda(6.25, 3.18, 2.65), oda2: oda(10.25, 3.03, 2.62), yon: 'taban' });
+  yakin(r.S, 18.94, 0.01);
+  yakin(r.V, 81.37, 0.01);   // alıcı (oda2) hacmi
+  yakin(r.V1, 52.67, 0.01);  // kaynak (oda1) hacmi, bilgi amaçlı
+});
+
+test('ID3 örneği: sol duvar ayırıcı — S referansla birebir eşleşir', () => {
+  const r = geometriHesapla({ oda1: oda(3.18, 1.57, 2.65), oda2: oda(3.18, 3.63, 2.65), yon: 'sol' });
+  yakin(r.S, 8.43, 0.01);
+});
+
+/* ── Yön davranışları ─────────────────────────────────────────────── */
+
+test('Yön verilmezse basit döşeme: S = min(L)×min(W)', () => {
+  const r = geometriHesapla({ oda1: oda(6, 4, 2.6), oda2: oda(5, 3, 2.6) });
+  yakin(r.S, 15); // min(6,5)×min(4,3)
   assert.equal(r.yanDuvarLf, undefined);
 });
 
-test('KS-Rechner örneği ile eşleşir: L=6,12 W=3,03 H=2,62, yön=sol → S=16,03 m²', () => {
-  const r = geometriHesapla({ L: 6.12, W: 3.03, H: 2.62, yon: 'sol' });
-  yakin(r.S, 16.03, 0.01);
-  yakin(r.ayiriciGenislik, 6.12);
-  yakin(r.yanDuvarLf, 2.62);
-  yakin(r.tabanTavanLf, 6.12);
+test('Ön/arka yön: S = min(W)×min(H)', () => {
+  const r = geometriHesapla({ oda1: oda(6, 4, 2.6), oda2: oda(5, 3, 2.5), yon: 'on' });
+  yakin(r.S, 3 * 2.5); // min(W)=3, min(H)=2.5
+  yakin(r.ayiriciGenislik, 3);
 });
 
-test('Ön/arka yön için ayırıcı genişliği W eksenidir', () => {
-  const on = geometriHesapla({ L: 6, W: 3, H: 2.6, yon: 'on' });
-  const arka = geometriHesapla({ L: 6, W: 3, H: 2.6, yon: 'arka' });
-  yakin(on.ayiriciGenislik, 3);
-  yakin(on.S, 3 * 2.6);
-  assert.deepEqual(on, arka, 'ön ve arka simetrik olmalı');
+test('Sol/sağ yön: S = min(L)×min(H)', () => {
+  const r = geometriHesapla({ oda1: oda(6, 4, 2.6), oda2: oda(5, 3, 2.5), yon: 'sol' });
+  yakin(r.S, 5 * 2.5); // min(L)=5, min(H)=2.5
+  yakin(r.ayiriciGenislik, 5);
 });
 
-test('Sol/sağ yön için ayırıcı genişliği L eksenidir', () => {
-  const sol = geometriHesapla({ L: 6, W: 3, H: 2.6, yon: 'sol' });
-  const sag = geometriHesapla({ L: 6, W: 3, H: 2.6, yon: 'sag' });
-  yakin(sol.ayiriciGenislik, 6);
-  yakin(sol.S, 6 * 2.6);
-  assert.deepEqual(sol, sag);
+test('Taban yönü: S = min(L)×min(W)', () => {
+  const r = geometriHesapla({ oda1: oda(6, 4, 2.6), oda2: oda(5, 3, 2.5), yon: 'taban' });
+  yakin(r.S, 5 * 3); // min(L)=5, min(W)=3 — H bu yönde S'i etkilemez
+  yakin(r.yanDuvarLf, 3);   // min(W)
+  yakin(r.tabanTavanLf, 5); // min(L)
 });
 
-test('Hacim, yönden bağımsız her zaman L×W×H\'dir', () => {
+test('Hacim her zaman alıcı (oda2) mekânın kendi hacmidir', () => {
+  const r = geometriHesapla({ oda1: oda(10, 10, 10), oda2: oda(2, 2, 2), yon: 'on' });
+  yakin(r.V, 8);
+  yakin(r.V1, 1000);
+});
+
+test('Yan duvar birleşim uzunluğu min(H), taban/tavan ayırıcı genişliğidir', () => {
   for (const yon of ['on', 'arka', 'sol', 'sag']) {
-    yakin(geometriHesapla({ L: 5, W: 4, H: 2.5, yon }).V, 50);
-  }
-});
-
-test('Yan duvar birleşim uzunluğu her zaman H, taban/tavan her zaman ayırıcı genişliğidir', () => {
-  for (const yon of ['on', 'arka', 'sol', 'sag']) {
-    const r = geometriHesapla({ L: 5, W: 4, H: 2.5, yon });
-    yakin(r.yanDuvarLf, 2.5);
+    const r = geometriHesapla({ oda1: oda(5, 4, 2.5), oda2: oda(5, 4, 2.7), yon });
+    yakin(r.yanDuvarLf, 2.5); // min(H)
     yakin(r.tabanTavanLf, r.ayiriciGenislik);
   }
+});
+
+/* ── Geriye dönük uyumluluk (eski tek-oda kaydı) ─────────────────── */
+
+test('Eski { L, W, H, yon } biçimi simetrik oda1=oda2 kabul edilir', () => {
+  const eski = geometriHesapla({ L: 6.12, W: 3.03, H: 2.62, yon: 'sol' });
+  const yeni = geometriHesapla({ oda1: oda(6.12, 3.03, 2.62), oda2: oda(6.12, 3.03, 2.62), yon: 'sol' });
+  assert.deepEqual(eski, yeni);
 });
 
 /* ── hesap.js entegrasyonu ────────────────────────────────────────── */
 
 test('Geometri modu S ve V\'yi otomatik hesaplayıp ayırıcı hesabına uygular', () => {
   const p = ornekProje();
-  p.ayiricilar[0].geometri = { mod: 'olculer', L: 6.12, W: 3.03, H: 2.62, yon: 'sol' };
+  p.ayiricilar[0].geometri = { mod: 'olculer', oda1: oda(6.12, 3.03, 2.62), oda2: oda(6.12, 3.03, 2.62), yon: 'sol' };
   const a = ayiriciHesapla(p.ayiricilar[0], p.proje);
   assert.ok(a.geo);
   yakin(a.geo.S, 16.03, 0.01);
-  yakin(a.sonuc.DnTw, a.sonuc.DnTw); // hesap çökmeden tamamlanmalı
 });
 
 test('mod=\'hacim\' iken geo null\'dur ve elle girilen S/V kullanılır', () => {
@@ -84,12 +103,11 @@ test('mod=\'hacim\' iken geo null\'dur ve elle girilen S/V kullanılır', () => 
   p.ayiricilar[0].S = 9.5; p.ayiricilar[0].V = 35;
   const a = ayiriciHesapla(p.ayiricilar[0], p.proje);
   assert.equal(a.geo, null);
-  yakin(a.sonuc.RwAksan, a.sonuc.RwAksan);
 });
 
 test('Standart 4 yan elemanın lf değeri geometri moduna göre otomatik güncellenir', () => {
   const p = ornekProje();
-  p.ayiricilar[0].geometri = { mod: 'olculer', L: 6, W: 4, H: 2.5, yon: 'on' };
+  p.ayiricilar[0].geometri = { mod: 'olculer', oda1: oda(6, 4, 2.5), oda2: oda(6, 4, 2.5), yon: 'on' };
   const a = ayiriciHesapla(p.ayiricilar[0], p.proje);
   const yanDuvarlar = a.yanElemanlar.filter((_, i) => p.ayiricilar[0].yanElemanlar[i].geometriRolu === 'yanDuvar');
   const tabanTavan = a.yanElemanlar.filter((_, i) => p.ayiricilar[0].yanElemanlar[i].geometriRolu === 'tabanTavan');
@@ -97,14 +115,21 @@ test('Standart 4 yan elemanın lf değeri geometri moduna göre otomatik güncel
   for (const y of tabanTavan) yakin(y.lf, 4);
 });
 
+test('Taban ayırıcı yönünde de yan eleman lf\'leri otomatik hesaplanır', () => {
+  const p = ornekProje();
+  p.ayiricilar[0].geometri = { mod: 'olculer', oda1: oda(6, 4, 2.5), oda2: oda(6, 4, 2.5), yon: 'taban' };
+  const a = ayiriciHesapla(p.ayiricilar[0], p.proje);
+  assert.ok(a.geo.S > 0);
+  for (const y of a.yanElemanlar) assert.ok(Number.isFinite(y.lf) && y.lf > 0);
+});
+
 test('Kullanıcının elle eklediği (geometriRolu tanımsız) yan eleman geometri modunda bile manuel lf\'sini korur', () => {
   const p = ornekProje();
-  p.ayiricilar[0].geometri = { mod: 'olculer', L: 6, W: 4, H: 2.5, yon: 'on' };
+  p.ayiricilar[0].geometri = { mod: 'olculer', oda1: oda(6, 4, 2.5), oda2: oda(6, 4, 2.5), yon: 'on' };
   p.ayiricilar[0].yanElemanlar.push({
     id: 'ozel', ad: 'Özel yan eleman', elemanId: 'ba-200', sivaId: 'sivasiz', sivaliYuzSayisi: 0,
     RwBeyan: null, yogunlukBeyan: null, lf: 1.5, birlesim: 'T', giydirmeId: 'yok', dolguId: null,
     esnekBaglanti: false, katmanlar: [],
-    // geometriRolu kasıtlı olarak yok
   });
   const a = ayiriciHesapla(p.ayiricilar[0], p.proje);
   const ozel = a.yanElemanlar[a.yanElemanlar.length - 1];
@@ -117,5 +142,4 @@ test('Döşeme geometri modu V\'yi otomatik hesaplar', () => {
   const d = darbeHesapla(p.darbeler[0], p.proje);
   assert.ok(d.geo);
   yakin(d.geo.V, 62.4);
-  yakin(d.sonuc.LnTw, d.sonuc.LnTw); // çökmeden tamamlanmalı
 });

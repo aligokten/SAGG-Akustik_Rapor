@@ -502,3 +502,38 @@ export function projeKimliklerinigGuncelle(nesne) {
   gez(nesne);
   return nesne;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   KATMAN ÖN AYARLARI — katman düzenleyicide "hazır malzeme seç" listesini
+   besler. Bunlar KATI referanslar değildir: seçildiğinde yalnızca katmanın
+   kendi ad/yoğunluk alanlarını doldurur, kullanıcı her ikisini de serbestçe
+   değiştirebilir. Kalınlık her zaman elle girilir.
+   ═══════════════════════════════════════════════════════════════════════ */
+export const KATMAN_ON_AYARLARI = [
+  { grup: 'Betonarme / harç',  ad: 'Betonarme',                  yogunluk: 2400 },
+  { grup: 'Betonarme / harç',  ad: 'Tesviye şapı',                yogunluk: 2000 },
+  { grup: 'Betonarme / harç',  ad: 'Hafif beton şap',             yogunluk: 1600 },
+
+  { grup: 'Duvar malzemesi',   ad: 'G2 Gazbeton',                 yogunluk: 400 },
+  { grup: 'Duvar malzemesi',   ad: 'G3 Gazbeton',                 yogunluk: 500 },
+  { grup: 'Duvar malzemesi',   ad: 'G4 Gazbeton',                 yogunluk: 600 },
+  { grup: 'Duvar malzemesi',   ad: 'Blok bims (hafif)',           yogunluk: 500 },
+  { grup: 'Duvar malzemesi',   ad: 'Blok bims (standart)',        yogunluk: 700 },
+  { grup: 'Duvar malzemesi',   ad: 'Yatay delikli tuğla',         yogunluk: 700 },
+  { grup: 'Duvar malzemesi',   ad: 'Düşey delikli tuğla',         yogunluk: 900 },
+  { grup: 'Duvar malzemesi',   ad: 'Dolu tuğla',                  yogunluk: 1800 },
+  { grup: 'Duvar malzemesi',   ad: 'Beton blok / briket',         yogunluk: 1400 },
+
+  { grup: 'Sıva / kaplama',    ad: 'Alçı sıva',                   yogunluk: 1000 },
+  { grup: 'Sıva / kaplama',    ad: 'Çimento esaslı sıva',         yogunluk: 1800 },
+  { grup: 'Sıva / kaplama',    ad: 'Alçı levha',                  yogunluk: 800 },
+  { grup: 'Sıva / kaplama',    ad: 'Seramik kaplama',             yogunluk: 2200 },
+  { grup: 'Sıva / kaplama',    ad: 'Ahşap parke',                 yogunluk: 700 },
+
+  { grup: 'Hafif / yalıtım',   ad: 'Akustik şilte',                yogunluk: 75 },
+  { grup: 'Hafif / yalıtım',   ad: 'Taşyünü levha',                yogunluk: 100 },
+  { grup: 'Hafif / yalıtım',   ad: 'Knauf mineral yün IPB 039',    yogunluk: 12.4 },
+  { grup: 'Hafif / yalıtım',   ad: 'Camyünü şilte',                yogunluk: 20 },
+  { grup: 'Hafif / yalıtım',   ad: 'EPS levha',                    yogunluk: 20 },
+  { grup: 'Hafif / yalıtım',   ad: 'XPS levha',                    yogunluk: 33 },
+];

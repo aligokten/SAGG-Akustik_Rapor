@@ -13,10 +13,13 @@ export function bosProje() {
     surum: 1,
     proje: {
       ad: '',
+      kod: '',                    // rapor kodu (ör. "ID1", "DOS1") — raporun sağ üst köşesinde gösterilir
       adaParsel: '',
       isveren: '',
       muellif: '',
       akustikUzman: '',
+      sirket: 'SAGG İnşaat Mimarlık Akustik',  // rapor antetindeki şirket/ofis adı
+      unvan: '',                  // akustik uzmanın unvanı (ör. "D1 Temel Bina Akustiği Uzmanı")
       tarih: new Date().toISOString().slice(0, 10),
       binaTuru: 'konut',
       hedefSinif: 'C',
@@ -54,8 +57,11 @@ export function yeniAyirici() {
     kapiAlani: 1.8,
     yanElemanlar: varsayilanYanElemanlar(),
     katmanlar: [],             // doluysa "Malzeme seçimi" yerine "Katmanlı yapı" kullanılır
-    geometri: {                // mod: 'hacim' (S,V doğrudan) | 'olculer' (L×W×H + yön)
-      mod: 'hacim', L: 6.0, W: 3.0, H: 2.62, yon: 'on',
+    geometri: {                // mod: 'hacim' (S,V doğrudan) | 'olculer' (oda1/oda2 L×W×H + yön)
+      mod: 'hacim',
+      oda1: { L: 6.0, W: 3.0, H: 2.62 },
+      oda2: { L: 6.0, W: 3.0, H: 2.62 },
+      yon: 'on',
     },
   };
 }

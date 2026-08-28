@@ -6,6 +6,9 @@
 import { $, $$, sayiOku, yeniId, aramaMetni } from './arayuz/ortak.js';
 import { simge } from './arayuz/simgeler.js';
 import * as YK from './cekirdek/katmanli-eleman.js';
+import { DUVARLAR, DOSEMELER, SIVALAR, bul as malzemeBul } from './veri/malzemeler.js';
+import { odaSVG } from './arayuz/oda-cizimi.js';
+import { v3ProjeyiDonustur, v3SemasiMi } from './veri/v3-donusturucu.js';
 import * as D from './durum.js';
 import { projeyiHesapla } from './hesap.js';
 import * as sekmePanel from './arayuz/sekme-panel.js';
@@ -219,18 +222,30 @@ function yolTabaniEylemiUygula(dugme) {
   if (eylem === 'katmanli-moda-gec') {
     if (!nesne.katmanlar) nesne.katmanlar = [];
     if (nesne.katmanlar.length === 0) {
-      // Mevcut basit seçimi başlangıç katmanı olarak aktar.
+      // Mevcut basit seçimi, serbest alanlı başlangıç katmanlarına çevirir.
+      const TUM = [...DUVARLAR, ...DOSEMELER];
+      const eleman = malzemeBul(TUM, nesne.elemanId || nesne.dosemeId);
+      const siva = malzemeBul(SIVALAR, nesne.sivaId);
+      // Sıva kayıtları yalnızca alan kütlesi taşır; kalınlık, adındaki
+      // "X mm" ibaresinden çözülür (ör. "Alçı sıva, 15 mm").
+      const sivaKalinlik = Number(siva?.ad.match(/(\d+(?:[.,]\d+)?)\s*mm/)?.[1]?.replace(',', '.')) || 15;
+      const sivaYogunluk = siva && siva.mAlan > 0 ? Math.round(siva.mAlan / (sivaKalinlik / 1000)) : 1000;
+      const sivaAdi = siva?.ad.replace(/,?\s*\d+(?:[.,]\d+)?\s*mm/, '').trim() || 'Sıva';
+
+      const sivaKatmani = () => ({ tur: 'siva', ad: sivaAdi, kalinlik: sivaKalinlik, yogunluk: sivaYogunluk });
       const baslangic = [];
-      for (let n = 0; n < (nesne.sivaliYuzSayisi || 0); n++) {
-        baslangic.push({ tur: 'siva', sivaId: nesne.sivaId || 'alci-15' });
-      }
-      const ortaMasif = { tur: 'masif', malzemeId: nesne.elemanId || nesne.dosemeId || null, yogunlukBeyan: nesne.yogunlukBeyan ?? null };
+      for (let n = 0; n < (nesne.sivaliYuzSayisi || 0); n++) baslangic.push(sivaKatmani());
+
+      const ortaMasif = eleman ? {
+        tur: 'masif', ad: eleman.ad,
+        kalinlik: eleman.kalinlik ?? 150,
+        yogunluk: Number.isFinite(nesne.yogunlukBeyan) ? nesne.yogunlukBeyan : (eleman.yogunluk ?? 400),
+      } : YK.yeniKatman('masif');
+
       // Sıvalar iki yüzdeyse taşıyıcının iki tarafına yerleştir.
-      if (baslangic.length >= 2) {
-        nesne.katmanlar = [baslangic[0], ortaMasif, ...baslangic.slice(1)];
-      } else {
-        nesne.katmanlar = [ortaMasif, ...baslangic];
-      }
+      nesne.katmanlar = baslangic.length >= 2
+        ? [baslangic[0], ortaMasif, ...baslangic.slice(1)]
+        : [ortaMasif, ...baslangic];
     }
     return true;
   }
@@ -329,6 +344,48 @@ function ciz() {
   ustBasligiCiz();
   kok.scrollTop = 0;
   D.kaydet(durum);
+  canliModelleriBagla();
+}
+
+/**
+ * Ayırıcı sekmesindeki "Canlı 3B model" şemalarını sürükleyerek döndürme
+ * etkileşimini bağlar. Döndürme yalnızca görsel/geçicidir: geometri
+ * verisini değiştirmez, `durum`a yazılmaz — bir sonraki tam çizimde
+ * varsayılan açıya döner. Bu nedenle her ciz() çağrısından sonra yeniden
+ * bağlanması yeterlidir.
+ */
+function canliModelleriBagla() {
+  for (const sarmalayici of $$('.oda-svg-sarmalayici')) {
+    const yolTabani = sarmalayici.dataset.yolTabani;
+    const oda1Adi = sarmalayici.dataset.oda1Adi;
+    const oda2Adi = sarmalayici.dataset.oda2Adi;
+    let aci = 30;
+    let surukluyorMu = false;
+    let baslangicX = 0;
+    let baslangicAci = 30;
+
+    const yenidenCiz = () => {
+      const geometri = yolDegerAl(durum, yolTabani);
+      if (!geometri) return;
+      sarmalayici.innerHTML = odaSVG(geometri, {
+        oda1Adi, oda2Adi, donusAcisiDeg: aci,
+        genislik: sarmalayici.clientWidth || 640, yukseklik: 340,
+      });
+    };
+
+    sarmalayici.addEventListener('pointerdown', (e) => {
+      surukluyorMu = true; baslangicX = e.clientX; baslangicAci = aci;
+      sarmalayici.setPointerCapture(e.pointerId);
+    });
+    sarmalayici.addEventListener('pointermove', (e) => {
+      if (!surukluyorMu) return;
+      aci = baslangicAci + (e.clientX - baslangicX) * 0.4;
+      yenidenCiz();
+    });
+    const birak = (e) => { surukluyorMu = false; try { sarmalayici.releasePointerCapture(e.pointerId); } catch { /* yoksay */ } };
+    sarmalayici.addEventListener('pointerup', birak);
+    sarmalayici.addEventListener('pointercancel', birak);
+  }
 }
 
 /** Kenar çubuğu menüsünü, bileşen sayaçlarıyla birlikte çizer. */
@@ -432,6 +489,17 @@ function olaylariBagla() {
 
   document.addEventListener('change', (e) => {
     const el = e.target;
+    if (el.dataset?.onayar) {
+      // Katman ön ayarı: seçilen malzemenin adını ve yoğunluğunu katmana
+      // kopyalar (kalınlık kullanıcının kendi girdiği değerde kalır).
+      const secenek = el.selectedOptions[0];
+      if (secenek && secenek.value) {
+        yolAyarla(durum, `${el.dataset.onayar}.ad`, secenek.value);
+        yolAyarla(durum, `${el.dataset.onayar}.yogunluk`, Number(secenek.dataset.yogunluk));
+        ciz();
+      }
+      return;
+    }
     if (el.dataset?.yol) {
       yolAyarla(durum, el.dataset.yol, degerCoz(el));
       ciz();
@@ -440,7 +508,13 @@ function olaylariBagla() {
       ciz();
     } else if (el.id === 'dosya-ac' && el.files?.[0]) {
       dosyaOku(el.files[0], (veri) => {
-        if (!veri?.proje) { alert('Bu dosya bir SAGG akustik projesi değil.'); return; }
+        if (v3SemasiMi(veri)) {
+          durum = v3ProjeyiDonustur(veri);
+          alert('"Katmanlı Model v3" formatındaki dosya içe aktarıldı. Ayırıcı elemanlar sekmesinden düzenleyebilirsiniz.');
+          ciz();
+          return;
+        }
+        if (!veri?.proje) { alert('Bu dosya tanınan bir SAGG akustik proje biçiminde değil.'); return; }
         durum = veri;
         if (veri.yonetmelik) yonetmeligiUygula(veri.yonetmelik);
         ciz();
