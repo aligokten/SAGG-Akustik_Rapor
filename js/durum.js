@@ -53,16 +53,28 @@ export function yeniAyirici() {
     kapiId: 'kapi-ic-dolu',
     kapiAlani: 1.8,
     yanElemanlar: varsayilanYanElemanlar(),
+    katmanlar: [],             // doluysa "Malzeme seçimi" yerine "Katmanlı yapı" kullanılır
+    geometri: {                // mod: 'hacim' (S,V doğrudan) | 'olculer' (L×W×H + yön)
+      mod: 'hacim', L: 6.0, W: 3.0, H: 2.62, yon: 'on',
+    },
   };
 }
 
-/** Tipik dört yan eleman (iki duvar + döşeme + tavan). */
+/**
+ * Tipik dört yan eleman (iki yan duvar + taban + tavan).
+ *
+ * `geometriRolu`, ayırıcı elemanın geometri modunda ('olculer') bu
+ * elemanın birleşim uzunluğunun (lf) oda boyutlarından otomatik
+ * hesaplanacağını işaretler: 'yanDuvar' → H, 'tabanTavan' → ayırıcının
+ * kendi genişliği. Kullanıcının sonradan eklediği yan elemanlarda bu alan
+ * boş bırakılır ve manuel girilen lf kullanılır.
+ */
 export function varsayilanYanElemanlar() {
   return [
-    { id: yeniId('y'), ad: 'Cephe duvarı', elemanId: 'ddt-240', sivaId: 'cimento-20', sivaliYuzSayisi: 2, RwBeyan: null, yogunlukBeyan: null, lf: 2.8, birlesim: 'T', giydirmeId: 'yok', dolguId: null, esnekBaglanti: false },
-    { id: yeniId('y'), ad: 'İç koridor duvarı', elemanId: 'ddt-190', sivaId: 'cimento-20', sivaliYuzSayisi: 2, RwBeyan: null, yogunlukBeyan: null, lf: 2.8, birlesim: 'T', giydirmeId: 'yok', dolguId: null, esnekBaglanti: false },
-    { id: yeniId('y'), ad: 'Alt döşeme', elemanId: 'ba-d-160', sivaId: 'alci-10', sivaliYuzSayisi: 1, RwBeyan: null, yogunlukBeyan: null, lf: 4.3, birlesim: 'X', giydirmeId: 'yok', dolguId: null, esnekBaglanti: false },
-    { id: yeniId('y'), ad: 'Üst döşeme (tavan)', elemanId: 'ba-d-160', sivaId: 'alci-10', sivaliYuzSayisi: 1, RwBeyan: null, yogunlukBeyan: null, lf: 4.3, birlesim: 'X', giydirmeId: 'yok', dolguId: null, esnekBaglanti: false },
+    { id: yeniId('y'), ad: 'Yan duvar (cephe)', elemanId: 'ddt-240', sivaId: 'cimento-20', sivaliYuzSayisi: 2, RwBeyan: null, yogunlukBeyan: null, lf: 2.8, birlesim: 'T', giydirmeId: 'yok', dolguId: null, esnekBaglanti: false, geometriRolu: 'yanDuvar', katmanlar: [] },
+    { id: yeniId('y'), ad: 'Yan duvar (koridor)', elemanId: 'ddt-190', sivaId: 'cimento-20', sivaliYuzSayisi: 2, RwBeyan: null, yogunlukBeyan: null, lf: 2.8, birlesim: 'T', giydirmeId: 'yok', dolguId: null, esnekBaglanti: false, geometriRolu: 'yanDuvar', katmanlar: [] },
+    { id: yeniId('y'), ad: 'Taban (döşeme)', elemanId: 'ba-d-160', sivaId: 'alci-10', sivaliYuzSayisi: 1, RwBeyan: null, yogunlukBeyan: null, lf: 4.3, birlesim: 'X', giydirmeId: 'yok', dolguId: null, esnekBaglanti: false, geometriRolu: 'tabanTavan', katmanlar: [] },
+    { id: yeniId('y'), ad: 'Tavan (döşeme)', elemanId: 'ba-d-160', sivaId: 'alci-10', sivaliYuzSayisi: 1, RwBeyan: null, yogunlukBeyan: null, lf: 4.3, birlesim: 'X', giydirmeId: 'yok', dolguId: null, esnekBaglanti: false, geometriRolu: 'tabanTavan', katmanlar: [] },
   ];
 }
 
@@ -81,6 +93,8 @@ export function yeniDarbe() {
     asmaTavanKazanci: 10,
     mYanOrtalama: 250,
     V: 40,
+    katmanlar: [],
+    geometri: { mod: 'hacim', L: 6.0, W: 3.0, H: 2.62 },
   };
 }
 

@@ -7,6 +7,7 @@ import { kacis, sayi, secenekler, uygunlukRozeti, sinifRozeti } from './ortak.js
 import { DOSEMELER, SAP_KAPLAMALAR } from '../veri/malzemeler.js';
 import { GURULTULULUK_DERECELERI, HASSASIYET_DERECELERI } from '../veri/yonetmelik.js';
 import { mekanSecenekleri } from './sekme-ayirici.js';
+import { katmanEditoru } from './katman-editor.js';
 
 export function ciz(durum, sonuclar) {
   const kayitlar = durum.darbeler;
@@ -49,17 +50,15 @@ function kart(k, i, h) {
       <div class="alan"><label>Alt kattaki (alıcı) mekân</label>
         <select data-yol="${y}.altMekanId">${mekanSecenekleri(k.altMekanId)}</select>
         <span class="ipucu">Hassasiyet: <b>${kacis(HASSASIYET_DERECELERI[d?.altMekan?.hassasiyet] || '—')}</b></span></div>
-      <div class="alan"><label>Alt mekân hacmi V (m³)</label>
-        <input type="number" step="1" min="1" data-yol="${y}.V" data-tur="sayi" value="${k.V}"></div>
     </div>
 
-    <h3 style="margin-top:18px">Taşıyıcı döşeme ve kaplama</h3>
+    ${geometriBolumu(y, k, h)}
+
+    <h3 style="margin-top:18px">Taşıyıcı döşeme</h3>
+    ${dosemeBolumu(y, k, h)}
+
+    <h3 style="margin-top:18px">Kaplama ve yan yol</h3>
     <div class="izgara">
-      <div class="alan"><label>Taşıyıcı döşeme</label>
-        <select data-yol="${y}.dosemeId">${secenekler(DOSEMELER, k.dosemeId, { gruplu: true })}</select>
-        <span class="ipucu">m′ = ${sayi(h.doseme.mAlan, 0)} kg/m²</span></div>
-      <div class="alan"><label>Beyan edilmiş Ln,w,eq (dB) — isteğe bağlı</label>
-        <input type="number" step="0.1" data-yol="${y}.LnwBeyan" data-tur="sayiVeyaNull" value="${k.LnwBeyan ?? ''}" placeholder="kütleden kestirilir"></div>
       <div class="alan"><label>Şap / kaplama</label>
         <select data-yol="${y}.sapId">${secenekler(SAP_KAPLAMALAR, k.sapId)}</select>
         <span class="ipucu">Kütüphane ΔLw = ${sayi(h.sap?.dLw ?? 0, 0)} dB</span></div>
@@ -91,4 +90,57 @@ function kart(k, i, h) {
       <p class="soluk" style="font-size:12px">Satır anahtarı: ${kacis(d.anahtar)}. ${kacis(d.dogrulama)}</p>
     </details>` : ''}
   </section>`;
+}
+
+/* ── Geometri (hacim ↔ boyutlar) ─────────────────────────────────────── */
+
+function geometriBolumu(y, k, h) {
+  const g = k.geometri || { mod: 'hacim' };
+  const boyutMi = g.mod === 'olculer';
+
+  return `
+  <h3 style="margin-top:18px">Geometri</h3>
+  <div class="satir-eylem" style="margin-bottom:10px">
+    ${boyutMi
+      ? `<span class="rozet bilgi">Oda boyutlarından hesaplanıyor</span>
+         <button class="dugme acik kucuk" data-eylem="hacim-moda-don" data-yol-tabani="${y}">Doğrudan V girişine dön</button>`
+      : `<button class="dugme acik kucuk" data-eylem="geometri-moda-gec" data-yol-tabani="${y}">Oda boyutlarından hesapla (L×W×H)</button>`}
+  </div>
+  ${!boyutMi ? `
+  <div class="izgara">
+    <div class="alan"><label>Alt mekân hacmi V (m³)</label>
+      <input type="number" step="1" min="1" data-yol="${y}.V" data-tur="sayi" value="${k.V}"></div>
+  </div>` : `
+  <div class="izgara dar">
+    <div class="alan"><label>Derinlik L (m)</label>
+      <input type="number" step="0.01" min="0.1" data-yol="${y}.geometri.L" data-tur="sayi" value="${g.L}"></div>
+    <div class="alan"><label>Genişlik W (m)</label>
+      <input type="number" step="0.01" min="0.1" data-yol="${y}.geometri.W" data-tur="sayi" value="${g.W}"></div>
+    <div class="alan"><label>Yükseklik H (m)</label>
+      <input type="number" step="0.01" min="0.1" data-yol="${y}.geometri.H" data-tur="sayi" value="${g.H}"></div>
+    <div class="alan"><label>Hesaplanan V</label><input readonly value="${h.geo ? sayi(h.geo.V) + ' m³' : '—'}"></div>
+  </div>`}`;
+}
+
+/* ── Taşıyıcı döşeme (basit seçim ↔ katmanlı yapı) ───────────────────── */
+
+function dosemeBolumu(y, k, h) {
+  const katmanliMi = (k.katmanlar || []).length > 0;
+  return `
+  <div class="satir-eylem" style="margin-bottom:10px">
+    ${katmanliMi
+      ? `<span class="rozet bilgi">Katmanlı yapı</span>
+         <button class="dugme acik kucuk" data-eylem="basit-moda-don" data-yol-tabani="${y}">Basit seçime dön</button>`
+      : `<button class="dugme acik kucuk" data-eylem="katmanli-moda-gec" data-yol-tabani="${y}">Katmanlı yapıya geç</button>`}
+  </div>
+  ${katmanliMi
+    ? katmanEditoru(y, k.katmanlar, { tur: 'doseme', katmanDetay: h.doseme.katmanDetay })
+    : `
+  <div class="izgara">
+    <div class="alan"><label>Taşıyıcı döşeme</label>
+      <select data-yol="${y}.dosemeId">${secenekler(DOSEMELER, k.dosemeId, { gruplu: true })}</select>
+      <span class="ipucu">m′ = ${sayi(h.doseme.mAlan, 0)} kg/m²</span></div>
+    <div class="alan"><label>Beyan edilmiş Ln,w,eq (dB) — isteğe bağlı</label>
+      <input type="number" step="0.1" data-yol="${y}.LnwBeyan" data-tur="sayiVeyaNull" value="${k.LnwBeyan ?? ''}" placeholder="kütleden kestirilir"></div>
+  </div>`}`;
 }

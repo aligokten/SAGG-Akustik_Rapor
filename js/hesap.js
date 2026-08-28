@@ -18,6 +18,8 @@ import {
   elemanAlanKutlesi, bul,
 } from './veri/malzemeler.js';
 import { rezonansFrekansi, rezonansYorumu } from './cekirdek/temel.js';
+import { katmanliElemaniCoz } from './cekirdek/katmanli-eleman.js';
+import { geometriHesapla } from './cekirdek/geometri.js';
 
 /** Tüm yapı elemanları tek listede (duvar + döşeme). */
 export const TUM_ELEMANLAR = [...DUVARLAR, ...DOSEMELER];
@@ -54,7 +56,44 @@ export function elemanCoz(tanim, model = 'en12354') {
     ad: eleman.ad, eleman, mAlan, Rw, kaynak, sivaKutlesi,
     yogunluk: yogunlukBeyan ?? eleman.yogunluk,
     yogunlukBeyanEdildi: yogunlukBeyan != null,
+    katmanli: false, katmanDetay: null,
   };
+}
+
+/**
+ * Bir yapı elemanı tanımını çözer: `tanim.katmanlar` doluysa çok katmanlı
+ * (kullanıcı tanımlı) yapı olarak, aksi hâlde kütüphaneden tek satırlık
+ * seçim (elemanCoz) olarak değerlendirilir. İkisi de aynı çıktı şeklini
+ * (ad, mAlan, Rw, kaynak, katmanli, katmanDetay) döndürür.
+ *
+ * @param {Object} tanim
+ * @param {string} model Rw kestirim modeli
+ */
+export function elemanVeyaKatmanCoz(tanim, model = 'en12354') {
+  if (tanim?.katmanlar && tanim.katmanlar.length > 0) {
+    const r = katmanliElemaniCoz(tanim.katmanlar, {
+      malzemeBul: (id) => bul(TUM_ELEMANLAR, id),
+      sivaBul: (id) => bul(SIVALAR, id),
+      dolguBul: (id) => bul(YALITIM_LEVHALARI, id),
+      alanKutlesiHesapla: elemanAlanKutlesi,
+      model,
+    });
+
+    let Rw = r.Rw;
+    let kaynak = r.tur === 'ikiKabuk'
+      ? `katmanlı yapı — iki kabuklu (kavite bonusu +${r.dRKavite.toFixed(1)} dB)`
+      : 'katmanlı yapı — tek kabuk (kütle kanunu)';
+    if (Number.isFinite(tanim.RwBeyan)) {
+      Rw = tanim.RwBeyan; kaynak = 'beyan edilmiş (laboratuvar) değeri';
+    }
+
+    return {
+      ad: 'Katmanlı yapı elemanı', eleman: null, mAlan: r.mAlan, Rw, kaynak,
+      sivaKutlesi: 0, yogunluk: null, yogunlukBeyanEdildi: false,
+      katmanli: true, katmanDetay: r,
+    };
+  }
+  return elemanCoz(tanim, model);
 }
 
 /**
@@ -92,19 +131,25 @@ export function giydirmeCoz(giydirmeId, dolguId, mTasiyici) {
 /** Bir ayırıcı elemanın hesabı. */
 export function ayiriciHesapla(a, proje) {
   const model = proje.rwModeli;
-  const ana = elemanCoz(a, model);
+  const ana = elemanVeyaKatmanCoz(a, model);
   const giydirmeCozum = giydirmeCoz(a.giydirmeId, a.dolguId, ana.mAlan);
   const giydirme = giydirmeCozum.giydirme;
+
+  // Oda boyutlarından (L×W×H + ayırıcı yön) S, V ve yan eleman birleşim
+  // uzunlukları otomatik hesaplanabilir.
+  const geo = a.geometri?.mod === 'olculer' ? geometriHesapla(a.geometri) : null;
+  const S = geo ? geo.S : a.S;
+  const V = geo ? geo.V : a.V;
 
   // Kapı varsa ayırıcı eleman bileşik hâle gelir.
   let RwAyirici = ana.Rw + giydirmeCozum.dRw;
   let kapiBilgi = null;
   if (a.kapiVar) {
     const kapi = bul(DOGRAMALAR, a.kapiId);
-    const Sk = Math.min(a.kapiAlani || 0, a.S);
+    const Sk = Math.min(a.kapiAlani || 0, S);
     if (kapi && Sk > 0) {
       RwAyirici = bilesikRw([
-        { S: a.S - Sk, Rw: RwAyirici },
+        { S: S - Sk, Rw: RwAyirici },
         { S: Sk, Rw: kapi.Rw },
       ]);
       kapiBilgi = { ad: kapi.ad, Rw: kapi.Rw, S: Sk };
@@ -112,14 +157,20 @@ export function ayiriciHesapla(a, proje) {
   }
 
   const yanElemanlar = (a.yanElemanlar || []).map((y) => {
-    const c = elemanCoz(y, model);
+    const c = elemanVeyaKatmanCoz(y, model);
     const gc = giydirmeCoz(y.giydirmeId, y.dolguId, c.mAlan);
     const dR = gc.dRw;
+    // Geometri modunda, standart 4 yan elemanın (iki yan duvar + taban +
+    // tavan) birleşim uzunluğu odanın boyutlarından hesaplanır; kullanıcının
+    // eklediği ek yan elemanlarda (geometriRolu tanımsız) manuel lf korunur.
+    const lf = (geo && y.geometriRolu === 'yanDuvar') ? geo.yanDuvarLf
+             : (geo && y.geometriRolu === 'tabanTavan') ? geo.tabanTavanLf
+             : y.lf;
     return {
       ad: y.ad,
       RwKaynak: c.Rw, RwAlici: c.Rw,
       mKaynak: c.mAlan, mAlici: c.mAlan,
-      lf: y.lf, birlesim: y.birlesim,
+      lf, birlesim: y.birlesim,
       esnekBaglanti: !!y.esnekBaglanti,
       // Giydirme kabuk yan elemanın her iki ucunda da varsayılır.
       dRFf: dR ? Math.min(2 * dR, 18) : 0,
@@ -131,7 +182,7 @@ export function ayiriciHesapla(a, proje) {
   const sonuc = havaDogusluYalitim({
     RwAyirici,
     mAyirici: ana.mAlan,
-    S: a.S, V: a.V,
+    S, V,
     dRDd: 0,                       // giydirme zaten RwAyirici içinde
     yanElemanlar,
     T0: proje.T0,
@@ -145,15 +196,20 @@ export function ayiriciHesapla(a, proje) {
     hedefSinif: proje.hedefSinif,
   });
 
-  return { kayit: a, ana, giydirme, giydirmeCozum, kapiBilgi, RwAyirici, yanElemanlar, sonuc, degerlendirme };
+  return { kayit: a, ana, giydirme, giydirmeCozum, kapiBilgi, RwAyirici, yanElemanlar, sonuc, degerlendirme, geo };
 }
 
 /** Bir döşemenin darbe sesi hesabı. */
 export function darbeHesapla(d, proje) {
-  const doseme = elemanCoz({ elemanId: d.dosemeId, sivaId: 'alci-10', sivaliYuzSayisi: 1 }, proje.rwModeli);
+  const doseme = (d.katmanlar && d.katmanlar.length > 0)
+    ? elemanVeyaKatmanCoz(d, proje.rwModeli)
+    : elemanCoz({ elemanId: d.dosemeId, sivaId: 'alci-10', sivaliYuzSayisi: 1 }, proje.rwModeli);
   const sap = bul(SAP_KAPLAMALAR, d.sapId);
   const dLw = Number.isFinite(d.dLwBeyan) ? d.dLwBeyan : (sap?.dLw || 0);
   // Yüzer şapın kütlesi taşıyıcı döşemenin kütlesine eklenmez (esnek ayrılmıştır).
+
+  const geo = d.geometri?.mod === 'olculer' ? geometriHesapla(d.geometri) : null;
+  const V = geo ? geo.V : d.V;
 
   const sonuc = darbeSesiYalitimi({
     mDoseme: doseme.mAlan,
@@ -161,7 +217,7 @@ export function darbeHesapla(d, proje) {
     dLw,
     dLwAsmaTavan: d.asmaTavanVar ? (d.asmaTavanKazanci || 0) : 0,
     mYanOrtalama: d.mYanOrtalama,
-    V: d.V,
+    V,
     T0: proje.T0,
     emniyetPayi: proje.emniyetPayi,
   });
@@ -173,13 +229,13 @@ export function darbeHesapla(d, proje) {
     hedefSinif: proje.hedefSinif,
   });
 
-  return { kayit: d, doseme, sap, dLw, sonuc, degerlendirme };
+  return { kayit: d, doseme, sap, dLw, sonuc, degerlendirme, geo };
 }
 
 /** Bir cephenin hesabı. */
 export function cepheHesapla(c, proje) {
   const yuzeysel = (c.elemanlar || []).map((e) => {
-    const coz = elemanCoz(e, proje.rwModeli);
+    const coz = e.tur === 'duvar' ? elemanVeyaKatmanCoz(e, proje.rwModeli) : elemanCoz(e, proje.rwModeli);
     return { ad: e.ad || coz.ad, S: e.S, Rw: coz.Rw, _cozum: coz };
   });
   const kucuk = (c.kucukElemanlar || []).map((k) => {

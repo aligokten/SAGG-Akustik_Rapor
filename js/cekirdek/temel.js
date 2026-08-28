@@ -150,3 +150,35 @@ export function rezonansYorumu(f0) {
   if (f0 <= 200) return { seviye: 'orta', metin: 'Sınırda — boşluğu derinleştirmek ya da levhayı ağırlaştırmak iyileştirir' };
   return { seviye: 'kotu', metin: 'Yüksek — bu giydirme kabuk yalıtımı kötüleştirebilir' };
 }
+
+/**
+ * İki kabuklu (boşlukla ayrılmış) bir sistemde, kütle kanununun tek kabuk
+ * gibi varsaydığı taban değere göre kavitenin (boşluğun) sağladığı ek
+ * yalıtım ΔR (dB).
+ *
+ * Fiziksel dayanak: kütle-yay-kütle rezonansının üzerindeki frekanslarda
+ * yalıtım, tek kabuklu (aynı toplam kütleli) bir elemana göre daha hızlı
+ * artar. Bu iyileşme miktarı rezonans frekansı f₀'a bağlıdır; f₀ ne kadar
+ * düşükse (derin boşluk, hafif kabuklar, gözenekli dolgu) kavite o kadar
+ * etkilidir.
+ *
+ * Aşağıdaki bağıntı, tipik giydirme kabuk sistemleri için literatürde
+ * bildirilen ΔRw değerleriyle (f₀ ≈ 80 Hz → ~16 dB, f₀ ≈ 125 Hz → ~10 dB,
+ * f₀ ≈ 200 Hz → ~4 dB, f₀ ≳ 300 Hz → ~0 dB) uyumlu olacak şekilde
+ * kalibre edilmiş, düzgün (log-doğrusal) bir mühendislik yaklaşımıdır.
+ *
+ *   ΔR(f₀) = 73,4 − 30,15·log10(f₀),  0 ile 25 dB arasında sınırlanır
+ *
+ * ÖNEMLİ: Bu, rijit köprüleme (nokta temas, ankraj) bulunmayan, düzgün
+ * biçimde ayrılmış ve gözenekli malzeme ile sönümlenmiş boşluklar için
+ * geçerli bir KESTİRİMDİR; kritik tasarımlarda ölçüm veya üretici beyan
+ * verisi kullanılmalıdır.
+ *
+ * @param {number} f0 Kavitenin rezonans frekansı (Hz)
+ * @returns {number} ΔR (dB)
+ */
+export function ikiKabukBonusu(f0) {
+  if (!Number.isFinite(f0) || f0 <= 0) return 0;
+  const dR = 73.4 - 30.15 * log10(f0);
+  return Math.min(25, Math.max(0, dR));
+}

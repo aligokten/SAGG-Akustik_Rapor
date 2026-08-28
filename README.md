@@ -123,6 +123,57 @@ mekanizma üzerinden hesaba girer.
 
 ---
 
+## Katmanlı yapı elemanları
+
+Ayırıcı elemanların ana gövdesi, her yan eleman ve döşemeler artık **kütüphaneden tek satır seçim**
+yerine **katman katman** kurulabilir — "Katmanlı yapıya geç" düğmesiyle geçilir, mevcut basit seçim
+(varsa) ilk katman olarak aktarılır, "Basit seçime dön" ile geri dönülür (veri kaybolmaz).
+
+Üç katman türü:
+
+- **Masif tabaka** — kütüphaneden bir malzeme (ör. "G2 Gazbeton, 150 mm"), isteğe bağlı beyan yoğunluğu.
+- **Sıva** — tek yüzey sıvası.
+- **Boşluk / dolgu** — kalınlık (mm) ve boşluk dolgusu (Knauf IPB serisi, taşyünü, camyünü, EPS/XPS…).
+  Bir boşluk katmanı, elemanı iki bağımsız kabuğa ayırır.
+
+**Hesap mantığı:**
+
+- **Boşluk yoksa** (ör. "15 cm betonarme + 5 mm şilte + 7 cm şap + 2 cm seramik"): tüm katmanların
+  kütlesi toplanır, TS EN 12354-1 Ek-B kütle kanunu ile tek kabuk gibi Rw kestirilir.
+- **Tam bir boşluk iki dolu segmenti ayırıyorsa** (ör. "2 cm sıva + 15 cm G2 gazbeton + 5 cm Knauf
+  taşyünü + 15 cm G2 gazbeton + 2 cm sıva"): iki kabuk bağımsız değerlendirilir. Taban Rw yine toplam
+  kütleden kütle kanunuyla bulunur; ardından kabukların kütle-yay-kütle rezonans frekansı f₀
+  (`rezonansFrekansi`, giydirme kabuk hesabıyla aynı bağıntı) hesaplanır ve buna dayalı bir kavite
+  bonusu (`ikiKabukBonusu`, 0–25 dB, f₀ ≈ 80 Hz'de ~16 dB) eklenir. Bu kestirim, KS-Schallschutzrechner
+  örnek bir sandviç duvarda (G2 gazbeton 150 + IPB 039 50 + G2 gazbeton 150) verdiği R'Dd,w = 68,3 dB
+  değerine ~2,6 dB yakınsar (farklı taban eğrileri kullanıldığından tam örtüşme beklenmez).
+  Rijit köprüleme (nokta temas, ankraj) bulunmayan, düzgün ayrılmış ve gözenekli malzemeyle
+  sönümlenmiş boşluklar için geçerlidir; kritik tasarımlarda ölçüm veya üretici beyan verisi esastır.
+- **Birden fazla boşluk katmanı** eklenirse yalnızca ilki değerlendirmeye katılır, kalanı bağlı kabul
+  edilir ve arayüzde uyarı gösterilir (üçüncü bir bağımsız kabuk desteklenmez).
+
+Bu mantık `js/cekirdek/katmanli-eleman.js` içindedir ve façade (cephe) duvar elemanlarında da arka
+planda çalışır; cephe sekmesinde şimdilik yalnızca basit (tek satır) seçim arayüzü sunulur.
+
+## Oda geometrisi ve izometrik şema
+
+Ayırıcı elemanlarda ve döşemelerde, alan/hacmi doğrudan girmek yerine **oda boyutlarından
+hesapla** moduna geçilebilir: derinlik (L), genişlik (W), yükseklik (H) ve — ayırıcı elemanlarda
+ayrıca — ayırıcının bulunduğu yüz (ön/arka/sol/sağ) girilir.
+
+- Ayırıcı elemanın alanı S ve alıcı mekân hacmi V otomatik hesaplanır.
+- Standart dört yan elemanın (iki yan duvar + taban + tavan) birleşim uzunluğu (lf) oda
+  boyutlarından otomatik türetilir — iki yan duvar için her zaman **H**, taban ve tavan için
+  ayırıcının kendi genişliği. Kullanıcının sonradan eklediği ek yan elemanlar bu otomasyondan
+  etkilenmez, elle girilen lf'lerini korur.
+- İki mekânın da aynı boyutta olduğu varsayılır (simetrik daire planı).
+- Girilen boyutlarla **izometrik bir oda şeması** (`js/arayuz/oda-cizimi.js`, saf SVG, dış bağımlılık
+  yok) otomatik çizilir: ayırıcı eleman vurgulu, taban/tavan (yan yol) hafif tonlu. Bu şema hem
+  ayırıcı sekmesinde hem de yazdırılabilir raporda görünür.
+
+Eksen kuralı, KS-Schallschutzrechner'in oda diyagramıyla doğrulanmıştır: L=6,12 m, W=3,03 m,
+H=2,62 m, ayırıcı "sol duvar"da iken hesaplanan S = 16,03 m² birebir eşleşir.
+
 ## Kullanım
 
 Kurulum gerekmez — [canlı sürümü](https://aligokten.github.io/SAGG-Akustik_Rapor/) doğrudan
@@ -172,7 +223,9 @@ js/
   durum.js                     Proje verisi, kalıcılık, örnek proje
   hesap.js                     Proje verisini hesap çekirdeğine bağlayan katman
   cekirdek/
-    temel.js                   Birim dönüşümleri (DnT ↔ R', L'nT ↔ L'n), enerjik toplama
+    temel.js                   Birim dönüşümleri, enerjik toplama, rezonans frekansı, kavite bonusu
+    katmanli-eleman.js         Çok katmanlı duvar/döşeme hesabı (tek/iki kabuk)
+    geometri.js                Oda boyutlarından (L×W×H) alan/hacim/birleşim uzunluğu hesabı
     kutle-kanunu.js            Alan kütlesinden Rw ve Ln,w,eq kestirimi
     kij.js                     Birleşimlerde titreşim azaltma indisi (TS EN 12354-1 Ek-E)
     en12354-1.js               Hava doğuşlu ses, yan yollu
@@ -186,6 +239,8 @@ js/
   arayuz/
     sekme-panel.js             Panel (genel görünüm)
     sekme-kutuphane.js         Malzeme kütüphanesi (aranabilir döküm)
+    katman-editor.js           Çok katmanlı yapı elemanı düzenleyici (paylaşılan bileşen)
+    oda-cizimi.js              İzometrik oda şeması (SVG) üretici
     sekme-*.js                 Bölüm ekranları
     simgeler.js                Satır içi SVG simge seti
     ortak.js                   Arayüz yardımcıları
@@ -198,9 +253,10 @@ test/cekirdek.test.js          Hesap çekirdeği testleri
 npm test          # node --test test/*.test.js
 ```
 
-72 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
-projenin uçtan uca hesabını, kütüphane bütünlüğünü (yinelenen kimlik, yoğunluk aralıkları,
-çözülemeyen başvuru), eski projelerin kimlik göçünü ve rezonans frekansı modelini kapsar.
+111 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
+modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
+hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış) ve izometrik şema üretimini kapsar.
 
 ---
 

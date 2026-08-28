@@ -7,6 +7,9 @@ import { kacis, sayi, secenekler, uygunlukRozeti, sinifRozeti } from './ortak.js
 import { EK2_TABLO_2_1, GURULTULULUK_DERECELERI, HASSASIYET_DERECELERI } from '../veri/yonetmelik.js';
 import { DUVARLAR, DOSEMELER, DOGRAMALAR, SIVALAR, GIYDIRME_KABUKLAR, YALITIM_LEVHALARI } from '../veri/malzemeler.js';
 import { BIRLESIM_TIPLERI } from '../cekirdek/kij.js';
+import { YON_ADLARI } from '../cekirdek/geometri.js';
+import { katmanEditoru } from './katman-editor.js';
+import { odaSVG } from './oda-cizimi.js';
 
 const MEKANLAR = EK2_TABLO_2_1.mekanlar;
 const YAPI_ELEMANLARI = [...DUVARLAR, ...DOSEMELER];
@@ -46,7 +49,7 @@ function kart(a, i, h) {
       </div>
     </div>
 
-    <h3>Mekânlar ve geometri</h3>
+    <h3>Mekânlar</h3>
     <div class="izgara">
       <div class="alan"><label>Gürültü kaynağı mekân</label>
         <select data-yol="${y}.kaynakMekanId">${mekanSecenekleri(a.kaynakMekanId)}</select>
@@ -54,30 +57,12 @@ function kart(a, i, h) {
       <div class="alan"><label>Alıcı (korunan) mekân</label>
         <select data-yol="${y}.aliciMekanId">${mekanSecenekleri(a.aliciMekanId)}</select>
         <span class="ipucu">Hassasiyet derecesi: <b>${kacis(HASSASIYET_DERECELERI[d?.aliciMekan?.hassasiyet] || '—')}</b></span></div>
-      <div class="alan"><label>Ayırıcı elemanın ortak alanı S (m²)</label>
-        <input type="number" step="0.1" min="0.1" data-yol="${y}.S" data-tur="sayi" value="${a.S}"></div>
-      <div class="alan"><label>Alıcı mekân hacmi V (m³)</label>
-        <input type="number" step="1" min="1" data-yol="${y}.V" data-tur="sayi" value="${a.V}"></div>
     </div>
 
+    ${geometriBolumu(y, a, h)}
+
     <h3 style="margin-top:18px">Ayırıcı eleman</h3>
-    <div class="izgara">
-      <div class="alan"><label>Yapı elemanı</label>
-        <select data-yol="${y}.elemanId">${secenekler(YAPI_ELEMANLARI, a.elemanId, { gruplu: true })}</select></div>
-      <div class="alan"><label>Sıva</label>
-        <select data-yol="${y}.sivaId">${secenekler(SIVALAR, a.sivaId)}</select></div>
-      <div class="alan"><label>Sıvalı yüz sayısı</label>
-        <select data-yol="${y}.sivaliYuzSayisi" data-tur="sayi">
-          ${[0, 1, 2].map((n) => `<option value="${n}"${n === a.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}
-        </select></div>
-      <div class="alan"><label>Beyan edilmiş yoğunluk (kg/m³)</label>
-        <input type="number" step="10" min="50" data-yol="${y}.yogunlukBeyan" data-tur="sayiVeyaNull"
-               value="${a.yogunlukBeyan ?? ''}" placeholder="${kacis(String(h.ana.eleman?.yogunluk ?? '—'))} (kütüphane)">
-        <span class="ipucu">Ürününüzün gerçek birim hacim ağırlığı.</span></div>
-      <div class="alan"><label>Beyan edilmiş Rw (dB) — isteğe bağlı</label>
-        <input type="number" step="0.1" data-yol="${y}.RwBeyan" data-tur="sayiVeyaNull" value="${a.RwBeyan ?? ''}" placeholder="laboratuvar değeri">
-        <span class="ipucu">Girilirse kestirim yerine bu değer kullanılır.</span></div>
-    </div>
+    ${anaElemanBolumu(y, a, h)}
 
     <h3 style="margin-top:18px">Giydirme kabuk</h3>
     <div class="izgara">
@@ -114,42 +99,149 @@ function kart(a, i, h) {
     <h3 style="margin-top:18px">Yan elemanlar (yan yol iletimi)</h3>
     <div class="tablo-sar"><table>
       <thead><tr>
-        <th>Yan eleman</th><th>Yapı elemanı</th><th>Sıva</th><th class="sayi">Yüz</th>
-        <th class="sayi">Yoğunluk</th><th class="sayi">m′ (kg/m²)</th><th class="sayi">Rw (dB)</th><th>Giydirme</th>
-        <th class="sayi">lf (m)</th><th>Birleşim</th><th>Esnek</th><th></th>
+        <th>Yan eleman</th><th>Yapı</th><th class="sayi">m′ (kg/m²)</th><th class="sayi">Rw (dB)</th>
+        <th>Giydirme</th><th class="sayi">lf (m)</th><th>Birleşim</th><th>Esnek</th><th></th>
       </tr></thead>
       <tbody>
-      ${(a.yanElemanlar || []).map((ye, j) => {
-        const yy = `${y}.yanElemanlar.${j}`;
-        const hy = h.yanElemanlar[j];
-        return `<tr>
-          <td><input data-yol="${yy}.ad" value="${kacis(ye.ad)}" style="min-width:130px"></td>
-          <td><select data-yol="${yy}.elemanId" style="min-width:190px">${secenekler(YAPI_ELEMANLARI, ye.elemanId, { gruplu: true })}</select></td>
-          <td><select data-yol="${yy}.sivaId" style="min-width:150px">${secenekler(SIVALAR, ye.sivaId)}</select></td>
-          <td><select data-yol="${yy}.sivaliYuzSayisi" data-tur="sayi" style="min-width:60px">${[0, 1, 2].map((n) => `<option value="${n}"${n === ye.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}</select></td>
-          <td><input type="number" step="10" min="50" data-yol="${yy}.yogunlukBeyan" data-tur="sayiVeyaNull"
-                     value="${ye.yogunlukBeyan ?? ''}" placeholder="${kacis(String(hy._cozum.eleman?.yogunluk ?? '—'))}" style="width:88px"></td>
-          <td class="sayi">${sayi(hy.mKaynak, 0)}</td>
-          <td class="sayi">${sayi(hy.RwKaynak)}</td>
-          <td><select data-yol="${yy}.giydirmeId" style="min-width:170px">${secenekler(GIYDIRME_KABUKLAR, ye.giydirmeId)}</select></td>
-          <td><input type="number" step="0.1" min="0.1" data-yol="${yy}.lf" data-tur="sayi" value="${ye.lf}" style="width:75px"></td>
-          <td><select data-yol="${yy}.birlesim">${Object.values(BIRLESIM_TIPLERI).map((b) =>
-                `<option value="${b.kod}"${b.kod === ye.birlesim ? ' selected' : ''}>${b.kod}</option>`).join('')}</select></td>
-          <td style="text-align:center"><input type="checkbox" data-yol="${yy}.esnekBaglanti" data-tur="bool" ${ye.esnekBaglanti ? 'checked' : ''} style="width:auto"></td>
-          <td><button class="dugme acik kucuk" data-eylem="sil-yan" data-idx="${i}" data-alt="${j}">Sil</button></td>
-        </tr>`;
-      }).join('')}
+      ${(a.yanElemanlar || []).map((ye, j) => yanElemanSatirlari(y, i, ye, j, h.yanElemanlar[j])).join('')}
       </tbody>
     </table></div>
     <button class="dugme acik kucuk" data-eylem="ekle-yan" data-idx="${i}">+ Yan eleman ekle</button>
     <p class="soluk" style="font-size:12px">
       lf: ayırıcı eleman ile yan elemanın birleşim uzunluğu. Birleşim tipi <b>T</b> (yan eleman ayırıcıda
       sonlanıyor) veya <b>X</b> (yan eleman ayırıcıdan sürekli geçiyor). Titreşim azaltma indisi Kij,
-      TS EN 12354-1 Ek-E bağıntıları ile hesaplanır.
+      TS EN 12354-1 Ek-E bağıntıları ile hesaplanır. Geometri "boyutlardan hesapla" modundaysa, standart
+      dört yan elemanın (iki yan duvar + taban + tavan) lf değeri oda boyutlarından otomatik hesaplanır.
     </p>
 
     ${sonucBolumu(h)}
   </section>`;
+}
+
+/* ── Geometri (hacim ↔ boyutlar) ─────────────────────────────────────── */
+
+function geometriBolumu(y, a, h) {
+  const g = a.geometri || { mod: 'hacim' };
+  const boyutMi = g.mod === 'olculer';
+
+  return `
+  <h3 style="margin-top:18px">Geometri</h3>
+  <div class="satir-eylem" style="margin-bottom:10px">
+    ${boyutMi
+      ? `<span class="rozet bilgi">Oda boyutlarından hesaplanıyor</span>
+         <button class="dugme acik kucuk" data-eylem="hacim-moda-don" data-yol-tabani="${y}">Doğrudan S/V girişine dön</button>`
+      : `<button class="dugme acik kucuk" data-eylem="geometri-moda-gec" data-yol-tabani="${y}">Oda boyutlarından hesapla (L×W×H)</button>`}
+  </div>
+
+  ${!boyutMi ? `
+  <div class="izgara">
+    <div class="alan"><label>Ayırıcı elemanın ortak alanı S (m²)</label>
+      <input type="number" step="0.1" min="0.1" data-yol="${y}.S" data-tur="sayi" value="${a.S}"></div>
+    <div class="alan"><label>Alıcı mekân hacmi V (m³)</label>
+      <input type="number" step="1" min="1" data-yol="${y}.V" data-tur="sayi" value="${a.V}"></div>
+  </div>` : `
+  <div class="izgara dar">
+    <div class="alan"><label>Derinlik L (m)</label>
+      <input type="number" step="0.01" min="0.1" data-yol="${y}.geometri.L" data-tur="sayi" value="${g.L}"></div>
+    <div class="alan"><label>Genişlik W (m)</label>
+      <input type="number" step="0.01" min="0.1" data-yol="${y}.geometri.W" data-tur="sayi" value="${g.W}"></div>
+    <div class="alan"><label>Yükseklik H (m)</label>
+      <input type="number" step="0.01" min="0.1" data-yol="${y}.geometri.H" data-tur="sayi" value="${g.H}"></div>
+    <div class="alan"><label>Ayırıcı elemanın bulunduğu yüz</label>
+      <select data-yol="${y}.geometri.yon">
+        ${Object.entries(YON_ADLARI).map(([k, v]) => `<option value="${k}"${k === g.yon ? ' selected' : ''}>${kacis(v)}</option>`).join('')}
+      </select></div>
+  </div>
+  <div class="izgara dar" style="margin-top:8px">
+    <div class="alan"><label>Hesaplanan S</label><input readonly value="${h.geo ? sayi(h.geo.S) + ' m²' : '—'}"></div>
+    <div class="alan"><label>Hesaplanan V</label><input readonly value="${h.geo ? sayi(h.geo.V) + ' m³' : '—'}"></div>
+  </div>
+  <div class="bilgi-kutu">
+    İki mekânın da aynı boyutta olduğu varsayılır (simetrik daire planı). Standart dört yan elemanın
+    birleşim uzunluğu (lf) bu boyutlardan otomatik hesaplanır — bkz. aşağıdaki şema.
+  </div>
+  ${h.geo ? `<div style="max-width:640px;margin:10px auto">${odaSVG(g, { oda1Adi: 'Kaynak mekân', oda2Adi: 'Alıcı mekân' })}</div>` : ''}
+  `}`;
+}
+
+/* ── Ana eleman (basit seçim ↔ katmanlı yapı) ────────────────────────── */
+
+function anaElemanBolumu(y, a, h) {
+  const katmanliMi = (a.katmanlar || []).length > 0;
+  return `
+  <div class="satir-eylem" style="margin-bottom:10px">
+    ${katmanliMi
+      ? `<span class="rozet bilgi">Katmanlı yapı</span>
+         <button class="dugme acik kucuk" data-eylem="basit-moda-don" data-yol-tabani="${y}">Basit seçime dön</button>`
+      : `<button class="dugme acik kucuk" data-eylem="katmanli-moda-gec" data-yol-tabani="${y}">Katmanlı yapıya geç</button>`}
+  </div>
+  ${katmanliMi
+    ? katmanEditoru(y, a.katmanlar, { tur: 'duvar', katmanDetay: h.ana.katmanDetay })
+    : `
+  <div class="izgara">
+    <div class="alan"><label>Yapı elemanı</label>
+      <select data-yol="${y}.elemanId">${secenekler(YAPI_ELEMANLARI, a.elemanId, { gruplu: true })}</select></div>
+    <div class="alan"><label>Sıva</label>
+      <select data-yol="${y}.sivaId">${secenekler(SIVALAR, a.sivaId)}</select></div>
+    <div class="alan"><label>Sıvalı yüz sayısı</label>
+      <select data-yol="${y}.sivaliYuzSayisi" data-tur="sayi">
+        ${[0, 1, 2].map((n) => `<option value="${n}"${n === a.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}
+      </select></div>
+    <div class="alan"><label>Beyan edilmiş yoğunluk (kg/m³)</label>
+      <input type="number" step="10" min="50" data-yol="${y}.yogunlukBeyan" data-tur="sayiVeyaNull"
+             value="${a.yogunlukBeyan ?? ''}" placeholder="${kacis(String(h.ana.eleman?.yogunluk ?? '—'))} (kütüphane)">
+      <span class="ipucu">Ürününüzün gerçek birim hacim ağırlığı.</span></div>
+    <div class="alan"><label>Beyan edilmiş Rw (dB) — isteğe bağlı</label>
+      <input type="number" step="0.1" data-yol="${y}.RwBeyan" data-tur="sayiVeyaNull" value="${a.RwBeyan ?? ''}" placeholder="laboratuvar değeri">
+      <span class="ipucu">Girilirse kestirim yerine bu değer kullanılır.</span></div>
+  </div>`}`;
+}
+
+/* ── Yan elemanlar tablosu ────────────────────────────────────────────── */
+
+function yanElemanSatirlari(y, i, ye, j, hy) {
+  const yy = `${y}.yanElemanlar.${j}`;
+  const katmanliMi = (ye.katmanlar || []).length > 0;
+
+  const anaSatir = `<tr>
+    <td><input data-yol="${yy}.ad" value="${kacis(ye.ad)}" style="min-width:130px"></td>
+    <td>${katmanliMi
+        ? `<span class="rozet bilgi">Katmanlı</span>`
+        : `<select data-yol="${yy}.elemanId" style="min-width:190px">${secenekler(YAPI_ELEMANLARI, ye.elemanId, { gruplu: true })}</select>`}
+    </td>
+    <td class="sayi">${sayi(hy.mKaynak, 0)}</td>
+    <td class="sayi">${sayi(hy.RwKaynak)}</td>
+    <td><select data-yol="${yy}.giydirmeId" style="min-width:150px">${secenekler(GIYDIRME_KABUKLAR, ye.giydirmeId)}</select></td>
+    <td><input type="number" step="0.1" min="0.1" data-yol="${yy}.lf" data-tur="sayi" value="${ye.lf}" style="width:75px" ${ye.geometriRolu ? 'title="Geometri modunda otomatik hesaplanır; burada girilen değer o modda kullanılmaz."' : ''}></td>
+    <td><select data-yol="${yy}.birlesim">${Object.values(BIRLESIM_TIPLERI).map((b) =>
+          `<option value="${b.kod}"${b.kod === ye.birlesim ? ' selected' : ''}>${b.kod}</option>`).join('')}</select></td>
+    <td style="text-align:center"><input type="checkbox" data-yol="${yy}.esnekBaglanti" data-tur="bool" ${ye.esnekBaglanti ? 'checked' : ''} style="width:auto"></td>
+    <td><button class="dugme acik kucuk" data-eylem="sil-yan" data-idx="${i}" data-alt="${j}">Sil</button></td>
+  </tr>`;
+
+  const detaySatir = `<tr>
+    <td></td>
+    <td colspan="8" style="background:var(--yuzey-2)">
+      <div class="satir-eylem" style="margin:8px 0">
+        ${katmanliMi
+          ? `<span class="rozet bilgi">Katmanlı yapı</span>
+             <button class="dugme acik kucuk" data-eylem="basit-moda-don" data-yol-tabani="${yy}">Basit seçime dön</button>`
+          : `<button class="dugme acik kucuk" data-eylem="katmanli-moda-gec" data-yol-tabani="${yy}">Katmanlı yapıya geç</button>`}
+      </div>
+      ${katmanliMi ? katmanEditoru(yy, ye.katmanlar, { tur: 'duvar', katmanDetay: hy._cozum.katmanDetay }) : `
+      <div class="izgara dar" style="max-width:520px">
+        <div class="alan"><label>Sıva</label><select data-yol="${yy}.sivaId">${secenekler(SIVALAR, ye.sivaId)}</select></div>
+        <div class="alan"><label>Sıvalı yüz sayısı</label>
+          <select data-yol="${yy}.sivaliYuzSayisi" data-tur="sayi">${[0, 1, 2].map((n) => `<option value="${n}"${n === ye.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
+        <div class="alan"><label>Beyan yoğunluk (kg/m³)</label>
+          <input type="number" step="10" min="50" data-yol="${yy}.yogunlukBeyan" data-tur="sayiVeyaNull" value="${ye.yogunlukBeyan ?? ''}" placeholder="${kacis(String(hy._cozum.eleman?.yogunluk ?? '—'))}"></div>
+        <div class="alan"><label>Beyan Rw (dB)</label>
+          <input type="number" step="0.1" data-yol="${yy}.RwBeyan" data-tur="sayiVeyaNull" value="${ye.RwBeyan ?? ''}" placeholder="—"></div>
+      </div>`}
+    </td>
+  </tr>`;
+
+  return anaSatir + detaySatir;
 }
 
 function sonucBolumu(h) {

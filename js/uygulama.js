@@ -5,6 +5,7 @@
 
 import { $, $$, sayiOku, yeniId, aramaMetni } from './arayuz/ortak.js';
 import { simge } from './arayuz/simgeler.js';
+import * as YK from './cekirdek/katmanli-eleman.js';
 import * as D from './durum.js';
 import { projeyiHesapla } from './hesap.js';
 import * as sekmePanel from './arayuz/sekme-panel.js';
@@ -73,6 +74,11 @@ function yolAyarla(nesne, yol, deger) {
     hedef = hedef[p];
   }
   if (hedef != null) hedef[parcalar[parcalar.length - 1]] = deger;
+}
+
+/** Nokta ayraçlı bir yoldaki nesneyi okur (bulunamazsa undefined). */
+function yolDegerAl(nesne, yol) {
+  return yol.split('.').reduce((h, p) => (h == null ? h : h[p]), nesne);
 }
 
 function degerCoz(el) {
@@ -149,8 +155,11 @@ const EYLEMLER = {
     durum.ayiricilar.splice(i + 1, 0, k);
   },
   'ekle-yan': (i) => durum.ayiricilar[i].yanElemanlar.push({
-    id: yeniId('y'), ad: 'Yeni yan eleman', elemanId: 'tugla-d190', sivaId: 'alci-15',
-    sivaliYuzSayisi: 2, RwBeyan: null, lf: 3, birlesim: 'T', giydirmeId: 'yok', esnekBaglanti: false,
+    id: yeniId('y'), ad: 'Yeni yan eleman', elemanId: 'ddt-190', sivaId: 'alci-15',
+    sivaliYuzSayisi: 2, RwBeyan: null, yogunlukBeyan: null, lf: 3, birlesim: 'T',
+    giydirmeId: 'yok', dolguId: null, esnekBaglanti: false, katmanlar: [],
+    // geometriRolu kasıtlı olarak atanmaz: kullanıcının eklediği yan elemanlar
+    // geometri modunda bile manuel lf kullanır (bkz. ayiriciHesapla).
   }),
   'sil-yan': (i, j) => durum.ayiricilar[i].yanElemanlar.splice(j, 1),
 
@@ -188,6 +197,83 @@ const EYLEMLER = {
   'ekle-nesne': (i) => durum.hacimler[i].nesneler.push({ id: yeniId('n'), nesneId: 'kisi-koltuk', adet: 1 }),
   'sil-nesne': (i, j) => durum.hacimler[i].nesneler.splice(j, 1),
 };
+
+/**
+ * Katman listesi ve geometri modu için yol tabanlı eylemler.
+ *
+ * Bu eylemler (i,j) indeksleriyle değil, durum içindeki bir nesneyi
+ * doğrudan gösteren `data-yol-tabani` yolu ile çalışır — çünkü katman
+ * düzenleyici; ayırıcı ana eleman, her yan eleman, döşeme ve cephe duvar
+ * elemanı gibi çok farklı derinliklerde yeniden kullanılır.
+ *
+ * @param {HTMLElement} dugme
+ * @returns {boolean} eylem işlendiyse true
+ */
+function yolTabaniEylemiUygula(dugme) {
+  const yolTabani = dugme.dataset.yolTabani;
+  if (!yolTabani) return false;
+  const eylem = dugme.dataset.eylem;
+  const nesne = yolDegerAl(durum, yolTabani);
+  if (!nesne) return false;
+
+  if (eylem === 'katmanli-moda-gec') {
+    if (!nesne.katmanlar) nesne.katmanlar = [];
+    if (nesne.katmanlar.length === 0) {
+      // Mevcut basit seçimi başlangıç katmanı olarak aktar.
+      const baslangic = [];
+      for (let n = 0; n < (nesne.sivaliYuzSayisi || 0); n++) {
+        baslangic.push({ tur: 'siva', sivaId: nesne.sivaId || 'alci-15' });
+      }
+      const ortaMasif = { tur: 'masif', malzemeId: nesne.elemanId || nesne.dosemeId || null, yogunlukBeyan: nesne.yogunlukBeyan ?? null };
+      // Sıvalar iki yüzdeyse taşıyıcının iki tarafına yerleştir.
+      if (baslangic.length >= 2) {
+        nesne.katmanlar = [baslangic[0], ortaMasif, ...baslangic.slice(1)];
+      } else {
+        nesne.katmanlar = [ortaMasif, ...baslangic];
+      }
+    }
+    return true;
+  }
+
+  if (eylem === 'basit-moda-don') {
+    nesne.katmanlar = [];
+    return true;
+  }
+
+  if (eylem === 'katman-ekle') {
+    if (!nesne.katmanlar) nesne.katmanlar = [];
+    nesne.katmanlar.push(YK.yeniKatman(dugme.dataset.tur || 'masif'));
+    return true;
+  }
+
+  const katmanIdx = Number(dugme.dataset.katmanIdx);
+  if (eylem === 'katman-sil') {
+    nesne.katmanlar?.splice(katmanIdx, 1);
+    return true;
+  }
+  if (eylem === 'katman-yukari' && katmanIdx > 0) {
+    const dizi = nesne.katmanlar;
+    [dizi[katmanIdx - 1], dizi[katmanIdx]] = [dizi[katmanIdx], dizi[katmanIdx - 1]];
+    return true;
+  }
+  if (eylem === 'katman-asagi' && nesne.katmanlar && katmanIdx < nesne.katmanlar.length - 1) {
+    const dizi = nesne.katmanlar;
+    [dizi[katmanIdx], dizi[katmanIdx + 1]] = [dizi[katmanIdx + 1], dizi[katmanIdx]];
+    return true;
+  }
+
+  if (eylem === 'geometri-moda-gec') {
+    if (!nesne.geometri) nesne.geometri = { mod: 'hacim', L: 6, W: 3, H: 2.62 };
+    nesne.geometri.mod = 'olculer';
+    return true;
+  }
+  if (eylem === 'hacim-moda-don') {
+    if (nesne.geometri) nesne.geometri.mod = 'hacim';
+    return true;
+  }
+
+  return false;
+}
 
 function yapiKopyala(nesne) {
   const k = JSON.parse(JSON.stringify(nesne));
@@ -371,6 +457,9 @@ function olaylariBagla() {
     const dugme = e.target.closest('[data-eylem]');
     if (dugme) {
       const eylem = dugme.dataset.eylem;
+
+      if (yolTabaniEylemiUygula(dugme)) { ciz(); return; }
+
       const i = Number(dugme.dataset.idx);
       const j = Number(dugme.dataset.alt);
       if (EYLEMLER[eylem]) { EYLEMLER[eylem](i, j); ciz(); return; }

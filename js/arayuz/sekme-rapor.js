@@ -7,6 +7,7 @@ import { kacis, sayi, uygunlukRozeti, sinifRozeti } from './ortak.js';
 import { SURUM, BINA_TURLERI, ASGARI_SINIFLAR } from '../veri/yonetmelik.js';
 import { MODELLER } from '../cekirdek/kutle-kanunu.js';
 import { OKTAV_BANTLARI } from '../cekirdek/temel.js';
+import { odaSVG } from './oda-cizimi.js';
 
 export function ciz(durum, s) {
   const p = durum.proje;
@@ -83,11 +84,13 @@ function bolumAyirici(s) {
     </tr></thead>
     <tbody>${s.ayiricilar.map((a) => {
       const d = a.degerlendirme;
+      const S = a.geo ? a.geo.S : a.kayit.S;
+      const V = a.geo ? a.geo.V : a.kayit.V;
       return `<tr>
         <td>${kacis(a.kayit.ad)}</td>
         <td>${kacis(d?.kaynakMekan?.ad || '—')} → ${kacis(d?.aliciMekan?.ad || '—')}</td>
-        <td class="sayi">${sayi(a.kayit.S)}</td>
-        <td class="sayi">${sayi(a.kayit.V, 0)}</td>
+        <td class="sayi">${sayi(S)}</td>
+        <td class="sayi">${sayi(V, 0)}</td>
         <td class="sayi">${sayi(a.RwAyirici)}</td>
         <td class="sayi">${sayi(a.sonuc.RwAksan)}</td>
         <td class="sayi"><b>${sayi(a.sonuc.DnTw)}</b></td>
@@ -96,7 +99,12 @@ function bolumAyirici(s) {
         <td>${uygunlukRozeti(d)}</td>
       </tr>`;
     }).join('')}</tbody>
-  </table></div>`;
+  </table></div>
+  ${s.ayiricilar.filter((a) => a.geo && a.kayit.geometri?.mod === 'olculer').map((a) => `
+  <div style="max-width:520px;margin:14px auto;break-inside:avoid">
+    <p style="text-align:center;font-size:12.5px;font-weight:600;margin-bottom:4px">${kacis(a.kayit.ad)}</p>
+    ${odaSVG(a.kayit.geometri, { oda1Adi: 'Kaynak mekân', oda2Adi: 'Alıcı mekân', genislik: 520, yukseklik: 340 })}
+  </div>`).join('')}`;
 }
 
 function bolumDarbe(s) {
