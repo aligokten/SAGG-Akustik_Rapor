@@ -14,7 +14,7 @@ import { kacis, sayi, uygunlukRozeti, sinifRozeti } from './ortak.js';
 import { SURUM, BINA_TURLERI, ASGARI_SINIFLAR } from '../veri/yonetmelik.js';
 import { MODELLER } from '../cekirdek/kutle-kanunu.js';
 import { OKTAV_BANTLARI } from '../cekirdek/temel.js';
-import { odaSVG } from './oda-cizimi.js';
+import { odaSVG, cepheSVG } from './oda-cizimi.js';
 import { YON_ADLARI } from '../cekirdek/geometri.js';
 import { katmanDizilimiMetni } from '../cekirdek/katmanli-eleman.js';
 import { YALITIM_LEVHALARI, bul } from '../veri/malzemeler.js';
@@ -308,7 +308,13 @@ function bolumCephe(s) {
     birleşimlerinden doğan Df yollarının enerjik toplamıdır (yalnızca oda boyutları girilmiş
     cephelerde hesaplanır). D<sub>nT,A,tr</sub> = D2m,nT,w + C<sub>tr</sub> bilgi amaçlıdır;
     uygunluk kararı EK-3 Tablo 3.1 ile D2m,nT,w üzerinden verilir.
-  </p>`;
+  </p>
+
+  ${s.cepheler.filter((x) => x.kayit.geometri?.mod === 'olculer').map((x) => `
+    <div class="canli-model yazdirma-goster" style="margin-top:14px">
+      <div class="canli-model-baslik"><span class="canli-model-nokta"></span> ${kacis(x.kayit.ad)} — mahal şeması</div>
+      <div style="padding:6px">${cepheSVG(x.kayit, { mekanAdi: x.kayit.ad, genislik: 720, yukseklik: 320 })}</div>
+    </div>`).join('')}`;
 }
 
 function bolumReverberasyon(s) {

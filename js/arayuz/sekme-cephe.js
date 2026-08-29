@@ -8,6 +8,8 @@ import { DUVARLAR, DOSEMELER, DOGRAMALAR, SIVALAR, KUCUK_ELEMANLAR } from '../ve
 import { BICIM_DUZELTMELERI, gerekliCepheYalitimi, CEPHE_YAN_ROLLERI } from '../cekirdek/en12354-3.js';
 import { HASSASIYET_DERECELERI } from '../veri/yonetmelik.js';
 import { mekanSecenekleri } from './sekme-ayirici.js';
+import { katmanEditoru } from './katman-editor.js';
+import { cepheSVG } from './oda-cizimi.js';
 
 const BICIMLER = Object.entries(BICIM_DUZELTMELERI).map(([id, v]) => ({ id, ad: `${v.ad} (ΔLfs = ${v.dLfs} dB)` }));
 
@@ -68,8 +70,22 @@ function geometriBolumu(y, c, h, i) {
   </div>
   ${geo ? `<p class="soluk" style="font-size:12px">
     Dış duvar brüt alanları: ${geo.duvarlar.map((dv) => `D${dv.no} = ${sayi(dv.alan, 2)} m²`).join(' · ')}.
+    Opak duvar alanı, brüt alandan o duvardaki doğramalar düşülerek bulunur.
     İç yan elemanlar cephe alanına eklenmez; dış duvarla birleşimlerinden Df yolu oluştururlar.
   </p>` : ''}
+
+  <div class="canli-model">
+    <div class="canli-model-baslik"><span class="canli-model-nokta"></span> Canlı 3B model
+      <span class="soluk" style="margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500">Döndürmek için sürükleyin</span>
+    </div>
+    <div class="oda-svg-sarmalayici" data-cephe-yolu="${kacis(y)}" data-mekan-adi="${kacis(c.ad || 'Mahal')}">
+      ${cepheSVG(c, { mekanAdi: c.ad || 'Mahal', genislik: 720, yukseklik: 340 })}
+    </div>
+  </div>
+  <p class="soluk" style="font-size:12px">
+    Doğramalar ait oldukları duvarda gerçek en × boy ölçüleriyle çizilir; duvar üzerindeki
+    yatay konumları temsilîdir (hesabı etkilemez).
+  </p>
 
   <h3 style="margin-top:18px">İç yan elemanlar (Df yolları)</h3>
   <div class="tablo-sar"><table>
@@ -80,13 +96,14 @@ function geometriBolumu(y, c, h, i) {
       const yy = `${y}.yanElemanlar.${j}`;
       const hy = h.yanElemanlar?.find((x) => x.rol === ye.rol);
       const pasif = ye.rol === 'icArkaDuvar' && c.konum !== 'kose';
+      const katmanliMi = (ye.katmanlar || []).length > 0;
       return `<tr${pasif ? ' style="opacity:.45"' : ''}>
         <td><b>${kacis(CEPHE_YAN_ROLLERI[ye.rol]?.kod || '')}</b> ${kacis(ye.ad)}</td>
-        <td><select data-yol="${yy}.elemanId" style="min-width:200px">${
-              secenekler(ye.rol === 'icTavan' || ye.rol === 'icTaban' ? DOSEMELER : DUVARLAR, ye.elemanId, { gruplu: true })}</select></td>
-        <td><select data-yol="${yy}.sivaId" style="min-width:140px">${secenekler(SIVALAR, ye.sivaId)}</select></td>
-        <td><select data-yol="${yy}.sivaliYuzSayisi" data-tur="sayi" style="width:62px">${[0, 1, 2].map((n) =>
-              `<option value="${n}"${n === ye.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}</select></td>
+        <td>${katmanliMi ? '<span class="rozet bilgi">Katmanlı</span>' : `<select data-yol="${yy}.elemanId" style="min-width:200px">${
+              secenekler(ye.rol === 'icTavan' || ye.rol === 'icTaban' ? DOSEMELER : DUVARLAR, ye.elemanId, { gruplu: true })}</select>`}</td>
+        <td>${katmanliMi ? '<span class="soluk">—</span>' : `<select data-yol="${yy}.sivaId" style="min-width:140px">${secenekler(SIVALAR, ye.sivaId)}</select>`}</td>
+        <td>${katmanliMi ? '<span class="soluk">—</span>' : `<select data-yol="${yy}.sivaliYuzSayisi" data-tur="sayi" style="width:62px">${[0, 1, 2].map((n) =>
+              `<option value="${n}"${n === ye.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}</select>`}</td>
         <td class="sayi">${sayi(hy?._cozum?.mAlan)}</td>
         <td class="sayi">${sayi(hy?._cozum?.Rw)}</td>
         <td><select data-yol="${yy}.birlesim">
@@ -94,6 +111,17 @@ function geometriBolumu(y, c, h, i) {
               <option value="X"${ye.birlesim === 'X' ? ' selected' : ''}>X</option></select></td>
         <td style="text-align:center"><input type="checkbox" data-yol="${yy}.esnekBaglanti" data-tur="bool"${ye.esnekBaglanti ? ' checked' : ''}></td>
         <td class="soluk" style="font-size:12px">${pasif ? 'orta mahalde pasif' : `${hy?.baglantiSayisi ?? 0} dış duvar`}</td>
+      </tr>
+      <tr${pasif ? ' style="opacity:.45"' : ''}>
+        <td colspan="9" style="background:var(--yuzey-2)">
+          <div class="satir-eylem" style="margin:8px 0">
+            ${katmanliMi
+              ? `<span class="rozet bilgi">Katmanlı yapı</span>
+                 <button class="dugme acik kucuk" data-eylem="basit-moda-don" data-yol-tabani="${yy}">Basit seçime dön</button>`
+              : `<button class="dugme acik kucuk" data-eylem="katmanli-moda-gec" data-yol-tabani="${yy}">Katmanlı yapıya geç</button>`}
+          </div>
+          ${katmanliMi ? katmanEditoru(yy, ye.katmanlar, { tur: 'duvar', katmanDetay: hy?._cozum?.katmanDetay }) : ''}
+        </td>
       </tr>`;
     }).join('')}
     </tbody>
@@ -144,35 +172,11 @@ function kart(c, i, h) {
 
     <h3 style="margin-top:18px">Yüzeysel cephe elemanları</h3>
     <div class="tablo-sar"><table>
-      <thead><tr><th>Ad</th><th>Tür</th><th>Duvar</th><th>Eleman</th><th>Sıva</th><th class="sayi">Yüz</th>
-        <th class="sayi">S (m²)</th><th class="sayi">Yoğunluk</th><th class="sayi">Rw (dB)</th><th>Beyan Rw</th><th class="sayi">Pay (%)</th><th></th></tr></thead>
+      <thead><tr><th>Ad</th><th>Tür</th><th>Duvar</th><th>Eleman / yapı</th>
+        <th class="sayi">En (m)</th><th class="sayi">Boy (m)</th><th class="sayi">S (m²)</th>
+        <th class="sayi">Rw (dB)</th><th class="sayi">Pay (%)</th><th></th></tr></thead>
       <tbody>
-      ${(c.elemanlar || []).map((e, j) => {
-        const ey = `${y}.elemanlar.${j}`;
-        const he = h.yuzeysel[j];
-        const pay = s.paylar.find((p) => p.ad === he.ad && p.tip === 'yuzeysel');
-        const duvarMi = e.tur === 'duvar';
-        return `<tr>
-          <td><input data-yol="${ey}.ad" value="${kacis(e.ad)}" style="min-width:130px"></td>
-          <td><select data-yol="${ey}.tur" style="min-width:110px">
-                <option value="duvar"${duvarMi ? ' selected' : ''}>Duvar</option>
-                <option value="dograma"${!duvarMi ? ' selected' : ''}>Doğrama</option></select></td>
-          <td><select data-yol="${ey}.duvarNo" data-tur="sayi" style="width:74px">
-                <option value="1"${(e.duvarNo || 1) === 1 ? ' selected' : ''}>D1</option>
-                <option value="2"${e.duvarNo === 2 ? ' selected' : ''}>D2</option></select></td>
-          <td><select data-yol="${ey}.elemanId" style="min-width:200px">${
-                secenekler(duvarMi ? DUVARLAR : DOGRAMALAR, e.elemanId, { gruplu: true })}</select></td>
-          <td>${duvarMi ? `<select data-yol="${ey}.sivaId" style="min-width:150px">${secenekler(SIVALAR, e.sivaId)}</select>` : '<span class="soluk">—</span>'}</td>
-          <td>${duvarMi ? `<select data-yol="${ey}.sivaliYuzSayisi" data-tur="sayi">${[0, 1, 2].map((n) =>
-                `<option value="${n}"${n === e.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}</select>` : '<span class="soluk">—</span>'}</td>
-          <td><input type="text" inputmode="decimal" data-yol="${ey}.S" data-tur="sayi" value="${e.S}" style="width:80px"></td>
-          <td>${duvarMi ? `<input type="text" inputmode="decimal" data-yol="${ey}.yogunlukBeyan" data-tur="sayiVeyaNull" value="${e.yogunlukBeyan ?? ''}" placeholder="${kacis(String(he._cozum.eleman?.yogunluk ?? '—'))}" style="width:88px">` : '<span class="soluk">—</span>'}</td>
-          <td class="sayi">${sayi(he.Rw)}</td>
-          <td><input type="text" inputmode="decimal" data-yol="${ey}.RwBeyan" data-tur="sayiVeyaNull" value="${e.RwBeyan ?? ''}" style="width:85px" placeholder="—"></td>
-          <td class="sayi">${pay ? sayi(pay.payYuzde, 1) : '—'}</td>
-          <td><button class="dugme acik kucuk" data-eylem="sil-cephe-eleman" data-idx="${i}" data-alt="${j}">Sil</button></td>
-        </tr>`;
-      }).join('')}
+      ${(c.elemanlar || []).map((e, j) => cepheElemanSatirlari(y, i, c, e, j, h)).join('')}
       </tbody>
     </table></div>
     <button class="dugme acik kucuk" data-eylem="ekle-cephe-eleman" data-idx="${i}">+ Yüzeysel eleman ekle</button>
@@ -233,4 +237,79 @@ function kart(c, i, h) {
       <p class="soluk" style="font-size:12px">Hassasiyet: ${kacis(d.mekan.hassasiyet)} · L<sub>gag</sub> aralığı: ${kacis(d.aralik.ad)}. ${kacis(d.dogrulama)}</p>
     </details>` : ''}
   </section>`;
+}
+
+/* ── Cephe elemanı satırları (ana satır + katman/ayrıntı satırı) ─────── */
+
+function cepheElemanSatirlari(y, i, c, e, j, h) {
+  const ey = `${y}.elemanlar.${j}`;
+  const he = h.yuzeysel[j];
+  const s = h.sonuc;
+  const pay = s.paylar.find((p) => p.ad === he.ad && p.tip === 'yuzeysel');
+  const duvarMi = e.tur === 'duvar';
+  const katmanliMi = (e.katmanlar || []).length > 0;
+  const olcuModu = c.geometri?.mod === 'olculer';
+
+  // Geometri modunda opak duvar alanı brütten doğramalar düşülerek bulunur.
+  const alanHucresi = duvarMi
+    ? (olcuModu
+        ? `<input readonly value="${sayi(he.S, 2)}" style="width:82px" title="Brüt duvar alanından doğramalar düşülerek hesaplanır">`
+        : `<input type="text" inputmode="decimal" data-yol="${ey}.S" data-tur="sayi" value="${e.S}" style="width:82px">`)
+    : `<input readonly value="${sayi(he.S, 2)}" style="width:82px" title="En × boy">`;
+
+  const anaSatir = `<tr${he.etkin === false ? ' style="opacity:.45"' : ''}>
+    <td><input data-yol="${ey}.ad" value="${kacis(e.ad)}" style="min-width:120px"></td>
+    <td><select data-yol="${ey}.tur" style="min-width:104px">
+          <option value="duvar"${duvarMi ? ' selected' : ''}>Duvar</option>
+          <option value="dograma"${!duvarMi ? ' selected' : ''}>Doğrama</option></select></td>
+    <td><select data-yol="${ey}.duvarNo" data-tur="sayi" style="width:72px">
+          <option value="1"${(e.duvarNo || 1) === 1 ? ' selected' : ''}>D1</option>
+          <option value="2"${e.duvarNo === 2 ? ' selected' : ''}>D2</option></select></td>
+    <td>${duvarMi && katmanliMi
+          ? '<span class="rozet bilgi">Katmanlı</span>'
+          : `<select data-yol="${ey}.elemanId" style="min-width:190px">${
+              secenekler(duvarMi ? DUVARLAR : DOGRAMALAR, e.elemanId, { gruplu: true })}</select>`}</td>
+    <td>${duvarMi ? '<span class="soluk">—</span>'
+          : `<input type="text" inputmode="decimal" data-yol="${ey}.en" data-tur="sayi" value="${e.en ?? ''}" style="width:72px">`}</td>
+    <td>${duvarMi ? '<span class="soluk">—</span>'
+          : `<input type="text" inputmode="decimal" data-yol="${ey}.boy" data-tur="sayi" value="${e.boy ?? ''}" style="width:72px">`}</td>
+    <td>${alanHucresi}</td>
+    <td class="sayi">${sayi(he.Rw)}</td>
+    <td class="sayi">${pay ? sayi(pay.payYuzde, 1) : '—'}</td>
+    <td><button class="dugme acik kucuk" data-eylem="sil-cephe-eleman" data-idx="${i}" data-alt="${j}">Sil</button></td>
+  </tr>`;
+
+  // Doğramalarda katman kavramı yoktur; yalnızca beyan Rw alanı gösterilir.
+  const ayrinti = duvarMi
+    ? `<div class="satir-eylem" style="margin:8px 0">
+         ${katmanliMi
+           ? `<span class="rozet bilgi">Katmanlı yapı</span>
+              <button class="dugme acik kucuk" data-eylem="basit-moda-don" data-yol-tabani="${ey}">Basit seçime dön</button>`
+           : `<button class="dugme acik kucuk" data-eylem="katmanli-moda-gec" data-yol-tabani="${ey}">Katmanlı yapıya geç</button>`}
+       </div>
+       ${katmanliMi
+         ? katmanEditoru(ey, e.katmanlar, { tur: 'duvar', katmanDetay: he._cozum.katmanDetay })
+         : `<div class="izgara dar" style="max-width:520px">
+              <div class="alan"><label>Sıva</label>
+                <select data-yol="${ey}.sivaId">${secenekler(SIVALAR, e.sivaId)}</select></div>
+              <div class="alan"><label>Sıvalı yüz sayısı</label>
+                <select data-yol="${ey}.sivaliYuzSayisi" data-tur="sayi">${[0, 1, 2].map((n) =>
+                  `<option value="${n}"${n === e.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
+              <div class="alan"><label>Beyan yoğunluk (kg/m³)</label>
+                <input type="text" inputmode="decimal" data-yol="${ey}.yogunlukBeyan" data-tur="sayiVeyaNull" value="${e.yogunlukBeyan ?? ''}" placeholder="${kacis(String(he._cozum.eleman?.yogunluk ?? '—'))}"></div>
+              <div class="alan"><label>Beyan Rw (dB)</label>
+                <input type="text" inputmode="decimal" data-yol="${ey}.RwBeyan" data-tur="sayiVeyaNull" value="${e.RwBeyan ?? ''}" placeholder="—"></div>
+            </div>`}`
+    : `<div class="izgara dar" style="max-width:420px;margin:8px 0">
+         <div class="alan"><label>Beyan Rw (dB)</label>
+           <input type="text" inputmode="decimal" data-yol="${ey}.RwBeyan" data-tur="sayiVeyaNull" value="${e.RwBeyan ?? ''}" placeholder="—">
+           <span class="ipucu">Doğramalarda ölçülmüş sistem değeri (çerçeve + cam) esastır.</span></div>
+       </div>`;
+
+  const detaySatir = `<tr>
+    <td></td>
+    <td colspan="9" style="background:var(--yuzey-2)">${ayrinti}</td>
+  </tr>`;
+
+  return anaSatir + detaySatir;
 }

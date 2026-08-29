@@ -25,6 +25,54 @@ function projeksiyonUret(azimutDeg) {
   return (x, y, z) => [x * cosA - z * sinA, (x * sinA + z * cosA) * 0.5 - y];
 }
 
+/**
+ * Ses kaynağını temsil eden simge: bir hoparlör gövdesi ve yayılan üç yay.
+ *
+ * İzometrik şemada gerçek bir hacim değil, ekran düzleminde çizilen bir
+ * gösterge olarak durur; bu yüzden döndürmeden etkilenmez ve her açıda
+ * okunur kalır.
+ *
+ * @param {number} cx Ekran koordinatı (px)
+ * @param {number} cy Ekran koordinatı (px)
+ * @param {number} olcek 1 = varsayılan boyut
+ * @param {string} etiket Erişilebilirlik/başlık metni
+ */
+export function sesKaynagiSimgesi(cx, cy, olcek = 1, etiket = 'Ses kaynağı') {
+  const b = 9 * olcek;                       // gövde yarı yüksekliği
+  const x = cx - b * 1.5;
+  const yay = (r) => {
+    const rx = r * b;
+    return `M ${(x + b * 1.15).toFixed(1)} ${(cy - rx * 0.75).toFixed(1)}`
+         + ` A ${rx.toFixed(1)} ${rx.toFixed(1)} 0 0 1 ${(x + b * 1.15).toFixed(1)} ${(cy + rx * 0.75).toFixed(1)}`;
+  };
+  return `
+  <g class="ses-kaynagi" aria-label="${kacis(etiket)}">
+    <title>${kacis(etiket)}</title>
+    <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(b * 2.1).toFixed(1)}" class="sk-hale"/>
+    <path class="sk-govde" d="M ${(x - b * 0.9).toFixed(1)} ${(cy - b * 0.42).toFixed(1)}
+      h ${(b * 0.62).toFixed(1)} l ${(b * 0.78).toFixed(1)} ${(-b * 0.72).toFixed(1)}
+      v ${(b * 2.28).toFixed(1)} l ${(-b * 0.78).toFixed(1)} ${(-b * 0.72).toFixed(1)}
+      h ${(-b * 0.62).toFixed(1)} z"/>
+    <path class="sk-yay" d="${yay(0.62)}"/>
+    <path class="sk-yay" d="${yay(1.02)}"/>
+    <path class="sk-yay" d="${yay(1.42)}"/>
+  </g>`;
+}
+
+/** Şemalarda ortak kullanılan biçem bloğu. */
+function ortakBicem() {
+  return `
+    .oda-svg .kutu-yuz { fill: var(--vurgu, #0f766e); fill-opacity: .05; stroke: none; }
+    .oda-svg .yan-yuz { fill: #f5c453; fill-opacity: .24; stroke: #d9a62b; stroke-width: 1; stroke-opacity: .55; }
+    .oda-svg .kenar { stroke: var(--soluk, #6b7c95); stroke-width: 1; opacity: .55; }
+    .oda-svg .ayirici { fill: var(--vurgu, #0f766e); fill-opacity: .55; stroke: var(--vurgu-2, #0b5d57); stroke-width: 1.75; }
+    .oda-svg .oda-metin { font: 700 12.5px sans-serif; fill: var(--metin, #141d2b); }
+    .oda-svg .aciklama { font: 600 10.5px sans-serif; fill: var(--vurgu-2, #0b5d57); }
+    .oda-svg .ses-kaynagi .sk-govde { fill: #e0483c; stroke: #a5271d; stroke-width: 1; stroke-linejoin: round; }
+    .oda-svg .ses-kaynagi .sk-yay { fill: none; stroke: #e0483c; stroke-width: 1.6; stroke-linecap: round; opacity: .9; }
+    .oda-svg .ses-kaynagi .sk-hale { fill: #e0483c; fill-opacity: .12; }`;
+}
+
 /** Bir kutunun (L,W,H, orijin ofseti) 8 köşesini hesaplar. */
 function kutuKoseleri(proj, ofsetX, boyut) {
   const { L, W, H } = boyut;
@@ -168,17 +216,13 @@ export function odaSVG(geometriHam, opts = {}) {
   const [o1x, o1y] = donustur(oda1Merkez);
   const [o2x, o2y] = donustur(oda2Merkez);
 
+  // Ses kaynağı, kaynak mekânın (Oda 1) içinde, ad etiketinin altında durur.
+  const [skx, sky] = donustur(oda1Merkez);
+
   return `
 <svg viewBox="0 0 ${genislik} ${yukseklik}" xmlns="http://www.w3.org/2000/svg" class="oda-svg" role="img"
-     aria-label="Ayırıcı eleman ve yan yüzeyleri gösteren izometrik oda şeması">
-  <style>
-    .oda-svg .kutu-yuz { fill: var(--vurgu, #0f766e); fill-opacity: .05; stroke: none; }
-    .oda-svg .yan-yuz { fill: #f5c453; fill-opacity: .24; stroke: #d9a62b; stroke-width: 1; stroke-opacity: .55; }
-    .oda-svg .kenar { stroke: var(--soluk, #6b7c95); stroke-width: 1; opacity: .55; }
-    .oda-svg .ayirici { fill: var(--vurgu, #0f766e); fill-opacity: .55; stroke: var(--vurgu-2, #0b5d57); stroke-width: 1.75; }
-    .oda-svg .oda-metin { font: 700 12.5px sans-serif; fill: var(--metin, #141d2b); }
-    .oda-svg .aciklama { font: 600 10.5px sans-serif; fill: var(--vurgu-2, #0b5d57); }
-  </style>
+     aria-label="Ayırıcı eleman, yan yüzeyler ve kaynak mekândaki ses kaynağını gösteren izometrik oda şeması">
+  <style>${ortakBicem()}</style>
 
   ${kutuYuzler.map((y) => `<polygon class="kutu-yuz" points="${d(y)}"/>`).join('\n  ')}
   ${yanYuzeyler.map((y) => `<polygon class="yan-yuz" points="${d(y.koseler)}"><title>${kacis(y.ad)} — yan yol iletim yüzeyi</title></polygon>`).join('\n  ')}
@@ -186,9 +230,188 @@ export function odaSVG(geometriHam, opts = {}) {
 
   <polygon class="ayirici" points="${d(ayiracKoseleri)}"><title>Ayırıcı eleman</title></polygon>
 
+  ${sesKaynagiSimgesi(skx, sky + 20, 1, `Ses kaynağı — ${oda1Adi}`)}
+
   <text x="${o1x.toFixed(1)}" y="${(o1y - 6).toFixed(1)}" class="oda-metin" text-anchor="middle">${kacis(oda1Adi)}</text>
   <text x="${o2x.toFixed(1)}" y="${(o2y - 6).toFixed(1)}" class="oda-metin" text-anchor="middle">${kacis(oda2Adi)}</text>
   <text x="14" y="${yukseklik - 12}" class="aciklama">■ Ayırıcı eleman</text>
   ${yanYuzeyler.length ? `<text x="150" y="${yukseklik - 12}" class="aciklama" style="fill:#a9791f">■ Taban / tavan (yan yol)</text>` : ''}
+  <text x="${yanYuzeyler.length ? 330 : 150}" y="${yukseklik - 12}" class="aciklama" style="fill:#c8362a">◉ Ses kaynağı</text>
+</svg>`.trim();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Cephe şeması
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Bir doğramanın bulunduğu duvardaki yerleşimini belirler.
+ *
+ * Kullanıcı doğramanın duvar üzerindeki konumunu girmez; yalnızca en ve boy
+ * ölçüsü vardır. Bu nedenle doğramalar duvar boyunca eşit aralıklarla,
+ * tipik bir denizlik yüksekliğinde dizilir: ölçüler ve hangi duvarda
+ * oldukları doğrudur, yatay konum temsilîdir.
+ *
+ * @param {{en:number, boy:number}[]} dogramalar
+ * @param {number} duvarBoyu Duvarın yatay uzunluğu (m)
+ * @param {number} H Kat yüksekliği (m)
+ * @returns {{u0:number, u1:number, y0:number, y1:number}[]} duvar düzlemindeki dikdörtgenler
+ */
+export function dogramaYerlesimi(dogramalar, duvarBoyu, H) {
+  const n = dogramalar.length;
+  if (!n || !(duvarBoyu > 0) || !(H > 0)) return [];
+
+  const enToplam = dogramalar.reduce((a, d) => a + Math.max(0, d.en), 0);
+  // Aralık, artan boşluğun (n+1)'e bölünmesiyle; taşma varsa asgariye iner.
+  const aralik = Math.max(0.04, (duvarBoyu - enToplam) / (n + 1));
+
+  let u = aralik;
+  return dogramalar.map((dg) => {
+    const en = Math.max(0.05, Math.min(dg.en, duvarBoyu));
+    const boy = Math.max(0.05, Math.min(dg.boy, H * 0.94));
+    // Denizlik: kalan yüksekliğin biraz altına oturur (tipik pencere).
+    const y0 = Math.max(0.03, (H - boy) * 0.45);
+    const kutu = { u0: u, u1: u + en, y0, y1: y0 + boy };
+    u += en + aralik;
+    return kutu;
+  });
+}
+
+/**
+ * Cephe mekânından izometrik SVG şeması üretir.
+ *
+ * Tek bir oda kutusu çizilir; orta mahalde bir (D1 = L×H), köşe mahalde iki
+ * (D1 ve D2 = W×H) dış duvar vurgulanır. Doğramalar ait oldukları duvarda
+ * gerçek en × boy ölçüleriyle işlenir. İç tavan, iç taban ve iç yan duvarlar
+ * yan yol (Df) yüzeyi olarak hafif tonlanır. Ses kaynağı, dış ortamı temsilen
+ * cephenin dışında durur.
+ *
+ * @param {Object} cephe { geometri:{L,W,H}, konum, elemanlar:[…] }
+ * @param {Object} [opts] { mekanAdi, genislik, yukseklik, donusAcisiDeg }
+ * @returns {string} <svg>…</svg>; geometri geçersizse ''
+ */
+export function cepheSVG(cephe, opts = {}) {
+  const g = cephe?.geometri;
+  const L = Number(g?.L), W = Number(g?.W), H = Number(g?.H);
+  if (!(L > 0) || !(W > 0) || !(H > 0)) return '';
+
+  const {
+    mekanAdi = 'Mahal', genislik = 640, yukseklik = 360, donusAcisiDeg = 30,
+  } = opts;
+  const kose = cephe.konum === 'kose';
+  const proj = projeksiyonUret(donusAcisiDeg);
+
+  const K = {
+    aaa: proj(0, 0, 0), Aaa: proj(L, 0, 0), aAa: proj(0, H, 0), AAa: proj(L, H, 0),
+    aaZ: proj(0, 0, W), AaZ: proj(L, 0, W), aAZ: proj(0, H, W), AAZ: proj(L, H, W),
+  };
+
+  // D1 = L×H düzlemi (z = 0), D2 = W×H düzlemi (x = 0). İkisi köşede buluşur.
+  const D1 = [K.aaa, K.Aaa, K.AAa, K.aAa];
+  const D2 = [K.aaa, K.aaZ, K.aAZ, K.aAa];
+
+  // İç yan yol yüzeyleri: tavan, taban ve (D1'e dik) iç yan duvar.
+  const yanYuzeyler = [
+    { ad: 'İç tavan', koseler: [K.aAa, K.AAa, K.AAZ, K.aAZ] },
+    { ad: 'İç taban', koseler: [K.aaa, K.Aaa, K.AaZ, K.aaZ] },
+  ];
+  if (!kose) yanYuzeyler.push({ ad: 'İç yan duvar', koseler: D2 });
+
+  const kenarlar = [
+    [K.aaa, K.Aaa], [K.Aaa, K.AAa], [K.AAa, K.aAa], [K.aAa, K.aaa],
+    [K.aaZ, K.AaZ], [K.AaZ, K.AAZ], [K.AAZ, K.aAZ], [K.aAZ, K.aaZ],
+    [K.aaa, K.aaZ], [K.Aaa, K.AaZ], [K.AAa, K.AAZ], [K.aAa, K.aAZ],
+  ];
+
+  // ── Doğramalar: her biri kendi duvarının düzleminde ────────────────────
+  const dogramalar = (cephe.elemanlar || []).filter((e) => e.tur !== 'duvar');
+  const duvarlar = kose ? [1, 2] : [1];
+  const dogramaYuzleri = [];
+
+  for (const no of duvarlar) {
+    const buDuvar = dogramalar
+      .filter((e) => (e.duvarNo || 1) === no)
+      .map((e) => ({ ad: e.ad, en: Number(e.en) || 0, boy: Number(e.boy) || 0 }))
+      .filter((e) => e.en > 0 && e.boy > 0);
+    if (!buDuvar.length) continue;
+
+    const duvarBoyu = no === 1 ? L : W;
+    // Duvar düzleminde (u = yatay, y = düşey) → dünya koordinatı.
+    const noktaya = no === 1
+      ? (u, y) => proj(u, y, 0)     // D1: z = 0 düzlemi, u = x
+      : (u, y) => proj(0, y, u);    // D2: x = 0 düzlemi, u = z
+
+    dogramaYerlesimi(buDuvar, duvarBoyu, H).forEach((r, i) => {
+      dogramaYuzleri.push({
+        ad: buDuvar[i].ad,
+        en: buDuvar[i].en,
+        boy: buDuvar[i].boy,
+        duvarNo: no,
+        koseler: [noktaya(r.u0, r.y0), noktaya(r.u1, r.y0), noktaya(r.u1, r.y1), noktaya(r.u0, r.y1)],
+      });
+    });
+  }
+
+  // Ses kaynağı: dış ortamı temsilen D1'in önünde (z < 0). Kutudan belirgin
+  // biçimde ayrı dursun diye en az 1,8 m dışarı taşınır; cepheye uzanan
+  // kesikli kılavuz çizgi geliş yönünü gösterir.
+  const kaynakDerinlik = -Math.max(W * 0.8, 1.8);
+  const kaynakNokta = proj(L / 2, H * 0.55, kaynakDerinlik);
+  const kaynakHedef = proj(L / 2, H * 0.5, 0);
+
+  // ── Sığdırma ──────────────────────────────────────────────────────────
+  const noktalar = [...kenarlar.flat(), ...D1, ...D2, kaynakNokta, kaynakHedef,
+    ...dogramaYuzleri.flatMap((f) => f.koseler)];
+  const xs = noktalar.map((p) => p[0]);
+  const ys = noktalar.map((p) => p[1]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+
+  const kenarBosluk = 52;
+  const olcek = Math.min(
+    (genislik - 2 * kenarBosluk) / Math.max(0.01, maxX - minX),
+    (yukseklik - 2 * kenarBosluk) / Math.max(0.01, maxY - minY),
+  );
+  const kaydirX = kenarBosluk + (genislik - 2 * kenarBosluk - (maxX - minX) * olcek) / 2;
+  const kaydirY = kenarBosluk + (yukseklik - 2 * kenarBosluk - (maxY - minY) * olcek) / 2;
+  const donustur = ([x, y]) => [(x - minX) * olcek + kaydirX, (y - minY) * olcek + kaydirY];
+  const d = (dizi) => dizi.map(donustur).map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const cizgi = (p1, p2) => {
+    const [x1, y1] = donustur(p1); const [x2, y2] = donustur(p2);
+    return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" class="kenar"/>`;
+  };
+
+  const [mx, my] = donustur(proj(L / 2, H * 0.78, W / 2));
+  const [skx, sky] = donustur(kaynakNokta);
+
+  return `
+<svg viewBox="0 0 ${genislik} ${yukseklik}" xmlns="http://www.w3.org/2000/svg" class="oda-svg" role="img"
+     aria-label="Cephe duvarlarını, doğramaları ve dış ortam ses kaynağını gösteren izometrik mahal şeması">
+  <style>${ortakBicem()}
+    .oda-svg .dis-duvar { fill: var(--vurgu, #0f766e); fill-opacity: .42; stroke: var(--vurgu-2, #0b5d57); stroke-width: 1.75; }
+    .oda-svg .dograma { fill: #7fc3e8; fill-opacity: .92; stroke: #1d6c95; stroke-width: 1.2; }
+    .oda-svg .dograma-etiket { font: 600 9px sans-serif; fill: #0f4763; }
+    .oda-svg .kaynak-yonu { stroke: #e0483c; stroke-width: 1.4; stroke-dasharray: 5 4; opacity: .75; }
+  </style>
+
+  <polygon class="kutu-yuz" points="${d([K.aAa, K.AAa, K.AAZ, K.aAZ])}"/>
+  <polygon class="kutu-yuz" points="${d([K.aaZ, K.AaZ, K.AAZ, K.aAZ])}"/>
+  ${yanYuzeyler.map((y) => `<polygon class="yan-yuz" points="${d(y.koseler)}"><title>${kacis(y.ad)} — Df yan yol yüzeyi</title></polygon>`).join('\n  ')}
+  ${kenarlar.map(([p1, p2]) => cizgi(p1, p2)).join('\n  ')}
+
+  <polygon class="dis-duvar" points="${d(D1)}"><title>D1 — dış duvar (L × H = ${L.toFixed(2)} × ${H.toFixed(2)} m)</title></polygon>
+  ${kose ? `<polygon class="dis-duvar" points="${d(D2)}"><title>D2 — dış duvar (W × H = ${W.toFixed(2)} × ${H.toFixed(2)} m)</title></polygon>` : ''}
+
+  ${dogramaYuzleri.map((f) => `<polygon class="dograma" points="${d(f.koseler)}"><title>${kacis(f.ad)} — D${f.duvarNo} · ${f.en.toFixed(2)} × ${f.boy.toFixed(2)} m</title></polygon>`).join('\n  ')}
+
+  ${(() => { const [hx, hy] = donustur(kaynakHedef);
+      return `<line class="kaynak-yonu" x1="${skx.toFixed(1)}" y1="${sky.toFixed(1)}" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}"/>`; })()}
+  ${sesKaynagiSimgesi(skx, sky, 1.1, 'Çevresel gürültü kaynağı (Lgag) — dış ortam')}
+
+  <text x="${mx.toFixed(1)}" y="${(my - 6).toFixed(1)}" class="oda-metin" text-anchor="middle">${kacis(mekanAdi)}</text>
+  <text x="14" y="${yukseklik - 12}" class="aciklama">■ Dış duvar${kose ? ' (D1 + D2)' : ' (D1)'}</text>
+  <text x="150" y="${yukseklik - 12}" class="aciklama" style="fill:#1d6c95">■ Pencere / kapı</text>
+  <text x="272" y="${yukseklik - 12}" class="aciklama" style="fill:#a9791f">■ İç yüzeyler (Df)</text>
+  <text x="404" y="${yukseklik - 12}" class="aciklama" style="fill:#c8362a">◉ Dış gürültü kaynağı</text>
 </svg>`.trim();
 }

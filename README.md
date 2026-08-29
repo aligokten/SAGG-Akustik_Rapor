@@ -182,6 +182,12 @@ ayırıcının bulunduğu yüz seçilir: **ön / arka / sol / sağ duvar** ya da
   SVG, dış bağımlılık yok) otomatik çizilir: ayırıcı yüzey vurgulu, iki oda kendi boyutlarıyla ayrı
   ayrı çizilir. Ayırıcı sekmesindeki "Canlı 3B model" kutusu fare/dokunmatikle **sürüklenerek
   döndürülebilir**; aynı şema (o anki açıyla) yazdırılabilir rapora da statik olarak eklenir.
+- Kaynak mekânda **ses kaynağını temsil eden bir simge** (hoparlör + yayılan dalgalar) yer alır.
+- **Cephe hesaplarının da kendi canlı 3B modeli** vardır: mahal kutusu, vurgulanmış dış duvar(lar),
+  ait oldukları duvarda **gerçek en × boy ölçüsüyle çizilen pencere/kapılar**, Df yan yolu oluşturan
+  iç yüzeyler ve cephenin dışında, geliş yönünü gösteren kesikli çizgiyle bağlanmış **çevresel
+  gürültü kaynağı** simgesi. Doğramaların duvar üzerindeki yatay konumu temsilîdir (hesabı etkilemez);
+  ölçüleri ve hangi duvarda oldukları gerçektir.
 
 Eksen kuralı, KS-Schallschutzrechner'in oda diyagramıyla doğrulanmıştır: L=6,12 m, W=3,03 m,
 H=2,62 m, ayırıcı "sol duvar"da iken hesaplanan S = 16,03 m² birebir eşleşir.
@@ -262,6 +268,9 @@ GitHub Pages gibi bir statik barındırmaya olduğu gibi yüklenebilir.
    boyutları girilirse mahal **orta** (tek dış duvar D1 = L×H) veya **köşe** (D1 + D2 = W×H) olarak
    çözülür ve iç tavan / iç taban / iç yan duvarların dış duvarla birleşimlerinden doğan **Df yan
    yolları** hesaba katılır. Ayrıca Ctr girilerek D<sub>nT,A,tr</sub> = D2m,nT,w + Ctr bilgi olarak üretilir.
+   Dış duvarlar ve dört iç yan eleman **katmanlı yapı** olarak da kurulabilir; doğramalar **en × boy**
+   ölçüsüyle girilir ve geometri modunda opak duvar alanı, brüt alandan o duvardaki doğramalar
+   düşülerek kendiliğinden bulunur.
 5. **Reverberasyon** — hacim, yüzeyler ve nesneler.
 6. **Rapor** — tüm sonuçların yazdırılabilir özeti (tarayıcıdan PDF'e aktarılabilir).
 

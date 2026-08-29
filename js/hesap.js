@@ -9,6 +9,7 @@ import { darbeSesiYalitimi } from './cekirdek/en12354-2.js';
 import {
   cepheYalitimi, cepheGeometrisi, yanElemanBaglantilari, CEPHE_YAN_ROLLERI,
 } from './cekirdek/en12354-3.js';
+import { dogramaAlani } from './durum.js';
 import { reverberasyonSuresi } from './cekirdek/reverberasyon.js';
 import {
   havaDogusluDegerlendir, darbeSesiDegerlendir, cepheDegerlendir,
@@ -234,22 +235,51 @@ export function darbeHesapla(d, proje) {
 
 /** Bir cephenin hesabı. */
 export function cepheHesapla(c, proje) {
+  // Oda boyutları girilmişse hacim, dış duvar brüt alanları ve iç yan
+  // yolların birleşim uzunlukları geometriden türetilir; aksi hâlde yalnızca
+  // elle girilen V kullanılır ve yan yol hesabı yapılmaz.
+  const geo = c.geometri?.mod === 'olculer'
+    ? cepheGeometrisi(c.geometri, c.konum)
+    : null;
+  const V = geo ? geo.V : c.V;
+
+  // Doğrama alanı en × boy'dan gelir (girilmemişse elle yazılan S korunur).
+  const dogramaAlanlari = new Map();
+  for (const e of (c.elemanlar || [])) {
+    if (e.tur === 'duvar') continue;
+    const no = e.duvarNo || 1;
+    dogramaAlanlari.set(no, (dogramaAlanlari.get(no) || 0) + dogramaAlani(e));
+  }
+
+  /**
+   * Geometri modunda opak duvar alanı, o duvarın brüt alanından üzerindeki
+   * doğramalar düşülerek bulunur; böylece toplam cephe alanı brüt alana
+   * eşitlenir ve doğrama boyutu değiştiğinde opak alan kendiliğinden
+   * güncellenir. Hacim modunda kullanıcının girdiği S korunur.
+   */
+  const opakAlan = (e) => {
+    if (!geo || e.tur !== 'duvar') return dogramaAlani(e);
+    const no = e.duvarNo || 1;
+    const duvar = geo.duvarlar.find((d) => d.no === no);
+    if (!duvar) return 0;   // etkin olmayan duvardaki eleman (ör. orta mahalde D2)
+    return Math.max(0.1, duvar.alan - (dogramaAlanlari.get(no) || 0));
+  };
+
   const yuzeysel = (c.elemanlar || []).map((e) => {
     const coz = e.tur === 'duvar' ? elemanVeyaKatmanCoz(e, proje.rwModeli) : elemanCoz(e, proje.rwModeli);
-    return { ad: e.ad || coz.ad, S: e.S, Rw: coz.Rw, duvarNo: e.duvarNo || 1, tur: e.tur, _cozum: coz };
+    const no = e.duvarNo || 1;
+    // Geometri modunda, etkin olmayan duvara atanmış elemanlar hesaba girmez.
+    const etkin = !geo || geo.duvarlar.some((d) => d.no === no);
+    return {
+      ad: e.ad || coz.ad,
+      S: etkin ? (e.tur === 'duvar' ? opakAlan(e) : dogramaAlani(e)) : 0,
+      Rw: coz.Rw, duvarNo: no, tur: e.tur, etkin, _cozum: coz,
+    };
   });
   const kucuk = (c.kucukElemanlar || []).map((k) => {
     const kayit = bul(KUCUK_ELEMANLAR, k.elemanId);
     return { ad: k.ad || kayit?.ad || 'Küçük eleman', adet: k.adet, Dnew: Number.isFinite(k.DnewBeyan) ? k.DnewBeyan : (kayit?.Dnew ?? 40) };
   });
-
-  // Oda boyutları girilmişse hacim ve iç yan yolların birleşim uzunlukları
-  // geometriden türetilir; aksi hâlde yalnızca elle girilen V kullanılır ve
-  // yan yol hesabı yapılmaz.
-  const geo = c.geometri?.mod === 'olculer'
-    ? cepheGeometrisi(c.geometri, c.konum)
-    : null;
-  const V = geo ? geo.V : c.V;
 
   // Her dış duvarın opak elemanı, o duvarın yan yol hesabında kaynak elemandır.
   const duvarElemani = (no) =>

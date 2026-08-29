@@ -7,7 +7,7 @@ import { $, $$, sayiOku, yeniId, aramaMetni } from './arayuz/ortak.js';
 import { simge } from './arayuz/simgeler.js';
 import * as YK from './cekirdek/katmanli-eleman.js';
 import { DUVARLAR, DOSEMELER, SIVALAR, bul as malzemeBul } from './veri/malzemeler.js';
-import { odaSVG } from './arayuz/oda-cizimi.js';
+import { odaSVG, cepheSVG } from './arayuz/oda-cizimi.js';
 import { v3ProjeyiDonustur, v3SemasiMi } from './veri/v3-donusturucu.js';
 import * as D from './durum.js';
 import { projeyiHesapla } from './hesap.js';
@@ -180,8 +180,9 @@ const EYLEMLER = {
     durum.cepheler.splice(i + 1, 0, k);
   },
   'ekle-cephe-eleman': (i) => durum.cepheler[i].elemanlar.push({
-    id: yeniId('e'), ad: 'Yeni eleman', tur: 'duvar', elemanId: 'tugla-d190',
-    sivaId: 'cimento-20', sivaliYuzSayisi: 2, RwBeyan: null, S: 5,
+    id: yeniId('e'), ad: 'Yeni eleman', tur: 'duvar', duvarNo: 1, elemanId: 'tugla-d190',
+    sivaId: 'cimento-20', sivaliYuzSayisi: 2, RwBeyan: null, yogunlukBeyan: null,
+    S: 5, en: 1.2, boy: 1.4, katmanlar: [],
   }),
   'sil-cephe-eleman': (i, j) => durum.cepheler[i].elemanlar.splice(j, 1),
   'ekle-kucuk': (i) => durum.cepheler[i].kucukElemanlar.push({
@@ -421,19 +422,31 @@ function ciz() {
 function canliModelleriBagla() {
   for (const sarmalayici of $$('.oda-svg-sarmalayici')) {
     const yolTabani = sarmalayici.dataset.yolTabani;
+    const cepheYolu = sarmalayici.dataset.cepheYolu;
     const oda1Adi = sarmalayici.dataset.oda1Adi;
     const oda2Adi = sarmalayici.dataset.oda2Adi;
+    const mekanAdi = sarmalayici.dataset.mekanAdi;
     let aci = 30;
     let surukluyorMu = false;
     let baslangicX = 0;
     let baslangicAci = 30;
 
+    // Ayırıcı şeması geometri kaydını, cephe şeması cephe kaydının tamamını
+    // (doğramalar ve konum bilgisi gerektiği için) çizer.
     const yenidenCiz = () => {
+      const genislik = sarmalayici.clientWidth || 640;
+      if (cepheYolu) {
+        const cephe = yolDegerAl(durum, cepheYolu);
+        if (!cephe) return;
+        sarmalayici.innerHTML = cepheSVG(cephe, {
+          mekanAdi, donusAcisiDeg: aci, genislik, yukseklik: 340,
+        });
+        return;
+      }
       const geometri = yolDegerAl(durum, yolTabani);
       if (!geometri) return;
       sarmalayici.innerHTML = odaSVG(geometri, {
-        oda1Adi, oda2Adi, donusAcisiDeg: aci,
-        genislik: sarmalayici.clientWidth || 640, yukseklik: 340,
+        oda1Adi, oda2Adi, donusAcisiDeg: aci, genislik, yukseklik: 340,
       });
     };
 
@@ -588,7 +601,7 @@ function olaylariBagla() {
           return;
         }
         if (!veri?.proje) { alert('Bu dosya tanınan bir SAGG akustik proje biçiminde değil.'); return; }
-        durum = veri;
+        durum = D.cepheleriNormallestir(veri);
         if (veri.yonetmelik) yonetmeligiUygula(veri.yonetmelik);
         ciz();
       });

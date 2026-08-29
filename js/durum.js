@@ -124,11 +124,52 @@ export function yeniCephe() {
     },
     elemanlar: [
       { id: yeniId('e'), ad: 'Dolu cephe duvarı', tur: 'duvar', duvarNo: 1, elemanId: 'ddt-240', sivaId: 'cimento-20', sivaliYuzSayisi: 2, RwBeyan: null, yogunlukBeyan: null, S: 9, katmanlar: [] },
-      { id: yeniId('e'), ad: 'Pencere', tur: 'dograma', duvarNo: 1, elemanId: 'pencere-6-16-4', RwBeyan: null, S: 4.5 },
+      // Doğramalarda alan en × boy'dan türetilir; 3B modelde de bu ölçülerle çizilir.
+      { id: yeniId('e'), ad: 'Pencere', tur: 'dograma', duvarNo: 1, elemanId: 'pencere-6-16-4', RwBeyan: null, en: 1.8, boy: 1.4, S: 2.52 },
     ],
     kucukElemanlar: [],
     yanElemanlar: varsayilanCepheYanElemanlari(),
   };
+}
+
+/** Bir doğramanın alanı: en × boy (ikisi de girilmişse), yoksa elle girilen S. */
+export function dogramaAlani(e) {
+  const en = Number(e?.en);
+  const boy = Number(e?.boy);
+  if (en > 0 && boy > 0) return en * boy;
+  return Number(e?.S) || 0;
+}
+
+/**
+ * Eski cephe kayıtlarını güncel şemaya taşır.
+ *
+ * Sayısal sonuç korunur: doğramalarda en/boy yoksa, elle girilmiş S alanı
+ * değişmeyecek biçimde makul bir en × boy çiftine çözülür (boy 1,40 m kabul
+ * edilir). Böylece kayıt 3B modelde çizilebilir hâle gelir ama hesap
+ * değişmez.
+ */
+export function cepheleriNormallestir(d) {
+  for (const c of (d?.cepheler || [])) {
+    if (!c.konum) c.konum = 'orta';
+    if (!Number.isFinite(c.ctr)) c.ctr = -3;
+    if (c.manuelHedef === undefined) c.manuelHedef = null;
+    if (!c.geometri) c.geometri = { mod: 'hacim', L: 4.5, W: 3.4, H: 2.62 };
+    if (!c.yanElemanlar?.length) c.yanElemanlar = varsayilanCepheYanElemanlari();
+
+    for (const e of (c.elemanlar || [])) {
+      if (!e.duvarNo) e.duvarNo = 1;
+      if (e.tur === 'duvar') {
+        if (!Array.isArray(e.katmanlar)) e.katmanlar = [];
+      } else if (!(Number(e.en) > 0 && Number(e.boy) > 0)) {
+        const S = Number(e.S) || 0;
+        const boy = Math.min(1.4, Math.max(0.6, Math.sqrt(S / 1.3) || 1.4));
+        e.boy = Number(boy.toFixed(2));
+        e.en = S > 0 ? Number((S / e.boy).toFixed(2)) : 1;
+        e.S = e.en * e.boy;
+      }
+    }
+  }
+  return d;
 }
 
 /**
@@ -178,7 +219,7 @@ export function yukle() {
     const ham = localStorage.getItem(DEPO_ANAHTARI);
     if (!ham) return null;
     const d = JSON.parse(ham);
-    return d && d.proje ? projeKimliklerinigGuncelle(d) : null;
+    return d && d.proje ? cepheleriNormallestir(projeKimliklerinigGuncelle(d)) : null;
   } catch { return null; }
 }
 
