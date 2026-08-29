@@ -61,8 +61,13 @@ test('Sol/sağ yön: S = min(L)×min(H)', () => {
 test('Taban yönü: S = min(L)×min(W)', () => {
   const r = geometriHesapla({ oda1: oda(6, 4, 2.6), oda2: oda(5, 3, 2.5), yon: 'taban' });
   yakin(r.S, 5 * 3); // min(L)=5, min(W)=3 — H bu yönde S'i etkilemez
-  yakin(r.yanDuvarLf, 3);   // min(W)
-  yakin(r.tabanTavanLf, 5); // min(L)
+
+  // Döşeme ayırıcıda dört yan elemanın hepsi düşey duvardır; rol etiketi
+  // yalnızca hangi döşeme kenarı boyunca birleştiklerini seçer. Kural her üç
+  // yönde de aynı: 0/1 dizinli yan elemanlar yanDuvarLf, 2/3 dizinliler
+  // tabanTavanLf alır (referans motordaki spanA/spanB).
+  yakin(r.yanDuvarLf, 5);   // uzun kenar, min(L)
+  yakin(r.tabanTavanLf, 3); // kısa kenar, min(W)
 });
 
 test('Hacim her zaman alıcı (oda2) mekânın kendi hacmidir', () => {

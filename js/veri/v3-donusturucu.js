@@ -80,15 +80,13 @@ export function v3ProjeyiDonustur(v3) {
   // (0,1 = yan duvar rolü → kısa kenar lf; 2,3 = taban/tavan rolü → uzun
   // kenar lf) eşlenir:
   //   duvar ayırıcı  : F1→0(yanDuvar) F2→3(tabanTavan) F3→1(yanDuvar) F4→2(tabanTavan)
-  //   taban ayırıcı  : F1→2(tabanTavan) F2→0(yanDuvar) F3→3(tabanTavan) F4→1(yanDuvar)
+  //   taban ayırıcı  : F1→0(yanDuvar) F2→2(tabanTavan) F3→1(yanDuvar) F4→3(tabanTavan)
   //
-  // Döşeme ayırıcıda dört yan elemanın hepsi düşey duvardır; rol etiketi
-  // yalnızca hangi döşeme kenarı boyunca birleştiklerini (lf) seçer.
-  // v3 aracı Ön/Arka yüzeyleri döşemenin UZUN kenarına (min L), Sol/Sağ
-  // yüzeyleri KISA kenarına (min W) oturtur; eşleşme buna göre kurulmuştur.
-  // Bu, DOS1 referans raporunu birebir (R'w 49,9 / DnT,w 49,3) yeniden üretir;
-  // ters eşleşme yan yolları ±3,15 dB kaydırıp sonucu 1,6 dB düşürüyordu.
-  const hedefIndeks = yon === 'taban' ? [2, 0, 3, 1] : [0, 3, 1, 2];
+  // Her iki durumda da sonuç, referans motordaki `lf = index % 2 ? spanB :
+  // spanA` kuralıyla aynıdır: F1/F3 → yanDuvarLf (spanA), F2/F4 →
+  // tabanTavanLf (spanB). Kenar uzunluklarının hangi role düştüğü
+  // `cekirdek/geometri.js` içinde tanımlıdır.
+  const hedefIndeks = yon === 'taban' ? [0, 2, 1, 3] : [0, 3, 1, 2];
   const etiketler = yon === 'taban'
     ? ['Ön yan duvar', 'Sol yan duvar', 'Arka yan duvar', 'Sağ yan duvar']
     : ['Ön yan eleman', 'Tavan', 'Arka yan eleman', 'Döşeme'];

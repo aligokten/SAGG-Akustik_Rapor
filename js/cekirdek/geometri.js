@@ -57,12 +57,16 @@ export function geometriHesapla(girdi) {
   }
 
   if (g.yon === 'taban') {
-    const onArkaLf = Math.min(o1.W, o2.W);
-    const solSagLf = Math.min(o1.L, o2.L);
+    // Döşeme ayırıcıda dört yan elemanın hepsi düşey duvardır; rol etiketi
+    // yalnızca hangi döşeme kenarı boyunca birleştiklerini seçer.
+    // Kural her üç yönde de aynıdır: 0/1 dizinli yan elemanlar `yanDuvarLf`,
+    // 2/3 dizinliler `tabanTavanLf` alır (referans motordaki spanA/spanB).
+    const uzunKenar = Math.min(o1.L, o2.L);
+    const kisaKenar = Math.min(o1.W, o2.W);
     return {
-      V, V1, S: solSagLf * onArkaLf,
+      V, V1, S: uzunKenar * kisaKenar,
       ayiriciGenislik: null,
-      yanDuvarLf: onArkaLf, tabanTavanLf: solSagLf,
+      yanDuvarLf: uzunKenar, tabanTavanLf: kisaKenar,
     };
   }
 

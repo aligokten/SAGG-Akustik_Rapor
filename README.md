@@ -197,11 +197,20 @@ model, katman düzenleyici) normal şekilde düzenlenebilir.
 
 #### Referans araçla sayısal denklik
 
-Hesap çekirdeği, aynı şemayı üreten referans aracın yayımlanmış raporlarına karşı doğrulanmıştır
-(`test/referans-raporlar.test.js`). İki senaryo — **ID1** (düşey L×H duvar ayırıcı, simetrik odalar)
-ve **DOS1** (döşeme ayırıcı, asimetrik odalar) — geometriden nihai göstergeye kadar **birebir**
-yeniden üretilir: S, V, her elemanın m′ ve Rw değeri, sekiz ses iletim yolunun R değeri ve enerji
-payı, R′w ve DnT,w. Ortak çalışma prensibi:
+Hesap çekirdeği, aynı şemayı üreten referans araca karşı iki düzeyde doğrulanmıştır:
+
+- **Bağıntı düzeyi** (`test/referans-motor.test.js`) — referans motorun formülleri bağımsız bir
+  "oracle" olarak yeniden yazılmış, kendi modüllerimiz geniş bir girdi kümesinde bununla 1e-9
+  toleransla karşılaştırılmıştır: Rw kestirimi (iki model, kol değişim noktaları dâhil), Kij
+  (T/X × düz/köşe × esnek, 338 kütle çifti), Ff/Fd/Df, enerjik birleştirme, DnT,w, L′nT,w,
+  üç ayırıcı yüzeyin alanı ve lf eşleşmesi, cephe geometri düzeltmesi ve bileşik Rw.
+- **Uçtan uca** (`test/referans-raporlar.test.js`) — **ID1** (düşey L×H duvar, simetrik odalar) ve
+  **DOS1** (döşeme ayırıcı, asimetrik odalar) senaryoları yayımlanmış raporlarla **birebir**
+  eşleşir: S, V, her elemanın m′ ve Rw değeri, sekiz ses iletim yolunun R değeri ve enerji payı,
+  R′w ve DnT,w.
+
+Aynı olan ve ayrışan noktaların tam dökümü: **[`docs/referans-karsilastirma.md`](docs/referans-karsilastirma.md)**.
+Ortak çalışma prensibi:
 
 | Adım | Bağıntı |
 |---|---|
@@ -217,9 +226,9 @@ oluşturduğunuz projelerde iki kabuklu sistem kurmak isterseniz katmanı **boş
 gerekir; bkz. [Katmanlı yapı elemanları](#katmanlı-yapı-elemanları).)
 
 Döşeme (taban/tavan) ayırıcıda dört yan elemanın hepsi düşey duvardır; birleşim uzunluğu (lf)
-hangi döşeme kenarına oturduklarıyla belirlenir. v3 şemasında **F1/F3 (Ön/Arka)** döşemenin uzun
-kenarı `min(L1,L2)`, **F2/F4 (Sol/Sağ)** kısa kenarı `min(W1,W2)` boyunca birleşir; içe aktarma bu
-eşleşmeyi kurar. Ters eşleşme yan yolları ±3,15 dB kaydırıp DnT,w'yi 1,6 dB düşürür.
+hangi döşeme kenarına oturduklarıyla belirlenir. Kural her üç ayırıcı yüzeyde de aynıdır:
+**F1/F3 → spanA**, **F2/F4 → spanB**; döşemede spanA = `min(L1,L2)`, spanB = `min(W1,W2)`.
+Ters eşleşme yan yolları ±3,15 dB kaydırıp DnT,w'yi 1,6 dB düşürür.
 
 ## Kullanım
 
