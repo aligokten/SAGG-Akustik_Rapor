@@ -67,8 +67,8 @@ export function v3ProjeyiDonustur(v3) {
   if (v3.receiverRoomUseId) ayirici.aliciMekanId = v3.receiverRoomUseId;
   ayirici.geometri = {
     mod: 'olculer',
-    oda1: { L: v3.room1?.length, W: v3.room1?.width, H: v3.room1?.height },
-    oda2: { L: v3.room2?.length, W: v3.room2?.width, H: v3.room2?.height },
+    oda1: { ad: v3.room1?.name || '', L: v3.room1?.length, W: v3.room1?.width, H: v3.room1?.height },
+    oda2: { ad: v3.room2?.name || '', L: v3.room2?.length, W: v3.room2?.width, H: v3.room2?.height },
     yon,
   };
 

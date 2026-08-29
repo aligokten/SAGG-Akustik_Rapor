@@ -138,7 +138,7 @@ function dosemeBolumu(y, k, h) {
       : `<button class="dugme acik kucuk" data-eylem="katmanli-moda-gec" data-yol-tabani="${y}">Katmanlı yapıya geç</button>`}
   </div>
   ${katmanliMi
-    ? katmanEditoru(y, k.katmanlar, { tur: 'doseme', katmanDetay: h.doseme.katmanDetay })
+    ? katmanEditoru(y, k.katmanlar, { tur: 'doseme', kategori: 'doseme', katmanDetay: h.doseme.katmanDetay })
     : `
   <div class="izgara">
     <div class="alan"><label>Taşıyıcı döşeme</label>

@@ -130,14 +130,16 @@ function geometriBolumu(y, a, h) {
   const oda1 = g.oda1 || { L: 6, W: 3, H: 2.62 };
   const oda2 = g.oda2 || { L: 6, W: 3, H: 2.62 };
 
-  const odaAlani = (etiket, yol, oda) => `
+  const odaAlani = (etiket, yol, oda, yerTutucu) => `
     <div class="alan"><label>${kacis(etiket)}</label>
-      <div class="izgara dar" style="gap:6px">
+      <input data-yol="${yol}.ad" value="${kacis(oda.ad ?? '')}" placeholder="${kacis(yerTutucu)}"
+             title="Mekânın proje içindeki adı — raporda ve 3B modelde gösterilir">
+      <div class="izgara dar" style="gap:6px;margin-top:6px">
         <input type="text" inputmode="decimal" data-yol="${yol}.L" data-tur="sayi" value="${oda.L}" title="Derinlik L (m)" placeholder="L">
         <input type="text" inputmode="decimal" data-yol="${yol}.W" data-tur="sayi" value="${oda.W}" title="Genişlik W (m)" placeholder="W">
         <input type="text" inputmode="decimal" data-yol="${yol}.H" data-tur="sayi" value="${oda.H}" title="Yükseklik H (m)" placeholder="H">
       </div>
-      <span class="ipucu">L (derinlik) × W (genişlik) × H (yükseklik), metre</span></div>`;
+      <span class="ipucu">Mekân adı · L (derinlik) × W (genişlik) × H (yükseklik), metre</span></div>`;
 
   return `
   <h3 style="margin-top:18px">Geometri</h3>
@@ -156,8 +158,8 @@ function geometriBolumu(y, a, h) {
       <input type="text" inputmode="decimal" data-yol="${y}.V" data-tur="sayi" value="${a.V}"></div>
   </div>` : `
   <div class="izgara">
-    ${odaAlani('Oda 1 / Kaynak boyutları', `${y}.geometri.oda1`, oda1)}
-    ${odaAlani('Oda 2 / Alıcı boyutları', `${y}.geometri.oda2`, oda2)}
+    ${odaAlani('Oda 1 / Kaynak', `${y}.geometri.oda1`, oda1, h.degerlendirme?.kaynakMekan?.ad || 'Kaynak mekân adı')}
+    ${odaAlani('Oda 2 / Alıcı', `${y}.geometri.oda2`, oda2, h.degerlendirme?.aliciMekan?.ad || 'Alıcı mekân adı')}
     <div class="alan"><label>Ayırıcı elemanın bulunduğu yüz</label>
       <select data-yol="${y}.geometri.yon">
         ${Object.entries(YON_ADLARI).map(([k, v]) => `<option value="${k}"${k === g.yon ? ' selected' : ''}>${kacis(v)}</option>`).join('')}
@@ -179,9 +181,13 @@ function geometriBolumu(y, a, h) {
       <span class="canli-model-nokta"></span> Canlı 3B model
       <span class="soluk" style="font-weight:500;margin-left:auto;font-size:11.5px">Döndürmek için sürükleyin</span>
     </div>
-    <div class="oda-svg-sarmalayici" data-yol-tabani="${y}.geometri" data-oda1-adi="Oda 1" data-oda2-adi="Oda 2">
-      ${odaSVG(g, { oda1Adi: 'Oda 1', oda2Adi: 'Oda 2' })}
-    </div>
+    ${(() => {
+      const a1 = oda1.ad || h.degerlendirme?.kaynakMekan?.ad || 'Oda 1 / Kaynak';
+      const a2 = oda2.ad || h.degerlendirme?.aliciMekan?.ad || 'Oda 2 / Alıcı';
+      return `<div class="oda-svg-sarmalayici" data-yol-tabani="${y}.geometri" data-oda1-adi="${kacis(a1)}" data-oda2-adi="${kacis(a2)}">
+        ${odaSVG(g, { oda1Adi: a1, oda2Adi: a2 })}
+      </div>`;
+    })()}
   </div>` : ''}
   `}`;
 }
@@ -198,7 +204,7 @@ function anaElemanBolumu(y, a, h) {
       : `<button class="dugme acik kucuk" data-eylem="katmanli-moda-gec" data-yol-tabani="${y}">Katmanlı yapıya geç</button>`}
   </div>
   ${katmanliMi
-    ? katmanEditoru(y, a.katmanlar, { tur: 'duvar', katmanDetay: h.ana.katmanDetay })
+    ? katmanEditoru(y, a.katmanlar, { tur: 'duvar', kategori: 'icDuvar', katmanDetay: h.ana.katmanDetay })
     : `
   <div class="izgara">
     <div class="alan"><label>Yapı elemanı</label>
@@ -250,7 +256,7 @@ function yanElemanSatirlari(y, i, ye, j, hy) {
              <button class="dugme acik kucuk" data-eylem="basit-moda-don" data-yol-tabani="${yy}">Basit seçime dön</button>`
           : `<button class="dugme acik kucuk" data-eylem="katmanli-moda-gec" data-yol-tabani="${yy}">Katmanlı yapıya geç</button>`}
       </div>
-      ${katmanliMi ? katmanEditoru(yy, ye.katmanlar, { tur: 'duvar', katmanDetay: hy._cozum.katmanDetay }) : `
+      ${katmanliMi ? katmanEditoru(yy, ye.katmanlar, { tur: 'duvar', kategori: ye.geometriRolu === 'tabanTavan' ? 'doseme' : 'icDuvar', katmanDetay: hy._cozum.katmanDetay }) : `
       <div class="izgara dar" style="max-width:520px">
         <div class="alan"><label>Sıva</label><select data-yol="${yy}.sivaId">${secenekler(SIVALAR, ye.sivaId)}</select></div>
         <div class="alan"><label>Sıvalı yüz sayısı</label>

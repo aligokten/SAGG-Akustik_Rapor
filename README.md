@@ -163,8 +163,30 @@ tek bakışta gösterir (aynı görsel hem düzenleyicide hem raporda kullanıl�
 - **Birden fazla boşluk katmanı** eklenirse yalnızca ilki değerlendirmeye katılır, kalanı bağlı kabul
   edilir ve arayüzde uyarı gösterilir (üçüncü bir bağımsız kabuk desteklenmez).
 
-Bu mantık `js/cekirdek/katmanli-eleman.js` içindedir ve façade (cephe) duvar elemanlarında da arka
-planda çalışır; cephe sekmesinde şimdilik yalnızca basit (tek satır) seçim arayüzü sunulur.
+Bu mantık `js/cekirdek/katmanli-eleman.js` içindedir ve **cephe elemanlarında da aynı arayüzle**
+kullanılabilir: cephe duvarları, iç yan yollu yüzeyler (tavan, taban, iç duvarlar) ve döşemeler için
+aynı katman düzenleyici sunulur.
+
+### Katman favorileri
+
+Sürekli tekrarlanan katman kombinasyonları, her katman düzenleyicisinin üstündeki **"Katmanı favoriye
+ekle"** satırıyla kişisel bir kitaplığa kaydedilebilir ve tek seçimle başka bir elemana yüklenebilir.
+Favoriler üç kategoriye ayrılır:
+
+| Kategori | Kullanıldığı yer |
+|---|---|
+| **İç duvar** | Ayırıcı elemanlar, iç yan elemanlar |
+| **Dış duvar** | Cephe duvarları |
+| **Döşeme** | Döşemeler, tavan/taban yan elemanları |
+
+Düzenleyici, bulunduğu bağlama uygun kategoriyi kendiliğinden ön seçer; yükleme listesi kategoriye
+göre gruplanır. Aynı kategoride aynı ad yeniden kaydedilirse üzerine yazılır.
+
+Favoriler **projeye değil kullanıcıya** aittir: tarayıcıda ayrı bir anahtarda (`sagg-akustik-katman-
+favorileri-v1`) tutulur ve tüm projelerde kullanılabilir. Yüklenen katmanlar bağımsız kopyadır —
+projede yapılan değişiklik favoriyi bozmaz. **Malzeme kütüphanesi** ekranındaki *Katman favorileri*
+kartından tüm liste görülebilir, tek tek silinebilir ve JSON olarak dışa/içe aktarılabilir (başka bir
+bilgisayara taşımak için). Kod: `js/veri/favoriler.js`.
 
 ## Oda geometrisi, izometrik şema ve canlı 3B model
 
@@ -183,6 +205,9 @@ ayırıcının bulunduğu yüz seçilir: **ön / arka / sol / sağ duvar** ya da
   ayrı çizilir. Ayırıcı sekmesindeki "Canlı 3B model" kutusu fare/dokunmatikle **sürüklenerek
   döndürülebilir**; aynı şema (o anki açıyla) yazdırılabilir rapora da statik olarak eklenir.
 - Kaynak mekânda **ses kaynağını temsil eden bir simge** (hoparlör + yayılan dalgalar) yer alır.
+- Her iki mekâna **ad** girilebilir. Bu adlar şemada ve raporda kullanılır; boş bırakılırsa mekân
+  kullanım adı (ör. "Yatak odası") yedek olarak devreye girer. Ayırıcı elemanın kendi adı (ör. "ID1")
+  yalnızca "Kaynak → Alıcı" biçiminde yazılmışsa mekân adı olarak yorumlanır.
 - **Cephe hesaplarının da kendi canlı 3B modeli** vardır: mahal kutusu, vurgulanmış dış duvar(lar),
   ait oldukları duvarda **gerçek en × boy ölçüsüyle çizilen pencere/kapılar**, Df yan yolu oluşturan
   iç yüzeyler ve cephenin dışında, geliş yönünü gösteren kesikli çizgiyle bağlanmış **çevresel
@@ -313,9 +338,11 @@ js/
   veri/
     yonetmelik.js              ★ Yönetmelik ekleri — düzenlenebilir veri katmanı
     malzemeler.js              ★ Malzeme kütüphanesi + eski kimlik göç haritası
+    favoriler.js               Kullanıcıya ait katman favorileri (iç duvar/dış duvar/döşeme)
+    v3-donusturucu.js          "Katmanlı Model v3" JSON şemasından içe aktarma
   arayuz/
     sekme-panel.js             Panel (genel görünüm)
-    sekme-kutuphane.js         Malzeme kütüphanesi (aranabilir döküm)
+    sekme-kutuphane.js         Malzeme kütüphanesi (aranabilir döküm) + katman favorileri
     katman-editor.js           Çok katmanlı yapı elemanı düzenleyici (paylaşılan bileşen)
     oda-cizimi.js              İzometrik oda şeması (SVG) üretici
     sekme-*.js                 Bölüm ekranları
@@ -330,10 +357,13 @@ test/cekirdek.test.js          Hesap çekirdeği testleri
 npm test          # node --test test/*.test.js
 ```
 
-111 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+203 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
 projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
 modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
-hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış) ve izometrik şema üretimini kapsar.
+hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış), izometrik şema üretimini, cephe iç yan
+yollarını, sayı girdisi davranışını, katman favorileri kitaplığını ve raporda mekân adı çözümünü
+kapsar. Ayrıca referans araçtan alınan dört örnek dosya, sonuçları birebir doğrulayan bir kehanet
+(oracle) takımı olarak koşturulur.
 
 ---
 

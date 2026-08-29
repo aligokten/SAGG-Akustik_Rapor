@@ -467,6 +467,37 @@ details > *:last-child{margin-bottom:12px}
 .dugme.simgeli svg{width:17px; height:17px}
 .dugme svg{width:15px; height:15px; flex:0 0 auto}
 
+/* ── Katman favorileri çubuğu ──────────────────────────────────────── */
+.favori-cubugu{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:10px 12px; margin-bottom:12px;
+  background:var(--yuzey-3); border:1px solid var(--cizgi); border-radius:var(--r);
+}
+.favori-cubugu select,
+.favori-cubugu input{width:auto; font-size:12.5px; padding:6px 9px}
+.favori-cubugu .favori-ad{min-width:170px; flex:1 1 170px; max-width:280px}
+.favori-cubugu .favori-kategori{min-width:120px}
+.favori-cubugu > select:first-child{min-width:220px}
+.favori-ayrac{
+  width:1px; align-self:stretch; background:var(--cizgi-koyu); margin:0 3px; flex:0 0 auto;
+}
+@media (max-width:620px){
+  .favori-cubugu .favori-ad{max-width:none}
+  .favori-ayrac{display:none}
+}
+
+/* Favori kitaplığı kartı */
+.favori-liste{display:flex; flex-direction:column; gap:8px; margin-top:12px}
+.favori-satir{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:10px 12px; border:1px solid var(--cizgi); border-radius:var(--r-s); background:var(--yuzey-2);
+}
+.favori-satir .ad{font-weight:650; font-size:13px}
+.favori-satir .dizilim{
+  flex:1 1 260px; min-width:0; font-size:11.5px; color:var(--soluk);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+
 /* ── Katman şeridi (kalınlık orantılı görselleştirme) ──────────────── */
 .katman-seridi{
   display:flex; width:100%; height:34px; border-radius:var(--r-s); overflow:hidden;

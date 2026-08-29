@@ -12,6 +12,7 @@
 
 import { kacis, sayi } from './ortak.js';
 import { KATMAN_ON_AYARLARI, YALITIM_LEVHALARI } from '../veri/malzemeler.js';
+import { FAVORI_KATEGORILERI, favorileriGrupla, kategoriDogrula } from '../veri/favoriler.js';
 
 const TUR_ADLARI = { masif: 'Masif tabaka', siva: 'Sıva', bosluk: 'Boşluk / dolgu' };
 const TUR_RENKLERI = { masif: '#8a94a3', siva: '#d8c9a8', bosluk: '#5fb8ad' };
@@ -26,11 +27,12 @@ const TUR_RENKLERI = { masif: '#8a94a3', siva: '#d8c9a8', bosluk: '#5fb8ad' };
  * @param {Object} [opts.katmanDetay]   hesap.js'ten dönen katmanliElemaniCoz sonucu (canlı özet için)
  */
 export function katmanEditoru(yolTabani, katmanlar, opts = {}) {
-  const { katmanDetay = null } = opts;
+  const { katmanDetay = null, kategori = 'icDuvar' } = opts;
   const detaylar = katmanDetay?.katmanDetaylari || [];
 
   return `
   <div class="katman-editor">
+    ${favoriCubugu(yolTabani, katmanlar, kategori)}
     ${katmanSeridi(katmanlar, detaylar)}
     <div class="tablo-sar"><table>
       <thead><tr>
@@ -52,6 +54,70 @@ export function katmanEditoru(yolTabani, katmanlar, opts = {}) {
     </div>
 
     ${katmanOzeti(katmanDetay)}
+  </div>`;
+}
+
+/**
+ * Favori kaydetme alanlarının (ad ve kategori) geçici içeriği.
+ *
+ * Bu iki alan projeye yazılmaz; ama görünüm her çizimde `innerHTML` ile
+ * baştan kurulduğundan, araya giren bir çizim kullanıcının yazdığı adı
+ * silerdi. Bu nedenle taslak, katman listesinin yoluna göre modül düzeyinde
+ * tutulur ve her çizimde geri yazılır.
+ */
+const favoriTaslaklari = new Map();
+
+export function favoriTaslaginiAyarla(yolTabani, alan, deger) {
+  const t = favoriTaslaklari.get(yolTabani) || {};
+  t[alan] = deger;
+  favoriTaslaklari.set(yolTabani, t);
+}
+
+export function favoriTaslaginiOku(yolTabani) {
+  return favoriTaslaklari.get(yolTabani) || {};
+}
+
+export function favoriTaslaginiTemizle(yolTabani) {
+  favoriTaslaklari.delete(yolTabani);
+}
+
+/**
+ * Favori katman kombinasyonları çubuğu: kayıtlı bir kombinasyonu yükler ya da
+ * o anki katmanları yeni bir favori olarak kaydeder.
+ *
+ * `kategori`, düzenleyicinin çağrıldığı bağlamdan gelen ön seçimdir (ör.
+ * cephe duvarında 'disDuvar'); kullanıcı kaydederken değiştirebilir.
+ */
+function favoriCubugu(yolTabani, katmanlar, kategori) {
+  const gruplar = favorileriGrupla();
+  const toplam = Object.values(gruplar).reduce((a, g) => a + g.length, 0);
+  const taslak = favoriTaslaginiOku(yolTabani);
+  const onSecim = kategoriDogrula(taslak.kategori || kategori);
+
+  const yukleSecenekleri = toplam === 0
+    ? '<option value="">Kayıtlı favori yok</option>'
+    : `<option value="">Favoriden yükle…</option>${
+        Object.entries(gruplar).filter(([, g]) => g.length).map(([k, g]) =>
+          `<optgroup label="${kacis(FAVORI_KATEGORILERI[k].ad)}">${
+            g.map((f) => `<option value="${kacis(f.id)}">${kacis(f.ad)} (${f.katmanlar.length} katman)</option>`).join('')
+          }</optgroup>`).join('')}`;
+
+  return `
+  <div class="favori-cubugu">
+    <select data-favori-yukle="${kacis(yolTabani)}" title="Kayıtlı bir katman kombinasyonunu bu elemana uygular"
+            ${toplam === 0 ? 'disabled' : ''}>${yukleSecenekleri}</select>
+    <span class="favori-ayrac"></span>
+    <input class="favori-ad" placeholder="Favori adı" maxlength="60"
+           data-favori-alan="ad" data-yol-tabani="${kacis(yolTabani)}" value="${kacis(taslak.ad ?? '')}"
+           title="Bu katman dizilimini kaydetmek için bir ad girin">
+    <select class="favori-kategori" data-favori-alan="kategori" data-yol-tabani="${kacis(yolTabani)}"
+            title="Favorinin kategorisi">
+      ${Object.entries(FAVORI_KATEGORILERI).map(([k, v]) =>
+        `<option value="${k}"${k === onSecim ? ' selected' : ''}>${kacis(v.ad)}</option>`).join('')}
+    </select>
+    <button class="dugme acik kucuk" data-eylem="favori-ekle" data-yol-tabani="${kacis(yolTabani)}"
+            data-favori-kategori="${kacis(onSecim)}"
+            ${katmanlar.length === 0 ? 'disabled' : ''}>★ Katmanı favoriye ekle</button>
   </div>`;
 }
 

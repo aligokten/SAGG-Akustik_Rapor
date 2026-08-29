@@ -60,8 +60,10 @@ export function yeniAyirici() {
     katmanlar: [],             // doluysa "Malzeme seçimi" yerine "Katmanlı yapı" kullanılır
     geometri: {                // mod: 'hacim' (S,V doğrudan) | 'olculer' (oda1/oda2 L×W×H + yön)
       mod: 'hacim',
-      oda1: { L: 6.0, W: 3.0, H: 2.62 },
-      oda2: { L: 6.0, W: 3.0, H: 2.62 },
+      // `ad`, mekânın proje içindeki kendi adıdır (ör. "TİP 1 YATAK ODASI");
+      // boşsa raporda mekân kullanım türünün adı kullanılır.
+      oda1: { ad: '', L: 6.0, W: 3.0, H: 2.62 },
+      oda2: { ad: '', L: 6.0, W: 3.0, H: 2.62 },
       yon: 'on',
     },
   };

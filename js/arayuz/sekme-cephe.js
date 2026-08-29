@@ -120,7 +120,7 @@ function geometriBolumu(y, c, h, i) {
                  <button class="dugme acik kucuk" data-eylem="basit-moda-don" data-yol-tabani="${yy}">Basit seçime dön</button>`
               : `<button class="dugme acik kucuk" data-eylem="katmanli-moda-gec" data-yol-tabani="${yy}">Katmanlı yapıya geç</button>`}
           </div>
-          ${katmanliMi ? katmanEditoru(yy, ye.katmanlar, { tur: 'duvar', katmanDetay: hy?._cozum?.katmanDetay }) : ''}
+          ${katmanliMi ? katmanEditoru(yy, ye.katmanlar, { tur: 'duvar', kategori: (ye.rol === 'icTavan' || ye.rol === 'icTaban') ? 'doseme' : 'icDuvar', katmanDetay: hy?._cozum?.katmanDetay }) : ''}
         </td>
       </tr>`;
     }).join('')}
@@ -288,7 +288,7 @@ function cepheElemanSatirlari(y, i, c, e, j, h) {
            : `<button class="dugme acik kucuk" data-eylem="katmanli-moda-gec" data-yol-tabani="${ey}">Katmanlı yapıya geç</button>`}
        </div>
        ${katmanliMi
-         ? katmanEditoru(ey, e.katmanlar, { tur: 'duvar', katmanDetay: he._cozum.katmanDetay })
+         ? katmanEditoru(ey, e.katmanlar, { tur: 'duvar', kategori: 'disDuvar', katmanDetay: he._cozum.katmanDetay })
          : `<div class="izgara dar" style="max-width:520px">
               <div class="alan"><label>Sıva</label>
                 <select data-yol="${ey}.sivaId">${secenekler(SIVALAR, e.sivaId)}</select></div>

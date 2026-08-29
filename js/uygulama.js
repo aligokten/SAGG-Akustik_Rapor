@@ -9,6 +9,8 @@ import * as YK from './cekirdek/katmanli-eleman.js';
 import { DUVARLAR, DOSEMELER, SIVALAR, bul as malzemeBul } from './veri/malzemeler.js';
 import { odaSVG, cepheSVG } from './arayuz/oda-cizimi.js';
 import { v3ProjeyiDonustur, v3SemasiMi } from './veri/v3-donusturucu.js';
+import * as FAV from './veri/favoriler.js';
+import { favoriTaslaginiAyarla, favoriTaslaginiOku, favoriTaslaginiTemizle } from './arayuz/katman-editor.js';
 import * as D from './durum.js';
 import { projeyiHesapla } from './hesap.js';
 import * as sekmePanel from './arayuz/sekme-panel.js';
@@ -256,6 +258,19 @@ function yolTabaniEylemiUygula(dugme) {
     return true;
   }
 
+  if (eylem === 'favori-ekle') {
+    // Ad ve kategori projeye yazılmaz; katman düzenleyicinin taslağında
+    // tutulur (bkz. katman-editor.js) ve çizimler arasında korunur.
+    const taslak = favoriTaslaginiOku(yolTabani);
+    // Kategori taslakta yoksa, çubuğun gösterdiği ön seçim kullanılır —
+    // kullanıcı listeye hiç dokunmadıysa ekranda görünen değer geçerlidir.
+    const kategori = taslak.kategori || dugme.dataset.favoriKategori;
+    const sonuc = FAV.favoriEkle(taslak.ad, kategori, nesne.katmanlar || []);
+    if (!sonuc.ok) { alert(sonuc.hata); return false; }
+    favoriTaslaginiTemizle(yolTabani);
+    return true;
+  }
+
   if (eylem === 'katman-ekle') {
     if (!nesne.katmanlar) nesne.katmanlar = [];
     nesne.katmanlar.push(YK.yeniKatman(dugme.dataset.tur || 'masif'));
@@ -369,6 +384,21 @@ function odakDurumunuAl() {
   try { bas = el.selectionStart; son = el.selectionEnd; } catch { /* desteklenmiyor */ }
 
   return { kimlik, deger: el.value, secimVar: bas != null, bas, son, secimKutusu: el.tagName === 'SELECT' };
+}
+
+/**
+ * Gecikmeli (alandan çıkışta tetiklenen) yeniden çizim.
+ *
+ * Odakta bir `<select>` varsa çizim atlanır: kullanıcı bir açılır listeyi
+ * açmışken görünümü yeniden kurmak, seçim yapılmadan önce o denetimi DOM'dan
+ * koparır ve seçim kaybolur. Bu durumda çizim, listenin kendi `change`
+ * olayına bırakılır — durum zaten güncel olduğundan yalnızca ekrandaki
+ * türetilmiş değerler bir etkileşim geç tazelenir.
+ */
+function gecikmeliCiz() {
+  const el = document.activeElement;
+  if (el && el.tagName === 'SELECT' && $('#icerik')?.contains(el)) return;
+  ciz();
 }
 
 /** `odakDurumunuAl` ile saklanan odağı, ham metni ve imleci geri yükler. */
@@ -558,6 +588,10 @@ function olaylariBagla() {
   document.addEventListener('input', (e) => {
     const el = e.target;
     if (el.dataset?.filtre === 'kutuphane') { kutuphaneyiSuz(el.value); return; }
+    if (el.dataset?.favoriAlan) {
+      favoriTaslaginiAyarla(el.dataset.yolTabani, el.dataset.favoriAlan, el.value);
+      return;
+    }
     if (el.dataset?.yol) {
       yolAyarla(durum, el.dataset.yol, degerCoz(el));
       D.kaydet(durum);
@@ -572,6 +606,24 @@ function olaylariBagla() {
 
   document.addEventListener('change', (e) => {
     const el = e.target;
+    if (el.dataset?.favoriAlan) {
+      favoriTaslaginiAyarla(el.dataset.yolTabani, el.dataset.favoriAlan, el.value);
+      return;
+    }
+    if (el.dataset?.favoriYukle) {
+      const id = el.value;
+      if (id) {
+        const katmanlar = FAV.favoriKatmanlari(id);
+        const hedef = yolDegerAl(durum, el.dataset.favoriYukle);
+        if (katmanlar && hedef) {
+          hedef.katmanlar = katmanlar;
+          ciz();
+          return;
+        }
+      }
+      el.value = '';
+      return;
+    }
     if (el.dataset?.onayar) {
       // Katman ön ayarı: seçilen malzemenin adını ve yoğunluğunu katmana
       // kopyalar (kalınlık kullanıcının kendi girdiği değerde kalır).
@@ -588,10 +640,10 @@ function olaylariBagla() {
       // Çizim bir sonraki döngüye bırakılır: 'change' alandan çıkarken
       // (mousedown → blur) tetiklenir; hemen çizmek, tıklanmakta olan
       // düğmeyi mouseup'tan önce DOM'dan koparıp tıklamayı düşürürdü.
-      setTimeout(ciz, 0);
+      setTimeout(gecikmeliCiz, 0);
     } else if (el.dataset?.yonetmelik) {
       yonetmelikDegistir(el);
-      setTimeout(ciz, 0);
+      setTimeout(gecikmeliCiz, 0);
     } else if (el.id === 'dosya-ac' && el.files?.[0]) {
       dosyaOku(el.files[0], (veri) => {
         if (v3SemasiMi(veri)) {
@@ -603,6 +655,13 @@ function olaylariBagla() {
         if (!veri?.proje) { alert('Bu dosya tanınan bir SAGG akustik proje biçiminde değil.'); return; }
         durum = D.cepheleriNormallestir(veri);
         if (veri.yonetmelik) yonetmeligiUygula(veri.yonetmelik);
+        ciz();
+      });
+      el.value = '';
+    } else if (el.id === 'favori-ice' && el.files?.[0]) {
+      dosyaOku(el.files[0], (veri) => {
+        const r = FAV.favorileriIceAktar(veri);
+        alert(`${r.eklenen} favori eklendi, ${r.guncellenen} favori güncellendi.`);
         ciz();
       });
       el.value = '';
@@ -634,6 +693,12 @@ function olaylariBagla() {
         ciz();
         return;
       }
+      if (eylem === 'favori-sil') {
+        const f = FAV.favoriBul(dugme.dataset.favoriId);
+        if (f && confirm(`"${f.ad}" favorisi silinsin mi?`)) { FAV.favoriSil(f.id); ciz(); }
+        return;
+      }
+      if (eylem === 'favori-disa') { indir(FAV.favoriPaketi(), 'katman-favorileri.json'); return; }
       if (eylem === 'panel-filtre') { sekmePanel.suzgeciAyarla(dugme.dataset.deger); ciz(); return; }
       if (eylem.startsWith('git-')) { sekmeyeGit(eylem.slice(4)); return; }
       if (eylem === 'ornek-yukle') { durum = D.ornekProje(); ciz(); return; }

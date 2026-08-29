@@ -14,12 +14,61 @@ import {
 } from '../veri/malzemeler.js';
 import { rwKestir, lnwEsdeger, MODELLER } from '../cekirdek/kutle-kanunu.js';
 import { OKTAV_BANTLARI } from '../cekirdek/temel.js';
+import { katmanDizilimiMetni } from '../cekirdek/katmanli-eleman.js';
+import { FAVORI_KATEGORILERI, favorileriGrupla } from '../veri/favoriler.js';
+import { YALITIM_LEVHALARI as DOLGULAR, bul } from '../veri/malzemeler.js';
+
+/**
+ * Katman favorileri kitaplığı — katman düzenleyicilerden kaydedilen
+ * kombinasyonların yönetimi. Favoriler projeye değil kullanıcıya aittir;
+ * tarayıcıda ayrı bir anahtarda saklanır.
+ */
+function favoriKitapligi() {
+  const gruplar = favorileriGrupla();
+  const toplam = Object.values(gruplar).reduce((a, g) => a + g.length, 0);
+  const dolguBul = (id) => bul(DOLGULAR, id);
+
+  return `
+  <section class="kart">
+    <div class="kart-baslik">
+      <h3>Katman favorileri</h3>
+      <div class="satir-eylem">
+        <span class="rozet notr yalin">${toplam} kayıt</span>
+        <button class="dugme acik kucuk" data-eylem="favori-disa">JSON olarak indir</button>
+        <label class="dugme acik kucuk" style="cursor:pointer">JSON yükle
+          <input type="file" id="favori-ice" accept="application/json" style="display:none"></label>
+      </div>
+    </div>
+    <div class="bilgi-kutu">
+      Sık kullandığınız katman dizilimlerini, herhangi bir katman düzenleyicideki
+      <b>★ Katmanı favoriye ekle</b> düğmesiyle kaydedin. Kayıtlı bir dizilimi aynı yerdeki
+      <b>Favoriden yükle</b> listesinden tek tıkla uygulayabilirsiniz. Favoriler tarayıcınızda
+      saklanır ve tüm projelerinizde kullanılabilir.
+    </div>
+    ${toplam === 0
+      ? '<div class="bos-durum">Henüz favori kaydedilmedi.</div>'
+      : Object.entries(gruplar).filter(([, g]) => g.length).map(([k, g]) => `
+        <h3 style="margin-top:16px">${kacis(FAVORI_KATEGORILERI[k].ad)} <span class="rozet notr yalin">${g.length}</span></h3>
+        <div class="favori-liste">
+          ${g.map((f) => `
+          <div class="favori-satir">
+            <span class="ad">${kacis(f.ad)}</span>
+            <span class="rozet notr yalin">${f.katmanlar.length} katman</span>
+            <span class="dizilim" title="${kacis(katmanDizilimiMetni(f.katmanlar, dolguBul))}">${kacis(katmanDizilimiMetni(f.katmanlar, dolguBul))}</span>
+            <span class="soluk" style="font-size:11.5px">${kacis(f.tarih || '')}</span>
+            <button class="dugme acik kucuk tehlike" data-eylem="favori-sil" data-favori-id="${kacis(f.id)}">Sil</button>
+          </div>`).join('')}
+        </div>`).join('')}
+  </section>`;
+}
 
 export function ciz(durum) {
   const model = durum.proje.rwModeli;
   const o = kutuphaneOzeti();
 
   return `
+  ${favoriKitapligi()}
+
   <section class="kart">
     <div class="kart-baslik">
       <h3>Malzeme kütüphanesi</h3>

@@ -65,9 +65,7 @@ function ayiriciRaporu(p, a, indeks, toplam) {
   const asgari = ASGARI_SINIFLAR[p.durum] || 'C';
   const geo = a.kayit.geometri;
   const boyutMi = geo?.mod === 'olculer';
-  const [oda1AdiVarsayilan, oda2AdiVarsayilan] = (a.kayit.ad || '').split(/→|->/).map((x) => x?.trim());
-  const oda1Adi = oda1AdiVarsayilan || d?.kaynakMekan?.ad || 'Oda 1 / Kaynak';
-  const oda2Adi = oda2AdiVarsayilan || d?.aliciMekan?.ad || 'Oda 2 / Alıcı';
+  const { oda1Adi, oda2Adi } = odaAdlariCoz(a.kayit.ad, geo, d);
 
   return `
   <div class="rapor${indeks > 0 ? ' rapor-sayfa-sonu' : ''}">
@@ -148,6 +146,29 @@ function ayiriciRaporu(p, a, indeks, toplam) {
       <span>SAGG Akustik Rapor · Katmanlı Model v3</span>
     </div>
   </div>`;
+}
+
+/**
+ * Raporda gösterilecek mekân adlarını çözer.
+ *
+ * Öncelik sırası: geometriye girilen mekân adı → ayırıcının adı (yalnızca
+ * "Kaynak → Alıcı" biçimindeyse) → mekân kullanım türünün adı → genel yedek.
+ *
+ * Ayırıcının adı, ancak ok işaretiyle GERÇEKTEN iki parçaya bölünüyorsa
+ * kullanılır; aksi hâlde "ID1" gibi bir rapor kodu kaynak oda adı olarak
+ * görünüyordu.
+ *
+ * @param {string} ayiriciAdi
+ * @param {Object} geo Ayırıcının ham geometri kaydı ({oda1,oda2} taşıyabilir)
+ * @param {Object} d   Değerlendirme (kaynakMekan / aliciMekan taşır)
+ */
+export function odaAdlariCoz(ayiriciAdi, geo, d) {
+  const parcalar = String(ayiriciAdi || '').split(/→|->/).map((x) => x.trim()).filter(Boolean);
+  const ikiParca = parcalar.length === 2;
+  return {
+    oda1Adi: geo?.oda1?.ad || (ikiParca ? parcalar[0] : '') || d?.kaynakMekan?.ad || 'Oda 1 / Kaynak',
+    oda2Adi: geo?.oda2?.ad || (ikiParca ? parcalar[1] : '') || d?.aliciMekan?.ad || 'Oda 2 / Alıcı',
+  };
 }
 
 function boyutSatiri(oda) {
