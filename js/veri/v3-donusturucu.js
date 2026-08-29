@@ -77,10 +77,18 @@ export function v3ProjeyiDonustur(v3) {
   if (Number.isFinite(ayiriciYuzey?.declaredRw)) ayirici.RwBeyan = ayiriciYuzey.declaredRw;
 
   // v3'ün F1-F4 sırası, ayırıcı yönüne göre kendi 4-flank dizinimize
-  // (0,1 = yan duvar rolü; 2,3 = taban/tavan rolü) farklı eşlenir:
+  // (0,1 = yan duvar rolü → kısa kenar lf; 2,3 = taban/tavan rolü → uzun
+  // kenar lf) eşlenir:
   //   duvar ayırıcı  : F1→0(yanDuvar) F2→3(tabanTavan) F3→1(yanDuvar) F4→2(tabanTavan)
-  //   taban ayırıcı  : F1→0(yanDuvar) F2→2(tabanTavan) F3→1(yanDuvar) F4→3(tabanTavan)
-  const hedefIndeks = yon === 'taban' ? [0, 2, 1, 3] : [0, 3, 1, 2];
+  //   taban ayırıcı  : F1→2(tabanTavan) F2→0(yanDuvar) F3→3(tabanTavan) F4→1(yanDuvar)
+  //
+  // Döşeme ayırıcıda dört yan elemanın hepsi düşey duvardır; rol etiketi
+  // yalnızca hangi döşeme kenarı boyunca birleştiklerini (lf) seçer.
+  // v3 aracı Ön/Arka yüzeyleri döşemenin UZUN kenarına (min L), Sol/Sağ
+  // yüzeyleri KISA kenarına (min W) oturtur; eşleşme buna göre kurulmuştur.
+  // Bu, DOS1 referans raporunu birebir (R'w 49,9 / DnT,w 49,3) yeniden üretir;
+  // ters eşleşme yan yolları ±3,15 dB kaydırıp sonucu 1,6 dB düşürüyordu.
+  const hedefIndeks = yon === 'taban' ? [2, 0, 3, 1] : [0, 3, 1, 2];
   const etiketler = yon === 'taban'
     ? ['Ön yan duvar', 'Sol yan duvar', 'Arka yan duvar', 'Sağ yan duvar']
     : ['Ön yan eleman', 'Tavan', 'Arka yan eleman', 'Döşeme'];

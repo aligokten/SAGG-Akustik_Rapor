@@ -195,6 +195,32 @@ ayırıcı yönü, ayırıcı + dört yan yüzeyin katman reçeteleri SAGG proje
 içe aktarılır. İçe aktarma sonrası proje, bu araçtaki tüm özelliklerle (proje bazlı kayıt, canlı
 model, katman düzenleyici) normal şekilde düzenlenebilir.
 
+#### Referans araçla sayısal denklik
+
+Hesap çekirdeği, aynı şemayı üreten referans aracın yayımlanmış raporlarına karşı doğrulanmıştır
+(`test/referans-raporlar.test.js`). İki senaryo — **ID1** (düşey L×H duvar ayırıcı, simetrik odalar)
+ve **DOS1** (döşeme ayırıcı, asimetrik odalar) — geometriden nihai göstergeye kadar **birebir**
+yeniden üretilir: S, V, her elemanın m′ ve Rw değeri, sekiz ses iletim yolunun R değeri ve enerji
+payı, R′w ve DnT,w. Ortak çalışma prensibi:
+
+| Adım | Bağıntı |
+|---|---|
+| Rw kestirimi (m′ < 200 kg/m²) | `Rw = 13·lg(m′) + 14` |
+| Rw kestirimi (m′ ≥ 200 kg/m²) | `Rw = 37,5·lg(m′) − 42` |
+| Yan yollar | Dd + Ff/Fd/Df enerjik toplamı, Kij birleşim tipinden (T/X, esnek seçeneği) |
+| Göstergeye dönüşüm | `DnT,w = R′w + 10·lg(0,32·V_alıcı / S) − emniyet payı` |
+
+Emniyet payı referans dosyalarda 2 dB'dir (`safetyMargin`) ve içe aktarmada korunur. Katmanlı
+elemanlarda **kavite bonusu uygulanmaz**: aradaki yalıtım levhası yalnızca kütlesiyle katkı verir,
+Rw toplam alan kütlesinden hesaplanır — bu, referans aracın davranışıyla aynıdır. (Kendi
+oluşturduğunuz projelerde iki kabuklu sistem kurmak isterseniz katmanı **boşluk** türünde eklemeniz
+gerekir; bkz. [Katmanlı yapı elemanları](#katmanlı-yapı-elemanları).)
+
+Döşeme (taban/tavan) ayırıcıda dört yan elemanın hepsi düşey duvardır; birleşim uzunluğu (lf)
+hangi döşeme kenarına oturduklarıyla belirlenir. v3 şemasında **F1/F3 (Ön/Arka)** döşemenin uzun
+kenarı `min(L1,L2)`, **F2/F4 (Sol/Sağ)** kısa kenarı `min(W1,W2)` boyunca birleşir; içe aktarma bu
+eşleşmeyi kurar. Ters eşleşme yan yolları ±3,15 dB kaydırıp DnT,w'yi 1,6 dB düşürür.
+
 ## Kullanım
 
 Kurulum gerekmez — [canlı sürümü](https://aligokten.github.io/SAGG-Akustik_Rapor/) doğrudan
