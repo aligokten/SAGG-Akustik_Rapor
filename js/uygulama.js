@@ -33,7 +33,9 @@ const YONETMELIK_TABLOLARI = {
   EK4_TABLO_4_1, EK5_REVERBERASYON,
 };
 
-let durum = D.yukle() || D.ornekProje();
+// Kayıtlı bir çalışma varsa ondan devam edilir; yoksa panel boş bir projeyle
+// açılır. Örnek proje yalnızca üst çubuktaki "Örnek proje" düğmesiyle yüklenir.
+let durum = D.yukle() || D.bosProje();
 let etkinSekme = 'panel';
 
 const TEMA_DEPO = 'sagg-akustik-tema';

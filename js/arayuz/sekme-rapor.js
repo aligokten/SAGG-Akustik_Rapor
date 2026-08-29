@@ -19,6 +19,7 @@ import { YON_ADLARI } from '../cekirdek/geometri.js';
 import { katmanDizilimiMetni } from '../cekirdek/katmanli-eleman.js';
 import { YALITIM_LEVHALARI, bul } from '../veri/malzemeler.js';
 import { xlsxOlustur, blobIndir, STIL } from './xlsx-yazici.js';
+import { LISANS, telifSatiri } from '../veri/lisans.js';
 
 const dolguBul = (id) => bul(YALITIM_LEVHALARI, id);
 
@@ -143,10 +144,25 @@ function ayiriciRaporu(p, a, indeks, toplam) {
 
     ${uzmanTavsiyesi(a)}
 
-    <div class="rapor-altbilgi">
-      <span>Hazırlayan: ${kacis(p.akustikUzman || '—')}</span>
-      <span>SAGG Akustik Rapor · Katmanlı Model v3</span>
-    </div>
+    ${altbilgi(p)}
+  </div>`;
+}
+
+/**
+ * Raporun her sayfasında yinelenen altbilgi: hazırlayan, program künyesi ve
+ * lisans / sorumluluk ibareleri.
+ */
+function altbilgi(p) {
+  return `
+  <div class="rapor-altbilgi">
+    <span>Hazırlayan: ${kacis(p.akustikUzman || '—')}</span>
+    <span>SAGG Akustik Hesap Paneli · Katmanlı Model v3</span>
+  </div>
+  <div class="rapor-lisans">
+    <div class="rapor-lisans-satir"><b>Program lisans sahibi</b><span>${kacis(LISANS.sahip)}</span></div>
+    <div class="rapor-lisans-satir"><b>Program geliştirici</b><span>${kacis(LISANS.gelistirici)}</span></div>
+    <p class="rapor-lisans-telif">${kacis(telifSatiri(p.tarih))}</p>
+    <p class="rapor-lisans-sorumluluk">${kacis(LISANS.sorumluluk)}</p>
   </div>`;
 }
 
@@ -277,6 +293,7 @@ function ekBolumler(p, s) {
     ${bolumDarbe(s)}
     ${bolumCephe(s)}
     ${bolumReverberasyon(s)}
+    ${altbilgi(p)}
   </div>`;
 }
 

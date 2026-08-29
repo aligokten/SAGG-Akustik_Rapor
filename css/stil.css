@@ -415,8 +415,25 @@ details > *:last-child{margin-bottom:12px}
 .rapor-kunye-tablo span{font-weight:650; text-align:right}
 
 .rapor-altbilgi{
-  display:flex; justify-content:space-between; margin-top:28px; padding-top:12px;
+  display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  margin-top:28px; padding-top:12px;
   border-top:1px solid var(--cizgi); font-size:11px; color:var(--soluk);
+}
+
+/* Lisans / sorumluluk bloğu — raporun her sayfasının en altında yinelenir. */
+.rapor-lisans{
+  margin-top:10px; padding:11px 13px; border:1px solid var(--cizgi);
+  border-radius:var(--r-s); background:var(--yuzey-2); font-size:11px; color:var(--metin-2);
+}
+.rapor-lisans-satir{display:flex; gap:8px; line-height:1.5}
+.rapor-lisans-satir b{
+  flex:0 0 138px; font-weight:700; color:var(--soluk);
+  text-transform:uppercase; letter-spacing:.04em; font-size:9.5px; padding-top:1px;
+}
+.rapor-lisans-telif{margin:7px 0 0; font-size:10.5px; color:var(--soluk)}
+.rapor-lisans-sorumluluk{
+  margin:7px 0 0; padding-top:7px; border-top:1px solid var(--cizgi);
+  font-weight:650; color:var(--metin); font-size:11.5px;
 }
 
 .rapor-sayfa-sonu{margin-top:34px; padding-top:34px; border-top:4px double var(--cizgi-koyu)}
@@ -472,6 +489,8 @@ details > *:last-child{margin-bottom:12px}
   .rapor-sayfa-sonu{break-before:page; margin-top:0; padding-top:0; border-top:0}
   .yazdirma-goster{break-inside:avoid}
   h2{break-after:avoid}
+  /* Lisans bloğu sayfaya bölünmesin; ekrandaki dolgu zemin baskıda gereksiz. */
+  .rapor-lisans{break-inside:avoid; background:transparent !important}
 }
 
 /* ── Satır içi SVG simgeler ─────────────────────────────────────── */

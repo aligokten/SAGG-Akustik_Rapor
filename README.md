@@ -325,8 +325,22 @@ verilir. Yönetmelik değeri kaybolmaz — arayüzde yer tutucu olarak, raporda 
 tablosundan okunmaya devam eder.
 
 Projeler `Projeyi indir` / `Proje aç` ile JSON olarak taşınır; çalışma ayrıca tarayıcıya otomatik
-kaydedilir. `Örnek proje` düğmesi, hem sağlanan hem sağlanmayan bileşenler içeren bir konut örneği
-yükler.
+kaydedilir.
+
+Panel **boş bir projeyle** açılır: kayıtlı bir çalışma varsa ondan devam edilir, yoksa hiçbir bileşen
+tanımlı değildir ve panelde başlangıç kartı görünür. Örnek proje kendiliğinden yüklenmez — üst
+çubuktaki `Örnek proje` düğmesi (ya da başlangıç kartındaki `Örnek projeyi yükle`) hem sağlanan hem
+sağlanmayan bileşenler içeren bir konut örneği yükler.
+
+### Raporda lisans ve sorumluluk
+
+Yazdırılabilir raporun **her sayfasının** altında program künyesi yer alır: lisans sahibi
+(*Sinem Ali Gökten Grup İnşaat Mimarlık Akustik Müh. San. Tic. Ltd. Şti.*), geliştirici
+(*SAGG+ App*), telif ibaresi ve şu sorumluluk kaydı:
+
+> **Rapor içeriğinden ve hesaplamalardan proje müellifi sorumludur.**
+
+Metinlerin tek kaynağı `js/veri/lisans.js`'tir; telif yılı raporun tarihinden alınır.
 
 ---
 
@@ -357,6 +371,7 @@ js/
   veri/
     yonetmelik.js              ★ Yönetmelik ekleri — düzenlenebilir veri katmanı
     malzemeler.js              ★ Malzeme kütüphanesi + eski kimlik göç haritası
+    lisans.js                  Program lisans / sorumluluk künyesi (rapor altbilgisi)
     favoriler.js               Kullanıcıya ait katman favorileri (iç duvar/dış duvar/döşeme)
     v3-donusturucu.js          "Katmanlı Model v3" JSON şemasından içe aktarma
   arayuz/
@@ -377,13 +392,13 @@ test/cekirdek.test.js          Hesap çekirdeği testleri
 npm test          # node --test test/*.test.js
 ```
 
-212 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+217 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
 projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
 modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
 hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış), izometrik şema üretimini, cephe iç yan
 yollarını, sayı girdisi davranışını, katman favorileri kitaplığını, raporda mekân adı çözümünü ve
 Excel sınır değer tablosu çıktısını (DD/İD/DOS kodlaması, sayfa yerleşimi, geçerli ZIP/OOXML paketi)
-kapsar. Ayrıca referans araçtan alınan dört örnek dosya, sonuçları birebir doğrulayan bir kehanet
+ve rapor altbilgisindeki lisans künyesini kapsar. Ayrıca referans araçtan alınan dört örnek dosya, sonuçları birebir doğrulayan bir kehanet
 (oracle) takımı olarak koşturulur.
 
 ---
