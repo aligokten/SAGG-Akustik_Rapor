@@ -192,7 +192,11 @@ export const EK3_TABLO_3_3 = {
  * EK-3 Tablo 3.1 — Gürültüye hassasiyet dereceleri belirlenen mekânların
  * DIŞ YAPI ELEMANLARI için en düşük hava doğuşlu ses yalıtım gerekleri,
  * D2m,nT,w (dB). Satır: mekânın hassasiyet derecesi, sütun: cephedeki
- * gündüz eşdeğer gürültü düzeyi Lgündüz (dBA) aralığı.
+ * gürültü göstergesi Lgag (gündüz-akşam-gece eşdeğer düzeyi, dBA) aralığı.
+ *
+ * Yönetmelik, çevresel gürültünün değerlendirilmesinde Lgag göstergesini
+ * esas alır; bu, gündüz/akşam/gece dönemlerinin cezalandırılmış enerjik
+ * ortalamasıdır ve yalnız gündüz düzeyinden (Lgündüz) daha yüksektir.
  */
 export const DIS_GURULTU_ARALIKLARI = [
   { id: 'a', ad: '≤ 55 dBA',      alt: -Infinity, ust: 55 },

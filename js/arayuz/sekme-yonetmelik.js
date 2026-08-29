@@ -66,7 +66,7 @@ function ciftGirisliTablo(tablo, tabloAdi, basligi) {
       <tbody>
       ${Object.entries(tablo.degerler).map(([anahtar, satir]) => `<tr>
         <td>${kacis(anahtarAdi(anahtar))}</td>
-        ${SINIFLAR.map((s) => `<td class="sayi"><input type="number" step="1" style="width:64px;text-align:right"
+        ${SINIFLAR.map((s) => `<td class="sayi"><input type="text" inputmode="decimal" style="width:64px;text-align:right"
             data-yonetmelik="${tabloAdi}" data-anahtar="${kacis(anahtar)}" data-sinif="${s}"
             value="${satir[s] ?? ''}"></td>`).join('')}
       </tr>`).join('')}
@@ -80,15 +80,15 @@ function cepheTablosu() {
   return `
   <section class="kart">
     <div class="kart-baslik"><h3>${kacis(t.kaynak)}</h3><span class="rozet notr">${kacis(t.dogrulama)}</span></div>
-    <p class="soluk" style="font-size:12.5px">Mekânın hassasiyet derecesi ve cephedeki gündüz gürültü düzeyine göre en az D2m,nT,w (dB)</p>
+    <p class="soluk" style="font-size:12.5px">Mekânın hassasiyet derecesi ve cephedeki L<sub>gag</sub> gürültü düzeyine göre en az D2m,nT,w (dB)</p>
     <div class="tablo-sar"><table>
-      <thead><tr><th>Hassasiyet</th><th>Dış gürültü</th>${SINIFLAR.map((s) => `<th class="sayi">${s}</th>`).join('')}</tr></thead>
+      <thead><tr><th>Hassasiyet</th><th>L<sub>gag</sub> aralığı</th>${SINIFLAR.map((s) => `<th class="sayi">${s}</th>`).join('')}</tr></thead>
       <tbody>
       ${Object.entries(t.degerler).map(([hass, aralik]) =>
         DIS_GURULTU_ARALIKLARI.map((a, k) => `<tr>
           ${k === 0 ? `<td rowspan="${DIS_GURULTU_ARALIKLARI.length}"><b>${kacis(HASSASIYET_DERECELERI[hass])}</b></td>` : ''}
           <td>${kacis(a.ad)}</td>
-          ${SINIFLAR.map((s) => `<td class="sayi"><input type="number" step="1" style="width:64px;text-align:right"
+          ${SINIFLAR.map((s) => `<td class="sayi"><input type="text" inputmode="decimal" style="width:64px;text-align:right"
               data-yonetmelik="EK3_TABLO_3_1" data-anahtar="${kacis(hass)}" data-alt-anahtar="${kacis(a.id)}" data-sinif="${s}"
               value="${aralik[a.id]?.[s] ?? ''}"></td>`).join('')}
         </tr>`).join('')).join('')}
@@ -109,7 +109,7 @@ function icGurultuTablosu() {
       <tbody>
       ${Object.entries(t.degerler).map(([id, satir]) => `<tr>
         <td>${kacis(mekanAdi(id))}</td>
-        ${SINIFLAR.map((s) => `<td class="sayi"><input type="number" step="1" style="width:64px;text-align:right"
+        ${SINIFLAR.map((s) => `<td class="sayi"><input type="text" inputmode="decimal" style="width:64px;text-align:right"
             data-yonetmelik="EK4_TABLO_4_1" data-anahtar="${kacis(id)}" data-sinif="${s}"
             value="${satir[s] ?? ''}"></td>`).join('')}
       </tr>`).join('')}
@@ -128,9 +128,9 @@ function reverberasyonTablosu() {
       <tbody>
       ${t.mekanlar.map((m, i) => `<tr>
         <td>${kacis(m.ad)}</td>
-        <td class="sayi"><input type="number" step="0.05" style="width:80px;text-align:right"
+        <td class="sayi"><input type="text" inputmode="decimal" style="width:80px;text-align:right"
             data-yonetmelik="EK5_REVERBERASYON" data-anahtar="${i}" data-alan="Tmin" value="${m.Tmin ?? ''}" placeholder="—"></td>
-        <td class="sayi"><input type="number" step="0.05" style="width:80px;text-align:right"
+        <td class="sayi"><input type="text" inputmode="decimal" style="width:80px;text-align:right"
             data-yonetmelik="EK5_REVERBERASYON" data-anahtar="${i}" data-alan="Tmax" value="${m.Tmax ?? ''}" placeholder="—"></td>
       </tr>`).join('')}
       </tbody>

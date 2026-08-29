@@ -54,7 +54,7 @@ function kart(k, i, h) {
         ${d ? `<span class="ipucu">İzin verilen: ${d.Tmin != null ? `${sayi(d.Tmin, 2)} – ` : '≤ '}${d.Tmax != null ? sayi(d.Tmax, 2) : '—'} s</span>`
              : '<span class="ipucu" style="color:var(--uyari)">Bu mekân için EK-5\'te gereksinim tanımlı değil.</span>'}</div>
       <div class="alan"><label>Hacim V (m³)</label>
-        <input type="number" step="1" min="1" data-yol="${y}.V" data-tur="sayi" value="${k.V}"></div>
+        <input type="text" inputmode="decimal" data-yol="${y}.V" data-tur="sayi" value="${k.V}"></div>
     </div>
 
     <h3 style="margin-top:18px">Yüzeyler</h3>
@@ -66,7 +66,7 @@ function kart(k, i, h) {
         const hy = h.yuzeyler[j];
         return `<tr>
           <td><select data-yol="${y}.yuzeyler.${j}.sogurucuId" style="min-width:250px">${secenekler(SOGURUCULAR, yu.sogurucuId, { gruplu: true })}</select></td>
-          <td><input type="number" step="1" min="0" data-yol="${y}.yuzeyler.${j}.alan" data-tur="sayi" value="${yu.alan}" style="width:90px"></td>
+          <td><input type="text" inputmode="decimal" data-yol="${y}.yuzeyler.${j}.alan" data-tur="sayi" value="${yu.alan}" style="width:90px"></td>
           ${OKTAV_BANTLARI.map((f) => `<td class="sayi">${sayi(hy.alfa[f] ?? 0, 2)}</td>`).join('')}
           <td><button class="dugme acik kucuk" data-eylem="sil-yuzey" data-idx="${i}" data-alt="${j}">Sil</button></td>
         </tr>`;
@@ -85,7 +85,7 @@ function kart(k, i, h) {
             const hn = h.nesneler[j];
             return `<tr>
               <td><select data-yol="${y}.nesneler.${j}.nesneId" style="min-width:230px">${secenekler(NESNELER, n.nesneId)}</select></td>
-              <td><input type="number" step="1" min="0" data-yol="${y}.nesneler.${j}.adet" data-tur="sayi" value="${n.adet}" style="width:80px"></td>
+              <td><input type="text" inputmode="decimal" data-yol="${y}.nesneler.${j}.adet" data-tur="sayi" value="${n.adet}" style="width:80px"></td>
               ${OKTAV_BANTLARI.map((f) => `<td class="sayi">${sayi(hn.A[f] ?? 0, 2)}</td>`).join('')}
               <td><button class="dugme acik kucuk" data-eylem="sil-nesne" data-idx="${i}" data-alt="${j}">Sil</button></td>
             </tr>`;

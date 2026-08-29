@@ -215,6 +215,6 @@ export const CEPHE_YAN_ROLLERI = {
  * (Yönetmelik EK'lerindeki en düşük gerek ile birlikte değerlendirilir;
  * ikisinden büyük olanı esas alınır.)
  */
-export function gerekliCepheYalitimi(disGurultu, icHedef) {
-  return disGurultu - icHedef;
+export function gerekliCepheYalitimi(Lgag, icHedef) {
+  return Lgag - icHedef;
 }

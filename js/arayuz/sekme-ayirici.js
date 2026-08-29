@@ -58,7 +58,7 @@ function kart(a, i, h) {
         <select data-yol="${y}.aliciMekanId">${mekanSecenekleri(a.aliciMekanId)}</select>
         <span class="ipucu">Hassasiyet derecesi: <b>${kacis(HASSASIYET_DERECELERI[d?.aliciMekan?.hassasiyet] || '—')}</b></span></div>
       <div class="alan"><label>Manuel DnT,w hedefi (dB)</label>
-        <input type="number" step="1" data-yol="${y}.manuelHedef" data-tur="sayiVeyaNull" value="${a.manuelHedef ?? ''}"
+        <input type="text" inputmode="decimal" data-yol="${y}.manuelHedef" data-tur="sayiVeyaNull" value="${a.manuelHedef ?? ''}"
                placeholder="${d ? sayi(d.yonetmelikGereken, 0) : '—'} (yönetmelik)">
         <span class="ipucu">${a.manuelHedef == null ? 'Yönetmelik hedefi etkin.' : 'Manuel hedef etkin — raporda etiketlenir.'}</span></div>
     </div>
@@ -95,7 +95,7 @@ function kart(a, i, h) {
       <div class="alan"><label>Kapı</label>
         <select data-yol="${y}.kapiId">${secenekler(DOGRAMALAR.filter((x) => x.grup === 'Kapı'), a.kapiId)}</select></div>
       <div class="alan"><label>Kapı alanı (m²)</label>
-        <input type="number" step="0.1" min="0" data-yol="${y}.kapiAlani" data-tur="sayi" value="${a.kapiAlani}"></div>
+        <input type="text" inputmode="decimal" data-yol="${y}.kapiAlani" data-tur="sayi" value="${a.kapiAlani}"></div>
       ` : ''}
     </div>
     ${h.kapiBilgi ? `<div class="bilgi-kutu sari">Kapı (Rw ${sayi(h.kapiBilgi.Rw, 0)} dB, ${sayi(h.kapiBilgi.S)} m²) nedeniyle ayırıcı elemanın bileşik Rw'si <b>${sayi(h.RwAyirici)} dB</b>'e düşmüştür.</div>` : ''}
@@ -133,9 +133,9 @@ function geometriBolumu(y, a, h) {
   const odaAlani = (etiket, yol, oda) => `
     <div class="alan"><label>${kacis(etiket)}</label>
       <div class="izgara dar" style="gap:6px">
-        <input type="number" step="0.01" min="0.1" data-yol="${yol}.L" data-tur="sayi" value="${oda.L}" title="Derinlik L (m)" placeholder="L">
-        <input type="number" step="0.01" min="0.1" data-yol="${yol}.W" data-tur="sayi" value="${oda.W}" title="Genişlik W (m)" placeholder="W">
-        <input type="number" step="0.01" min="0.1" data-yol="${yol}.H" data-tur="sayi" value="${oda.H}" title="Yükseklik H (m)" placeholder="H">
+        <input type="text" inputmode="decimal" data-yol="${yol}.L" data-tur="sayi" value="${oda.L}" title="Derinlik L (m)" placeholder="L">
+        <input type="text" inputmode="decimal" data-yol="${yol}.W" data-tur="sayi" value="${oda.W}" title="Genişlik W (m)" placeholder="W">
+        <input type="text" inputmode="decimal" data-yol="${yol}.H" data-tur="sayi" value="${oda.H}" title="Yükseklik H (m)" placeholder="H">
       </div>
       <span class="ipucu">L (derinlik) × W (genişlik) × H (yükseklik), metre</span></div>`;
 
@@ -151,9 +151,9 @@ function geometriBolumu(y, a, h) {
   ${!boyutMi ? `
   <div class="izgara">
     <div class="alan"><label>Ayırıcı elemanın ortak alanı S (m²)</label>
-      <input type="number" step="0.1" min="0.1" data-yol="${y}.S" data-tur="sayi" value="${a.S}"></div>
+      <input type="text" inputmode="decimal" data-yol="${y}.S" data-tur="sayi" value="${a.S}"></div>
     <div class="alan"><label>Alıcı mekân hacmi V (m³)</label>
-      <input type="number" step="1" min="1" data-yol="${y}.V" data-tur="sayi" value="${a.V}"></div>
+      <input type="text" inputmode="decimal" data-yol="${y}.V" data-tur="sayi" value="${a.V}"></div>
   </div>` : `
   <div class="izgara">
     ${odaAlani('Oda 1 / Kaynak boyutları', `${y}.geometri.oda1`, oda1)}
@@ -210,11 +210,11 @@ function anaElemanBolumu(y, a, h) {
         ${[0, 1, 2].map((n) => `<option value="${n}"${n === a.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}
       </select></div>
     <div class="alan"><label>Beyan edilmiş yoğunluk (kg/m³)</label>
-      <input type="number" step="10" min="50" data-yol="${y}.yogunlukBeyan" data-tur="sayiVeyaNull"
+      <input type="text" inputmode="decimal" data-yol="${y}.yogunlukBeyan" data-tur="sayiVeyaNull"
              value="${a.yogunlukBeyan ?? ''}" placeholder="${kacis(String(h.ana.eleman?.yogunluk ?? '—'))} (kütüphane)">
       <span class="ipucu">Ürününüzün gerçek birim hacim ağırlığı.</span></div>
     <div class="alan"><label>Beyan edilmiş Rw (dB) — isteğe bağlı</label>
-      <input type="number" step="0.1" data-yol="${y}.RwBeyan" data-tur="sayiVeyaNull" value="${a.RwBeyan ?? ''}" placeholder="laboratuvar değeri">
+      <input type="text" inputmode="decimal" data-yol="${y}.RwBeyan" data-tur="sayiVeyaNull" value="${a.RwBeyan ?? ''}" placeholder="laboratuvar değeri">
       <span class="ipucu">Girilirse kestirim yerine bu değer kullanılır.</span></div>
   </div>`}`;
 }
@@ -234,7 +234,7 @@ function yanElemanSatirlari(y, i, ye, j, hy) {
     <td class="sayi">${sayi(hy.mKaynak, 0)}</td>
     <td class="sayi">${sayi(hy.RwKaynak)}</td>
     <td><select data-yol="${yy}.giydirmeId" style="min-width:150px">${secenekler(GIYDIRME_KABUKLAR, ye.giydirmeId)}</select></td>
-    <td><input type="number" step="0.1" min="0.1" data-yol="${yy}.lf" data-tur="sayi" value="${ye.lf}" style="width:75px" ${ye.geometriRolu ? 'title="Geometri modunda otomatik hesaplanır; burada girilen değer o modda kullanılmaz."' : ''}></td>
+    <td><input type="text" inputmode="decimal" data-yol="${yy}.lf" data-tur="sayi" value="${ye.lf}" style="width:75px" ${ye.geometriRolu ? 'title="Geometri modunda otomatik hesaplanır; burada girilen değer o modda kullanılmaz."' : ''}></td>
     <td><select data-yol="${yy}.birlesim">${Object.values(BIRLESIM_TIPLERI).map((b) =>
           `<option value="${b.kod}"${b.kod === ye.birlesim ? ' selected' : ''}>${b.kod}</option>`).join('')}</select></td>
     <td style="text-align:center"><input type="checkbox" data-yol="${yy}.esnekBaglanti" data-tur="bool" ${ye.esnekBaglanti ? 'checked' : ''} style="width:auto"></td>
@@ -256,9 +256,9 @@ function yanElemanSatirlari(y, i, ye, j, hy) {
         <div class="alan"><label>Sıvalı yüz sayısı</label>
           <select data-yol="${yy}.sivaliYuzSayisi" data-tur="sayi">${[0, 1, 2].map((n) => `<option value="${n}"${n === ye.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
         <div class="alan"><label>Beyan yoğunluk (kg/m³)</label>
-          <input type="number" step="10" min="50" data-yol="${yy}.yogunlukBeyan" data-tur="sayiVeyaNull" value="${ye.yogunlukBeyan ?? ''}" placeholder="${kacis(String(hy._cozum.eleman?.yogunluk ?? '—'))}"></div>
+          <input type="text" inputmode="decimal" data-yol="${yy}.yogunlukBeyan" data-tur="sayiVeyaNull" value="${ye.yogunlukBeyan ?? ''}" placeholder="${kacis(String(hy._cozum.eleman?.yogunluk ?? '—'))}"></div>
         <div class="alan"><label>Beyan Rw (dB)</label>
-          <input type="number" step="0.1" data-yol="${yy}.RwBeyan" data-tur="sayiVeyaNull" value="${ye.RwBeyan ?? ''}" placeholder="—"></div>
+          <input type="text" inputmode="decimal" data-yol="${yy}.RwBeyan" data-tur="sayiVeyaNull" value="${ye.RwBeyan ?? ''}" placeholder="—"></div>
       </div>`}
     </td>
   </tr>`;

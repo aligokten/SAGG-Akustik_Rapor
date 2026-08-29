@@ -46,7 +46,7 @@ function geometriBolumu(y, c, h, i) {
     return `
     <div class="izgara" style="margin-top:14px">
       <div class="alan"><label>Mekân hacmi V (m³)</label>
-        <input type="number" step="1" min="1" data-yol="${y}.V" data-tur="sayi" value="${c.V}"></div>
+        <input type="text" inputmode="decimal" data-yol="${y}.V" data-tur="sayi" value="${c.V}"></div>
       <div class="alan" style="justify-content:flex-end">
         <button class="dugme acik kucuk" data-eylem="cephe-olcu-moda-gec" data-idx="${i}">Oda boyutlarından hesapla (L×W×H)</button>
         <span class="ipucu">İç yan yolların (Df) hesaba katılması için oda boyutları gerekir.</span></div>
@@ -56,11 +56,11 @@ function geometriBolumu(y, c, h, i) {
   return `
   <div class="izgara" style="margin-top:14px">
     <div class="alan"><label>Derinlik L (m)</label>
-      <input type="number" step="0.01" min="0.5" data-yol="${y}.geometri.L" data-tur="sayi" value="${g.L}"></div>
+      <input type="text" inputmode="decimal" data-yol="${y}.geometri.L" data-tur="sayi" value="${g.L}"></div>
     <div class="alan"><label>Genişlik W (m)</label>
-      <input type="number" step="0.01" min="0.5" data-yol="${y}.geometri.W" data-tur="sayi" value="${g.W}"></div>
+      <input type="text" inputmode="decimal" data-yol="${y}.geometri.W" data-tur="sayi" value="${g.W}"></div>
     <div class="alan"><label>Yükseklik H (m)</label>
-      <input type="number" step="0.01" min="1.5" data-yol="${y}.geometri.H" data-tur="sayi" value="${g.H}"></div>
+      <input type="text" inputmode="decimal" data-yol="${y}.geometri.H" data-tur="sayi" value="${g.H}"></div>
     <div class="alan"><label>Hacim V (m³)</label>
       <input readonly value="${sayi(geo?.V, 2)}"></div>
     <div class="alan" style="justify-content:flex-end">
@@ -120,9 +120,9 @@ function kart(c, i, h) {
       <div class="alan"><label>Mekân</label>
         <select data-yol="${y}.mekanId">${mekanSecenekleri(c.mekanId)}</select>
         <span class="ipucu">Hassasiyet: <b>${kacis(HASSASIYET_DERECELERI[d?.mekan?.hassasiyet] || '—')}</b></span></div>
-      <div class="alan"><label>Cephedeki gündüz gürültü düzeyi (dBA)</label>
-        <input type="number" step="1" min="30" max="90" data-yol="${y}.disGurultu" data-tur="sayi" value="${c.disGurultu}">
-        <span class="ipucu">Tablo aralığı: <b>${kacis(d?.aralik?.ad || '—')}</b></span></div>
+      <div class="alan"><label>Cephedeki çevresel gürültü düzeyi L<sub>gag</sub> (dBA)</label>
+        <input type="text" inputmode="decimal" data-yol="${y}.disGurultu" data-tur="sayi" value="${c.disGurultu}">
+        <span class="ipucu">Gündüz-akşam-gece eşdeğer düzeyi · Tablo aralığı: <b>${kacis(d?.aralik?.ad || '—')}</b></span></div>
       <div class="alan"><label>Cephe biçimi</label>
         <select data-yol="${y}.bicim">${secenekler(BICIMLER, c.bicim)}</select></div>
       <div class="alan"><label>Mahal konumu</label>
@@ -132,10 +132,10 @@ function kart(c, i, h) {
         </select>
         <span class="ipucu">Köşe mahalde D1 (L×H) ve D2 (W×H) birlikte değerlendirilir.</span></div>
       <div class="alan"><label>Spektrum düzeltmesi C<sub>tr</sub> (dB)</label>
-        <input type="number" step="1" min="-20" max="0" data-yol="${y}.ctr" data-tur="sayi" value="${c.ctr ?? -3}">
+        <input type="text" inputmode="decimal" data-yol="${y}.ctr" data-tur="sayi" value="${c.ctr ?? -3}">
         <span class="ipucu">D<sub>nT,A,tr</sub> = D2m,nT,w + C<sub>tr</sub> — bilgi amaçlıdır.</span></div>
       <div class="alan"><label>Manuel D2m,nT,w hedefi (dB)</label>
-        <input type="number" step="1" data-yol="${y}.manuelHedef" data-tur="sayiVeyaNull" value="${c.manuelHedef ?? ''}"
+        <input type="text" inputmode="decimal" data-yol="${y}.manuelHedef" data-tur="sayiVeyaNull" value="${c.manuelHedef ?? ''}"
                placeholder="${d ? sayi(d.yonetmelikGereken, 0) : '—'} (yönetmelik)">
         <span class="ipucu">${c.manuelHedef == null ? 'Yönetmelik hedefi etkin.' : 'Manuel hedef etkin — raporda etiketlenir.'}</span></div>
     </div>
@@ -165,10 +165,10 @@ function kart(c, i, h) {
           <td>${duvarMi ? `<select data-yol="${ey}.sivaId" style="min-width:150px">${secenekler(SIVALAR, e.sivaId)}</select>` : '<span class="soluk">—</span>'}</td>
           <td>${duvarMi ? `<select data-yol="${ey}.sivaliYuzSayisi" data-tur="sayi">${[0, 1, 2].map((n) =>
                 `<option value="${n}"${n === e.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}</select>` : '<span class="soluk">—</span>'}</td>
-          <td><input type="number" step="0.1" min="0" data-yol="${ey}.S" data-tur="sayi" value="${e.S}" style="width:80px"></td>
-          <td>${duvarMi ? `<input type="number" step="10" min="50" data-yol="${ey}.yogunlukBeyan" data-tur="sayiVeyaNull" value="${e.yogunlukBeyan ?? ''}" placeholder="${kacis(String(he._cozum.eleman?.yogunluk ?? '—'))}" style="width:88px">` : '<span class="soluk">—</span>'}</td>
+          <td><input type="text" inputmode="decimal" data-yol="${ey}.S" data-tur="sayi" value="${e.S}" style="width:80px"></td>
+          <td>${duvarMi ? `<input type="text" inputmode="decimal" data-yol="${ey}.yogunlukBeyan" data-tur="sayiVeyaNull" value="${e.yogunlukBeyan ?? ''}" placeholder="${kacis(String(he._cozum.eleman?.yogunluk ?? '—'))}" style="width:88px">` : '<span class="soluk">—</span>'}</td>
           <td class="sayi">${sayi(he.Rw)}</td>
-          <td><input type="number" step="0.1" data-yol="${ey}.RwBeyan" data-tur="sayiVeyaNull" value="${e.RwBeyan ?? ''}" style="width:85px" placeholder="—"></td>
+          <td><input type="text" inputmode="decimal" data-yol="${ey}.RwBeyan" data-tur="sayiVeyaNull" value="${e.RwBeyan ?? ''}" style="width:85px" placeholder="—"></td>
           <td class="sayi">${pay ? sayi(pay.payYuzde, 1) : '—'}</td>
           <td><button class="dugme acik kucuk" data-eylem="sil-cephe-eleman" data-idx="${i}" data-alt="${j}">Sil</button></td>
         </tr>`;
@@ -189,9 +189,9 @@ function kart(c, i, h) {
             const pay = s.paylar.find((p) => p.ad === hk.ad && p.tip === 'kucuk');
             return `<tr>
               <td><select data-yol="${ky}.elemanId" style="min-width:230px">${secenekler(KUCUK_ELEMANLAR, k.elemanId)}</select></td>
-              <td><input type="number" step="1" min="0" data-yol="${ky}.adet" data-tur="sayi" value="${k.adet}" style="width:70px"></td>
+              <td><input type="text" inputmode="decimal" data-yol="${ky}.adet" data-tur="sayi" value="${k.adet}" style="width:70px"></td>
               <td class="sayi">${sayi(hk.Dnew, 0)}</td>
-              <td><input type="number" step="0.1" data-yol="${ky}.DnewBeyan" data-tur="sayiVeyaNull" value="${k.DnewBeyan ?? ''}" style="width:85px" placeholder="—"></td>
+              <td><input type="text" inputmode="decimal" data-yol="${ky}.DnewBeyan" data-tur="sayiVeyaNull" value="${k.DnewBeyan ?? ''}" style="width:85px" placeholder="—"></td>
               <td class="sayi">${pay ? sayi(pay.payYuzde, 1) : '—'}</td>
               <td><button class="dugme acik kucuk" data-eylem="sil-kucuk" data-idx="${i}" data-alt="${j}">Sil</button></td>
             </tr>`;
@@ -230,7 +230,7 @@ function kart(c, i, h) {
         <thead><tr><th>Sınıf</th>${Object.keys(d.satir).map((c2) => `<th class="sayi">${c2}</th>`).join('')}</tr></thead>
         <tbody><tr><td>D2m,nT,w en az (dB)</td>${Object.values(d.satir).map((v) => `<td class="sayi">${v}</td>`).join('')}</tr></tbody>
       </table></div>
-      <p class="soluk" style="font-size:12px">Hassasiyet: ${kacis(d.mekan.hassasiyet)} · Dış gürültü aralığı: ${kacis(d.aralik.ad)}. ${kacis(d.dogrulama)}</p>
+      <p class="soluk" style="font-size:12px">Hassasiyet: ${kacis(d.mekan.hassasiyet)} · L<sub>gag</sub> aralığı: ${kacis(d.aralik.ad)}. ${kacis(d.dogrulama)}</p>
     </details>` : ''}
   </section>`;
 }

@@ -325,9 +325,73 @@ function dosyaOku(dosya, geriCagri) {
 
 /* ── Çizim ──────────────────────────────────────────────────────────── */
 
+/**
+ * Bir form alanını çizimler arasında yeniden bulmaya yarayan kararlı kimlik.
+ *
+ * Değerler nokta ve köşeli ayraç içerdiğinden CSS seçici kurmak yerine düz
+ * dizge karşılaştırması yapılır; böylece kaçış kurallarına takılmayız.
+ * Yönetmelik tablosu hücrelerinde `data-yol` yoktur; onlar kendi veri
+ * öznitelikleriyle tanımlanır.
+ */
+function alanKimligi(el) {
+  const d = el.dataset || {};
+  if (d.yol) return `yol:${d.yol}`;
+  if (d.yonetmelik) {
+    return `yon:${d.yonetmelik}|${d.anahtar ?? ''}|${d.altAnahtar ?? ''}|${d.sinif ?? ''}|${d.alan ?? ''}`;
+  }
+  if (d.onayar) return `onayar:${d.onayar}`;
+  if (el.id) return `id:${el.id}`;
+  return null;
+}
+
+/**
+ * Yeniden çizimden önce odaklı alanın kimliğini, ham metnini ve imleç
+ * konumunu saklar.
+ *
+ * Görünüm her çizimde `innerHTML` ile baştan kurulduğu için, kullanıcı bir
+ * kutuya yazarken araya giren çizim odağı düşürür ve yazmayı keser.
+ */
+function odakDurumunuAl() {
+  const el = document.activeElement;
+  if (!el || typeof el.matches !== 'function') return null;
+  if (!el.matches('input, select, textarea')) return null;
+  const kok = $('#icerik');
+  if (!kok || !kok.contains(el)) return null;
+
+  const kimlik = alanKimligi(el);
+  if (!kimlik) return null;
+
+  // number ve select alanları metin seçimini desteklemez; erişim bazı
+  // tarayıcılarda hata fırlatır.
+  let bas = null;
+  let son = null;
+  try { bas = el.selectionStart; son = el.selectionEnd; } catch { /* desteklenmiyor */ }
+
+  return { kimlik, deger: el.value, secimVar: bas != null, bas, son, secimKutusu: el.tagName === 'SELECT' };
+}
+
+/** `odakDurumunuAl` ile saklanan odağı, ham metni ve imleci geri yükler. */
+function odagiGeriYukle(od) {
+  if (!od) return;
+  const kok = $('#icerik');
+  if (!kok) return;
+  const el = $$('input, select, textarea', kok).find((x) => alanKimligi(x) === od.kimlik);
+  if (!el) return;
+
+  // Kullanıcının yazmakta olduğu ham metni koru: "6," ya da "-" gibi ara
+  // durumlar sayıya çevrilip geri yazıldığında girdi bozulurdu.
+  if (!od.secimKutusu && el.value !== od.deger) el.value = od.deger;
+
+  el.focus({ preventScroll: true });
+  if (od.secimVar) {
+    try { el.setSelectionRange(od.bas, od.son); } catch { /* desteklenmiyor */ }
+  }
+}
+
 function ciz() {
   const sonuclar = projeyiHesapla(durum);
   const kok = $('#icerik');
+  const odak = odakDurumunuAl();
   const cizimler = {
     panel: () => sekmePanel.ciz(durum, sonuclar),
     proje: () => sekmeProje.ciz(durum),
@@ -342,9 +406,9 @@ function ciz() {
   kok.innerHTML = (cizimler[etkinSekme] || cizimler.panel)();
   menuyuCiz(sonuclar);
   ustBasligiCiz();
-  kok.scrollTop = 0;
   D.kaydet(durum);
   canliModelleriBagla();
+  odagiGeriYukle(odak);
 }
 
 /**
@@ -391,7 +455,7 @@ function canliModelleriBagla() {
 /** Kenar çubuğu menüsünü, bileşen sayaçlarıyla birlikte çizer. */
 function menuyuCiz(sonuclar) {
   const menu = $('#yan-menu');
-  menu.innerHTML = SEKMELER.map((sek) => {
+  const html = SEKMELER.map((sek) => {
     const adet = sek.sayim ? sek.sayim(durum) : null;
     const eksik = sek.eksik ? sek.eksik(sonuclar) : 0;
     const rakam = adet == null ? ''
@@ -402,6 +466,11 @@ function menuyuCiz(sonuclar) {
          <span>${sek.ad}</span>${rakam}
        </button>`;
   }).join('');
+
+  // Değişmediyse yeniden kurma: bir alandan çıkarken tetiklenen çizim,
+  // tıklanmakta olan sekme düğmesini DOM'dan koparıp tıklamayı düşürüyordu.
+  if (menu.innerHTML !== html) menu.innerHTML = html;
+
   const s = $('#veri-surumu');
   if (s) s.textContent = SURUM.veriSurumu;
 }
@@ -503,10 +572,13 @@ function olaylariBagla() {
     }
     if (el.dataset?.yol) {
       yolAyarla(durum, el.dataset.yol, degerCoz(el));
-      ciz();
+      // Çizim bir sonraki döngüye bırakılır: 'change' alandan çıkarken
+      // (mousedown → blur) tetiklenir; hemen çizmek, tıklanmakta olan
+      // düğmeyi mouseup'tan önce DOM'dan koparıp tıklamayı düşürürdü.
+      setTimeout(ciz, 0);
     } else if (el.dataset?.yonetmelik) {
       yonetmelikDegistir(el);
-      ciz();
+      setTimeout(ciz, 0);
     } else if (el.id === 'dosya-ac' && el.files?.[0]) {
       dosyaOku(el.files[0], (veri) => {
         if (v3SemasiMi(veri)) {

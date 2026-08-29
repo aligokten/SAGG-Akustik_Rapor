@@ -265,6 +265,9 @@ GitHub Pages gibi bir statik barındırmaya olduğu gibi yüklenebilir.
 5. **Reverberasyon** — hacim, yüzeyler ve nesneler.
 6. **Rapor** — tüm sonuçların yazdırılabilir özeti (tarayıcıdan PDF'e aktarılabilir).
 
+Ölçü ve değer kutuları metin girdisidir (`inputmode="decimal"`): Türkçe ondalık **virgülü**
+doğrudan kabul edilir ("2,62"), yazarken araya giren yeniden çizimlerde imleç ve odak korunur.
+
 Ayırıcı, döşeme ve cephe hesaplarında **manuel hedef** girilebilir: alan boş bırakıldığında
 yönetmelik tablosundan gelen değer kullanılır, bir değer girildiğinde uygunluk kararı ona göre
 verilir. Yönetmelik değeri kaybolmaz — arayüzde yer tutucu olarak, raporda ise hedefin yanındaki
@@ -335,7 +338,8 @@ hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış) ve izometrik �
   "Esnek" seçeneği muhafazakâr bir ilave uygular; kesin değer için ölçüm ya da üretici verisi
   kullanılmalıdır.
 - Tesisat ve servis ekipmanı gürültüsü ile bina dışı gürültü haritalaması kapsam dışıdır; cephe
-  hesabında dış gürültü düzeyi kullanıcı girdisidir.
+  hesabında çevresel gürültü düzeyi **L<sub>gag</sub>** (gündüz-akşam-gece eşdeğer düzeyi) kullanıcı
+  girdisidir ve gürültü haritasından ya da ölçümden alınmalıdır.
 - Bu araç bir **ön tasarım ve kontrol aracıdır**. Yönetmelik kapsamındaki akustik proje ve raporlar,
   Bakanlık kayıtlı yetkili akustik uzmanının sorumluluğundadır.
 

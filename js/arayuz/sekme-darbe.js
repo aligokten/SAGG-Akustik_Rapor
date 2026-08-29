@@ -51,7 +51,7 @@ function kart(k, i, h) {
         <select data-yol="${y}.altMekanId">${mekanSecenekleri(k.altMekanId)}</select>
         <span class="ipucu">Hassasiyet: <b>${kacis(HASSASIYET_DERECELERI[d?.altMekan?.hassasiyet] || '—')}</b></span></div>
       <div class="alan"><label>Manuel L′nT,w üst sınırı (dB)</label>
-        <input type="number" step="1" data-yol="${y}.manuelHedef" data-tur="sayiVeyaNull" value="${k.manuelHedef ?? ''}"
+        <input type="text" inputmode="decimal" data-yol="${y}.manuelHedef" data-tur="sayiVeyaNull" value="${k.manuelHedef ?? ''}"
                placeholder="${d ? sayi(d.yonetmelikGereken, 0) : '—'} (yönetmelik)">
         <span class="ipucu">${k.manuelHedef == null ? 'Yönetmelik sınırı etkin.' : 'Manuel sınır etkin — raporda etiketlenir.'}</span></div>
     </div>
@@ -67,12 +67,12 @@ function kart(k, i, h) {
         <select data-yol="${y}.sapId">${secenekler(SAP_KAPLAMALAR, k.sapId)}</select>
         <span class="ipucu">Kütüphane ΔLw = ${sayi(h.sap?.dLw ?? 0, 0)} dB</span></div>
       <div class="alan"><label>Beyan edilmiş ΔLw (dB) — isteğe bağlı</label>
-        <input type="number" step="0.1" data-yol="${y}.dLwBeyan" data-tur="sayiVeyaNull" value="${k.dLwBeyan ?? ''}" placeholder="ürün beyan değeri"></div>
+        <input type="text" inputmode="decimal" data-yol="${y}.dLwBeyan" data-tur="sayiVeyaNull" value="${k.dLwBeyan ?? ''}" placeholder="ürün beyan değeri"></div>
       <div class="alan"><label>Yan duvarların ortalama m′ (kg/m²)</label>
-        <input type="number" step="10" min="50" data-yol="${y}.mYanOrtalama" data-tur="sayi" value="${k.mYanOrtalama}">
+        <input type="text" inputmode="decimal" data-yol="${y}.mYanOrtalama" data-tur="sayi" value="${k.mYanOrtalama}">
         <span class="ipucu">Yan yol düzeltmesi K = ${sayi(s.K)} dB</span></div>
       <div class="alan"><label><input type="checkbox" data-yol="${y}.asmaTavanVar" data-tur="bool" ${k.asmaTavanVar ? 'checked' : ''} style="width:auto;margin-right:6px">Elastik askılı asma tavan var</label>
-        ${k.asmaTavanVar ? `<input type="number" step="1" min="0" max="20" data-yol="${y}.asmaTavanKazanci" data-tur="sayi" value="${k.asmaTavanKazanci}" placeholder="kazanç, dB">` : ''}
+        ${k.asmaTavanVar ? `<input type="text" inputmode="decimal" data-yol="${y}.asmaTavanKazanci" data-tur="sayi" value="${k.asmaTavanKazanci}" placeholder="kazanç, dB">` : ''}
         <span class="ipucu">Asma tavanın darbe sesi kazancı (dB)</span></div>
     </div>
 
@@ -113,15 +113,15 @@ function geometriBolumu(y, k, h) {
   ${!boyutMi ? `
   <div class="izgara">
     <div class="alan"><label>Alt mekân hacmi V (m³)</label>
-      <input type="number" step="1" min="1" data-yol="${y}.V" data-tur="sayi" value="${k.V}"></div>
+      <input type="text" inputmode="decimal" data-yol="${y}.V" data-tur="sayi" value="${k.V}"></div>
   </div>` : `
   <div class="izgara dar">
     <div class="alan"><label>Derinlik L (m)</label>
-      <input type="number" step="0.01" min="0.1" data-yol="${y}.geometri.L" data-tur="sayi" value="${g.L}"></div>
+      <input type="text" inputmode="decimal" data-yol="${y}.geometri.L" data-tur="sayi" value="${g.L}"></div>
     <div class="alan"><label>Genişlik W (m)</label>
-      <input type="number" step="0.01" min="0.1" data-yol="${y}.geometri.W" data-tur="sayi" value="${g.W}"></div>
+      <input type="text" inputmode="decimal" data-yol="${y}.geometri.W" data-tur="sayi" value="${g.W}"></div>
     <div class="alan"><label>Yükseklik H (m)</label>
-      <input type="number" step="0.01" min="0.1" data-yol="${y}.geometri.H" data-tur="sayi" value="${g.H}"></div>
+      <input type="text" inputmode="decimal" data-yol="${y}.geometri.H" data-tur="sayi" value="${g.H}"></div>
     <div class="alan"><label>Hesaplanan V</label><input readonly value="${h.geo ? sayi(h.geo.V) + ' m³' : '—'}"></div>
   </div>`}`;
 }
@@ -145,6 +145,6 @@ function dosemeBolumu(y, k, h) {
       <select data-yol="${y}.dosemeId">${secenekler(DOSEMELER, k.dosemeId, { gruplu: true })}</select>
       <span class="ipucu">m′ = ${sayi(h.doseme.mAlan, 0)} kg/m²</span></div>
     <div class="alan"><label>Beyan edilmiş Ln,w,eq (dB) — isteğe bağlı</label>
-      <input type="number" step="0.1" data-yol="${y}.LnwBeyan" data-tur="sayiVeyaNull" value="${k.LnwBeyan ?? ''}" placeholder="kütleden kestirilir"></div>
+      <input type="text" inputmode="decimal" data-yol="${y}.LnwBeyan" data-tur="sayiVeyaNull" value="${k.LnwBeyan ?? ''}" placeholder="kütleden kestirilir"></div>
   </div>`}`;
 }

@@ -83,7 +83,7 @@ function katmanSatiri(yolTabani, k, idx, toplam, detay) {
       <td colspan="2">
         <select data-yol="${y}.dolguId" style="min-width:220px">${dolguSecenekleri(k.dolguId)}</select>
       </td>
-      <td><input type="number" step="5" min="5" data-yol="${y}.kalinlik" data-tur="sayi" value="${k.kalinlik}" style="width:90px"></td>
+      <td><input type="text" inputmode="decimal" data-yol="${y}.kalinlik" data-tur="sayi" value="${k.kalinlik}" style="width:90px"></td>
       <td class="soluk">—</td>`;
   } else {
     hucreler = `
@@ -94,8 +94,8 @@ function katmanSatiri(yolTabani, k, idx, toplam, detay) {
         </select>
       </td>
       <td><input data-yol="${y}.ad" value="${kacis(k.ad || '')}" placeholder="malzeme adı" style="min-width:170px"></td>
-      <td><input type="number" step="1" min="1" data-yol="${y}.kalinlik" data-tur="sayi" value="${k.kalinlik}" style="width:80px"></td>
-      <td><input type="number" step="10" min="1" data-yol="${y}.yogunluk" data-tur="sayi" value="${k.yogunluk}" style="width:90px"></td>`;
+      <td><input type="text" inputmode="decimal" data-yol="${y}.kalinlik" data-tur="sayi" value="${k.kalinlik}" style="width:80px"></td>
+      <td><input type="text" inputmode="decimal" data-yol="${y}.yogunluk" data-tur="sayi" value="${k.yogunluk}" style="width:90px"></td>`;
   }
 
   return `<tr>

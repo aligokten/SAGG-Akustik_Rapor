@@ -14,9 +14,9 @@ export function mekanBul(id, tablo = EK2_TABLO_2_1) {
   return tablo.mekanlar.find((m) => m.id === id) || null;
 }
 
-/** Dış gürültü düzeyinin (dBA) hangi aralığa düştüğünü bulur. */
-export function disGurultuAraligi(Lgunduz) {
-  return DIS_GURULTU_ARALIKLARI.find((a) => Lgunduz > a.alt && Lgunduz <= a.ust)
+/** Çevresel gürültü göstergesi Lgag'ın (dBA) hangi aralığa düştüğünü bulur. */
+export function disGurultuAraligi(Lgag) {
+  return DIS_GURULTU_ARALIKLARI.find((a) => Lgag > a.alt && Lgag <= a.ust)
       || DIS_GURULTU_ARALIKLARI[DIS_GURULTU_ARALIKLARI.length - 1];
 }
 
@@ -134,7 +134,7 @@ export function darbeSesiDegerlendir({ ustMekanId, altMekanId, LnTw, hedefSinif 
  * Cephede hava doğuşlu ses yalıtımı değerlendirmesi (EK-3 Tablo 3.1).
  * @param {Object} p
  * @param {string} p.mekanId
- * @param {number} p.disGurultu Cephedeki gündüz eşdeğer gürültü düzeyi (dBA)
+ * @param {number} p.disGurultu Cephedeki çevresel gürültü göstergesi Lgag (dBA)
  * @param {number} p.D2mnTw     Hesaplanan D2m,nT,w (dB)
  */
 export function cepheDegerlendir({ mekanId, disGurultu, D2mnTw, hedefSinif = ASGARI_SINIFLAR.yeniBina, manuelHedef = null }) {

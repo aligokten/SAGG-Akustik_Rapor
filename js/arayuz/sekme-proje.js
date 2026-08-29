@@ -93,10 +93,10 @@ export function ciz(durum) {
         </select>
         <span class="ipucu">Yalnızca beyan edilmiş Rw değeri girilmemiş elemanlarda kullanılır.</span></div>
       <div class="alan"><label for="pr-ep">Emniyet payı (dB)</label>
-        <input id="pr-ep" type="number" step="0.5" min="0" max="10" data-yol="proje.emniyetPayi" data-tur="sayi" value="${p.emniyetPayi}">
+        <input id="pr-ep" type="text" inputmode="decimal" data-yol="proje.emniyetPayi" data-tur="sayi" value="${p.emniyetPayi}">
         <span class="ipucu">Öngörü belirsizliği; hava doğuşlu ve cephe sonuçlarından düşülür, darbe sesine eklenir.</span></div>
       <div class="alan"><label for="pr-t0">Referans reverberasyon süresi T₀ (s)</label>
-        <input id="pr-t0" type="number" step="0.1" min="0.1" max="2" data-yol="proje.T0" data-tur="sayi" value="${p.T0}">
+        <input id="pr-t0" type="text" inputmode="decimal" data-yol="proje.T0" data-tur="sayi" value="${p.T0}">
         <span class="ipucu">Konut ve benzeri mekânlarda 0,5 s.</span></div>
     </div>
     <div class="alan" style="margin-top:14px">
