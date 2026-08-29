@@ -30,7 +30,7 @@ rapor koyu temadan da doğru basılır. Dar ekranlarda menü çekmeceye dönüş
 |---|---|---|---|
 | Ayırıcı elemanlar (düşey/yatay) | `DnT,w` | TS EN 12354-1, doğrudan yol + Ff/Fd/Df yan yolları | EK-3 Tablo 3.2 |
 | Döşemeler | `L'nT,w` | TS EN 12354-2, `L'n,w = Ln,w,eq − ΔLw + K` | EK-3 Tablo 3.3 |
-| Cephe (dış yapı elemanı) | `D2m,nT,w` | TS EN 12354-3, bileşik yalıtım + biçim ve hacim düzeltmesi | EK-3 Tablo 3.1 |
+| Cephe (dış yapı elemanı) | `D2m,nT,w` | TS EN 12354-3, bileşik yalıtım + iç yan yollar (Df) + biçim ve hacim düzeltmesi | EK-3 Tablo 3.1 |
 | Hacimler | `T` (çınlama süresi) | Sabine bağıntısı, oktav bantlarında, hava soğurması dahil | EK-5 |
 
 Ayrıca: mekân içi gürültü düzeyi sınırları (EK-4 Tablo 4.1) ve mekânların gürültülülük/hassasiyet
@@ -258,9 +258,18 @@ GitHub Pages gibi bir statik barındırmaya olduğu gibi yüklenebilir.
    (birleşim uzunluğu `lf`, birleşim tipi T/X) tanımlayın. "Ses iletim yollarının payları" bölümü
    hangi yolun sonucu sınırladığını gösterir; iyileştirme oraya yapılmalıdır.
 3. **Darbe sesi** — taşıyıcı döşeme, yüzer şap/şilte ve varsa asma tavan.
-4. **Cephe** — yüzeysel elemanlar (duvar, pencere) ve küçük elemanlar (menfez, panjur kutusu).
+4. **Cephe** — yüzeysel elemanlar (duvar, pencere) ve küçük elemanlar (menfez, panjur kutusu). Oda
+   boyutları girilirse mahal **orta** (tek dış duvar D1 = L×H) veya **köşe** (D1 + D2 = W×H) olarak
+   çözülür ve iç tavan / iç taban / iç yan duvarların dış duvarla birleşimlerinden doğan **Df yan
+   yolları** hesaba katılır. Ayrıca Ctr girilerek D<sub>nT,A,tr</sub> = D2m,nT,w + Ctr bilgi olarak üretilir.
 5. **Reverberasyon** — hacim, yüzeyler ve nesneler.
 6. **Rapor** — tüm sonuçların yazdırılabilir özeti (tarayıcıdan PDF'e aktarılabilir).
+
+Ayırıcı, döşeme ve cephe hesaplarında **manuel hedef** girilebilir: alan boş bırakıldığında
+yönetmelik tablosundan gelen değer kullanılır, bir değer girildiğinde uygunluk kararı ona göre
+verilir. Yönetmelik değeri kaybolmaz — arayüzde yer tutucu olarak, raporda ise hedefin yanındaki
+"manuel" etiketiyle birlikte görünür; elde edilen akustik sınıf her hâlükârda yönetmelik
+tablosundan okunmaya devam eder.
 
 Projeler `Projeyi indir` / `Proje aç` ile JSON olarak taşınır; çalışma ayrıca tarayıcıya otomatik
 kaydedilir. `Örnek proje` düğmesi, hem sağlanan hem sağlanmayan bileşenler içeren bir konut örneği

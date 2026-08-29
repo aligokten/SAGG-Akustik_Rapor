@@ -57,6 +57,10 @@ function kart(a, i, h) {
       <div class="alan"><label>Alıcı (korunan) mekân</label>
         <select data-yol="${y}.aliciMekanId">${mekanSecenekleri(a.aliciMekanId)}</select>
         <span class="ipucu">Hassasiyet derecesi: <b>${kacis(HASSASIYET_DERECELERI[d?.aliciMekan?.hassasiyet] || '—')}</b></span></div>
+      <div class="alan"><label>Manuel DnT,w hedefi (dB)</label>
+        <input type="number" step="1" data-yol="${y}.manuelHedef" data-tur="sayiVeyaNull" value="${a.manuelHedef ?? ''}"
+               placeholder="${d ? sayi(d.yonetmelikGereken, 0) : '—'} (yönetmelik)">
+        <span class="ipucu">${a.manuelHedef == null ? 'Yönetmelik hedefi etkin.' : 'Manuel hedef etkin — raporda etiketlenir.'}</span></div>
     </div>
 
     ${geometriBolumu(y, a, h)}
@@ -270,7 +274,7 @@ function sonucBolumu(h) {
     <div class="hucre"><span class="etiket">Doğrudan yol (Dd)</span><span class="deger">${sayi(s.Dd)} <small>dB</small></span></div>
     <div class="hucre"><span class="etiket">Yan yollu R′w</span><span class="deger">${sayi(s.RwAksan)} <small>dB</small></span></div>
     <div class="hucre one-cikan"><span class="etiket">DnT,w (hesaplanan)</span><span class="deger">${sayi(s.DnTw)} <small>dB</small></span></div>
-    <div class="hucre"><span class="etiket">Gereken (${kacis(d?.hedefSinif ?? '—')} sınıfı)</span><span class="deger">${d ? sayi(d.gereken, 0) : '—'} <small>dB</small></span></div>
+    <div class="hucre"><span class="etiket">${d?.hedefKaynagi === 'manuel' ? 'Manuel hedef' : `Gereken (${kacis(d?.hedefSinif ?? '—')} sınıfı)`}</span><span class="deger">${d ? sayi(d.gereken, 0) : '—'} <small>dB</small></span></div>
     <div class="hucre"><span class="etiket">Elde edilen sınıf</span><span>${sinifRozeti(d?.eldeEdilenSinif)}</span></div>
     <div class="hucre"><span class="etiket">Sonuç</span><span>${uygunlukRozeti(d)}${d && Number.isFinite(d.fark) ? ` <small>(${d.fark >= 0 ? '+' : ''}${sayi(d.fark)} dB)</small>` : ''}</span></div>
   </div>

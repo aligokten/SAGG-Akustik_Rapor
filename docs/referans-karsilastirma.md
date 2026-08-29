@@ -14,6 +14,7 @@ Doğrulama iki test dosyasında kilitlidir:
 | Dosya | Kapsam |
 |---|---|
 | `test/referans-motor.test.js` | Bağıntı düzeyinde denklik. Referans motorun formülleri bağımsız bir "oracle" olarak yeniden yazılmış, kendi modüllerimiz geniş bir girdi kümesinde bununla karşılaştırılmıştır (1e-9 toleransla). |
+| `test/cephe-yan-yollar.test.js` | Cephe iç yan yolları, köşe mahal, Ctr ve manuel hedef davranışı. |
 | `test/referans-raporlar.test.js` | Uçtan uca denklik. ID1 ve DOS1 senaryoları geometriden nihai göstergeye kadar yayımlanmış rapor değerleriyle karşılaştırılır. |
 
 ---
@@ -133,17 +134,22 @@ katmanı `boşluk` türünde eklemeniz gerekir — bu, referansta bulunmayan bir
 
 ## 2. Farklar
 
-### 2.1 Referansta olup bizde olmayanlar
+### 2.1 Referanstan alınanlar (uygulandı)
+
+| # | Konu | Durum |
+|---|---|---|
+| 1 | **Cephe iç yan yolları** | Uygulandı. İç tavan, iç taban ve iç yan duvarlar dış duvara Df yolu olarak bağlanır: `R'w,görünür = −10·lg(10^(−Rw,bileşik/10) + Σ10^(−R_Df/10))`. Yalnızca cephe kaydında oda boyutları girilmişse etkindir. |
+| 2 | **Köşe mahal** | Uygulandı. Orta mahalde tek dış duvar (D1 = L×H), köşe mahalde iki dış duvar (D2 = W×H). Yüzeysel elemanlar D1/D2'ye atanır; iç tavan/taban her aktif duvara, iç yan duvar D1'e, iç arka duvar (yalnız köşede) D2'ye bağlanır. |
+| 3 | **Ctr → DnT,A,tr** | Uygulandı. `DnT,A,tr = D2m,nT,w + Ctr` hesaplanır ve raporda gösterilir. **Uygunluk kararı yine EK-3 Tablo 3.1 ile D2m,nT,w üzerinden verilir** (bkz. §2.4); DnT,A,tr bilgi amaçlıdır. |
+| 4 | **Manuel hedef** | Uygulandı. Hava (DnT,w), darbe (L'nT,w) ve cephe (D2m,nT,w) hedefleri elle geçersiz kılınabilir. Yönetmelik değeri `yonetmelikGereken` alanında korunur, elde edilen sınıf yine tablodan okunur, rapor ve arayüzde "manuel" etiketi gösterilir. |
+
+### 2.2 Referansta olup bizde olmayan
 
 | # | Konu | Referans davranışı | Bizdeki durum |
 |---|---|---|---|
-| 1 | Cephe iç yan yolları | İç tavan, iç taban ve iç yan duvarlar dış duvara Df yan yolu olarak bağlanır; `R'w_görünür = −10·lg(10^(−Rw_bileşik/10) + Σ10^(−R_Df/10))` | Cephede yan yol modellenmez; `Rw_bileşik` doğrudan kullanılır |
-| 2 | Köşe mahal | Orta mahal 1 dış duvar (D1 = L×H), köşe mahal 2 dış duvar (D2 = W×H) | Cephe kaydı tek bir eleman listesidir; köşe mahal kavramı yok |
-| 3 | Ctr / DnT,A,tr | `DnT,A,tr = D2m,nT,w + Ctr`, uygunluk bu gösterge üzerinden | D2m,nT,w doğrudan EK-3 Tablo 3.1 ile karşılaştırılır |
-| 4 | Manuel hedef | Hava, darbe ve cephe hedefleri elle geçersiz kılınabilir; raporda "manuel" etiketlenir | Hedef her zaman yönetmelik tablolarından gelir |
-| 5 | Darbe bağlama | Ayırıcı döşemeyse ayırıcı, duvarsa F4 döşeme sayılır; darbe genel karara yalnız ayırıcı döşemeyse katılır | Darbe ayrı bir kayıt türüdür (`darbeler`), ayırıcıdan bağımsız modellenir |
+| 1 | Darbe bağlama | Ayırıcı döşemeyse ayırıcı, duvarsa F4 döşeme sayılır; darbe genel karara yalnız ayırıcı döşemeyse katılır | Darbe ayrı bir kayıt türüdür (`darbeler`), ayırıcıdan bağımsız modellenir — tek projede birden çok döşeme tanımlanabildiği için bağlama yapılmaz |
 
-### 2.2 Bizde olup referansta olmayanlar
+### 2.3 Bizde olup referansta olmayanlar
 
 | # | Konu |
 |---|---|
@@ -154,7 +160,7 @@ katmanı `boşluk` türünde eklemeniz gerekir — bu, referansta bulunmayan bir
 | 5 | Tek projede sınırsız sayıda ayırıcı / döşeme / cephe / hacim kaydı |
 | 6 | Sürüklenerek döndürülebilen izometrik 3B oda modeli (saf SVG, dış bağımlılık yok) |
 
-### 2.3 Bilinçli olarak benimsenmeyen
+### 2.4 Bilinçli olarak benimsenmeyen
 
 **Cephe hedef matrisi.** Referans, cephe hedefini `hedef = L_dış − sınıf_indirimi`
 bağıntısıyla kendi tablosundan üretir (A–D sınıflarında 30 dB alt sınırıyla). Referans

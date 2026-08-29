@@ -539,6 +539,16 @@ function olaylariBagla() {
       const j = Number(dugme.dataset.alt);
       if (EYLEMLER[eylem]) { EYLEMLER[eylem](i, j); ciz(); return; }
 
+      if (eylem === 'cephe-olcu-moda-gec' || eylem === 'cephe-hacim-moda-don') {
+        const c = durum.cepheler[Number(dugme.dataset.idx)];
+        if (c) {
+          if (!c.geometri) c.geometri = { mod: 'hacim', L: 4.5, W: 3.4, H: 2.62 };
+          c.geometri.mod = eylem === 'cephe-olcu-moda-gec' ? 'olculer' : 'hacim';
+          if (!c.yanElemanlar?.length) c.yanElemanlar = D.varsayilanCepheYanElemanlari();
+        }
+        ciz();
+        return;
+      }
       if (eylem === 'panel-filtre') { sekmePanel.suzgeciAyarla(dugme.dataset.deger); ciz(); return; }
       if (eylem.startsWith('git-')) { sekmeyeGit(eylem.slice(4)); return; }
       if (eylem === 'ornek-yukle') { durum = D.ornekProje(); ciz(); return; }

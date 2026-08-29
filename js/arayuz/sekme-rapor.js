@@ -81,7 +81,7 @@ function ayiriciRaporu(p, a, indeks, toplam) {
       <div class="hucre"><span class="etiket">Sonuç</span>
         <span class="deger" style="font-size:16px;color:${d?.uygun ? 'var(--basari)' : 'var(--hata)'}">${d ? (d.uygun ? 'SAĞLIYOR' : 'SAĞLAMIYOR') : '—'}</span></div>
       <div class="hucre one-cikan"><span class="etiket">D<sub>nT,w</sub></span><span class="deger">${sayi(a.sonuc.DnTw)} <small>dB</small></span></div>
-      <div class="hucre"><span class="etiket">Yönetmelik hedefi</span><span class="deger">${d ? `≥ ${sayi(d.gereken, 0)}` : '—'} <small>dB</small></span></div>
+      <div class="hucre"><span class="etiket">${d?.hedefKaynagi === 'manuel' ? 'Manuel hedef' : 'Yönetmelik hedefi'}</span><span class="deger">${d ? `≥ ${sayi(d.gereken, 0)}` : '—'} <small>dB</small></span></div>
       <div class="hucre"><span class="etiket">R′<sub>w</sub></span><span class="deger">${sayi(a.sonuc.RwAksan)} <small>dB</small></span></div>
     </div>
 
@@ -272,7 +272,7 @@ function bolumDarbe(s) {
         <td>${kacis(x.kayit.ad)}</td>
         <td>${kacis(d?.ustMekan?.ad || '—')} → ${kacis(d?.altMekan?.ad || '—')}</td>
         <td class="sayi"><b>${sayi(x.sonuc.LnTw)}</b></td>
-        <td class="sayi">${d ? sayi(d.gereken, 0) : '—'}</td>
+        <td class="sayi">${d ? sayi(d.gereken, 0) : '—'}${d?.hedefKaynagi === 'manuel' ? ' <small>(manuel)</small>' : ''}</td>
         <td>${d?.eldeEdilenSinif || '—'}</td>
         <td>${uygunlukRozeti(d)}</td>
       </tr>`;
@@ -285,17 +285,30 @@ function bolumCephe(s) {
   return `
   <h2>Cephede ses yalıtımı (D2m,nT,w)</h2>
   <div class="tablo-sar"><table>
-    <thead><tr><th>Cephe</th><th>Mekân</th><th class="sayi">D2m,nT,w</th><th class="sayi">Gereken</th><th>Sınıf</th><th>Sonuç</th></tr></thead>
+    <thead><tr><th>Cephe</th><th>Mekân</th><th>Konum</th><th class="sayi">Bileşik R′w</th>
+      <th class="sayi">Yan yollu R′w</th><th class="sayi">D2m,nT,w</th><th class="sayi">D<sub>nT,A,tr</sub></th>
+      <th class="sayi">Gereken</th><th>Sınıf</th><th>Sonuç</th></tr></thead>
     <tbody>${s.cepheler.map((x) => {
       const d = x.degerlendirme;
+      const so = x.sonuc;
       return `<tr>
         <td>${kacis(x.kayit.ad)}</td><td>${kacis(d?.mekan?.ad || '—')}</td>
-        <td class="sayi"><b>${sayi(x.sonuc.D2mnTw)}</b></td>
-        <td class="sayi">${d ? sayi(d.gereken, 0) : '—'}</td>
+        <td>${x.kayit.konum === 'kose' ? 'Köşe (D1+D2)' : 'Orta (D1)'}</td>
+        <td class="sayi">${sayi(so.RwBilesik)}</td>
+        <td class="sayi">${sayi(so.RwGorunur)}</td>
+        <td class="sayi"><b>${sayi(so.D2mnTw)}</b></td>
+        <td class="sayi">${sayi(so.DnTAtr)}</td>
+        <td class="sayi">${d ? sayi(d.gereken, 0) : '—'}${d?.hedefKaynagi === 'manuel' ? ' <small>(manuel)</small>' : ''}</td>
         <td>${d?.eldeEdilenSinif || '—'}</td><td>${uygunlukRozeti(d)}</td>
       </tr>`;
     }).join('')}</tbody>
-  </table></div>`;
+  </table></div>
+  <p class="soluk" style="font-size:12px">
+    Yan yollu R′w, bileşik cephe yalıtımı ile iç tavan/taban ve iç yan duvarların dış duvarla
+    birleşimlerinden doğan Df yollarının enerjik toplamıdır (yalnızca oda boyutları girilmiş
+    cephelerde hesaplanır). D<sub>nT,A,tr</sub> = D2m,nT,w + C<sub>tr</sub> bilgi amaçlıdır;
+    uygunluk kararı EK-3 Tablo 3.1 ile D2m,nT,w üzerinden verilir.
+  </p>`;
 }
 
 function bolumReverberasyon(s) {

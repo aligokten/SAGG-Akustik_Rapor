@@ -59,8 +59,19 @@ export function sinifYeterliMi(elde, hedef) {
  * @property {Object}  satir     Sınıf-değer satırının tamamı
  */
 
-function degerlendir(tablo, satir, hesaplanan, hedefSinif) {
-  const gereken = satir?.[hedefSinif];
+/**
+ * @param {Object} tablo   Yönetmelik tablosu (yön ve gösterge bilgisiyle)
+ * @param {Object} satir   Hedef sınıfa göre okunacak değer satırı
+ * @param {number} hesaplanan
+ * @param {string} hedefSinif
+ * @param {number|null} [manuelHedef] Girilirse yönetmelik değerinin yerine
+ *   geçer. Elde edilen sınıf yine yönetmelik satırından okunur; yalnızca
+ *   uygunluk kararı manuel hedefe göre verilir.
+ */
+function degerlendir(tablo, satir, hesaplanan, hedefSinif, manuelHedef = null) {
+  const yonetmelikGereken = satir?.[hedefSinif];
+  const manuelVar = Number.isFinite(manuelHedef);
+  const gereken = manuelVar ? manuelHedef : yonetmelikGereken;
   const yon = tablo.yon;
   const fark = yon === 'enAz' ? hesaplanan - gereken : gereken - hesaplanan;
   return {
@@ -68,6 +79,8 @@ function degerlendir(tablo, satir, hesaplanan, hedefSinif) {
     birim: tablo.birim,
     hesaplanan,
     gereken,
+    yonetmelikGereken,
+    hedefKaynagi: manuelVar ? 'manuel' : 'yonetmelik',
     hedefSinif,
     eldeEdilenSinif: sinifBelirle(satir, hesaplanan, yon),
     uygun: Number.isFinite(gereken) && Number.isFinite(hesaplanan) && fark >= 0,
@@ -86,14 +99,14 @@ function degerlendir(tablo, satir, hesaplanan, hedefSinif) {
  * @param {number} p.DnTw           Hesaplanan DnT,w (dB)
  * @param {string} [p.hedefSinif]
  */
-export function havaDogusluDegerlendir({ kaynakMekanId, aliciMekanId, DnTw, hedefSinif = ASGARI_SINIFLAR.yeniBina }) {
+export function havaDogusluDegerlendir({ kaynakMekanId, aliciMekanId, DnTw, hedefSinif = ASGARI_SINIFLAR.yeniBina, manuelHedef = null }) {
   const kaynak = mekanBul(kaynakMekanId);
   const alici = mekanBul(aliciMekanId);
   if (!kaynak || !alici) return null;
   const anahtar = `${kaynak.gurultululuk}-${alici.hassasiyet}`;
   const satir = EK3_TABLO_3_2.degerler[anahtar];
   return {
-    ...degerlendir(EK3_TABLO_3_2, satir, DnTw, hedefSinif),
+    ...degerlendir(EK3_TABLO_3_2, satir, DnTw, hedefSinif, manuelHedef),
     kaynakMekan: kaynak, aliciMekan: alici, anahtar,
   };
 }
@@ -105,14 +118,14 @@ export function havaDogusluDegerlendir({ kaynakMekanId, aliciMekanId, DnTw, hede
  * @param {string} p.altMekanId
  * @param {number} p.LnTw  Hesaplanan L'nT,w (dB)
  */
-export function darbeSesiDegerlendir({ ustMekanId, altMekanId, LnTw, hedefSinif = ASGARI_SINIFLAR.yeniBina }) {
+export function darbeSesiDegerlendir({ ustMekanId, altMekanId, LnTw, hedefSinif = ASGARI_SINIFLAR.yeniBina, manuelHedef = null }) {
   const ust = mekanBul(ustMekanId);
   const alt = mekanBul(altMekanId);
   if (!ust || !alt) return null;
   const anahtar = `${ust.gurultululuk}-${alt.hassasiyet}`;
   const satir = EK3_TABLO_3_3.degerler[anahtar];
   return {
-    ...degerlendir(EK3_TABLO_3_3, satir, LnTw, hedefSinif),
+    ...degerlendir(EK3_TABLO_3_3, satir, LnTw, hedefSinif, manuelHedef),
     ustMekan: ust, altMekan: alt, anahtar,
   };
 }
@@ -124,13 +137,13 @@ export function darbeSesiDegerlendir({ ustMekanId, altMekanId, LnTw, hedefSinif 
  * @param {number} p.disGurultu Cephedeki gündüz eşdeğer gürültü düzeyi (dBA)
  * @param {number} p.D2mnTw     Hesaplanan D2m,nT,w (dB)
  */
-export function cepheDegerlendir({ mekanId, disGurultu, D2mnTw, hedefSinif = ASGARI_SINIFLAR.yeniBina }) {
+export function cepheDegerlendir({ mekanId, disGurultu, D2mnTw, hedefSinif = ASGARI_SINIFLAR.yeniBina, manuelHedef = null }) {
   const mekan = mekanBul(mekanId);
   if (!mekan) return null;
   const aralik = disGurultuAraligi(disGurultu);
   const satir = EK3_TABLO_3_1.degerler[mekan.hassasiyet]?.[aralik.id];
   return {
-    ...degerlendir(EK3_TABLO_3_1, satir, D2mnTw, hedefSinif),
+    ...degerlendir(EK3_TABLO_3_1, satir, D2mnTw, hedefSinif, manuelHedef),
     mekan, aralik, disGurultu,
   };
 }

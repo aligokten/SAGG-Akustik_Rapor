@@ -6,7 +6,9 @@
 import { rwKestir } from './cekirdek/kutle-kanunu.js';
 import { havaDogusluYalitim, bilesikRw } from './cekirdek/en12354-1.js';
 import { darbeSesiYalitimi } from './cekirdek/en12354-2.js';
-import { cepheYalitimi } from './cekirdek/en12354-3.js';
+import {
+  cepheYalitimi, cepheGeometrisi, yanElemanBaglantilari, CEPHE_YAN_ROLLERI,
+} from './cekirdek/en12354-3.js';
 import { reverberasyonSuresi } from './cekirdek/reverberasyon.js';
 import {
   havaDogusluDegerlendir, darbeSesiDegerlendir, cepheDegerlendir,
@@ -191,6 +193,7 @@ export function ayiriciHesapla(a, proje) {
     aliciMekanId: a.aliciMekanId,
     DnTw: sonuc.DnTw,
     hedefSinif: proje.hedefSinif,
+    manuelHedef: a.manuelHedef,
   });
 
   return { kayit: a, ana, giydirme, giydirmeCozum, kapiBilgi, RwAyirici, yanElemanlar, sonuc, degerlendirme, geo };
@@ -233,20 +236,59 @@ export function darbeHesapla(d, proje) {
 export function cepheHesapla(c, proje) {
   const yuzeysel = (c.elemanlar || []).map((e) => {
     const coz = e.tur === 'duvar' ? elemanVeyaKatmanCoz(e, proje.rwModeli) : elemanCoz(e, proje.rwModeli);
-    return { ad: e.ad || coz.ad, S: e.S, Rw: coz.Rw, _cozum: coz };
+    return { ad: e.ad || coz.ad, S: e.S, Rw: coz.Rw, duvarNo: e.duvarNo || 1, tur: e.tur, _cozum: coz };
   });
   const kucuk = (c.kucukElemanlar || []).map((k) => {
     const kayit = bul(KUCUK_ELEMANLAR, k.elemanId);
     return { ad: k.ad || kayit?.ad || 'Küçük eleman', adet: k.adet, Dnew: Number.isFinite(k.DnewBeyan) ? k.DnewBeyan : (kayit?.Dnew ?? 40) };
   });
 
+  // Oda boyutları girilmişse hacim ve iç yan yolların birleşim uzunlukları
+  // geometriden türetilir; aksi hâlde yalnızca elle girilen V kullanılır ve
+  // yan yol hesabı yapılmaz.
+  const geo = c.geometri?.mod === 'olculer'
+    ? cepheGeometrisi(c.geometri, c.konum)
+    : null;
+  const V = geo ? geo.V : c.V;
+
+  // Her dış duvarın opak elemanı, o duvarın yan yol hesabında kaynak elemandır.
+  const duvarElemani = (no) =>
+    yuzeysel.find((y) => y.tur === 'duvar' && y.duvarNo === no)
+    || yuzeysel.find((y) => y.tur === 'duvar')
+    || null;
+
+  const yanElemanCozumleri = [];
+  const yanYollar = [];
+  if (geo) {
+    for (const y of (c.yanElemanlar || [])) {
+      const baglantilar = yanElemanBaglantilari(y.rol, geo);
+      const coz = elemanVeyaKatmanCoz(y, proje.rwModeli);
+      yanElemanCozumleri.push({ ...y, _cozum: coz, baglantiSayisi: baglantilar.length });
+      for (const b of baglantilar) {
+        const dis = duvarElemani(b.duvarNo);
+        if (!dis) continue;
+        yanYollar.push({
+          ad: `D${b.duvarNo}f — ${y.ad || CEPHE_YAN_ROLLERI[y.rol]?.ad || 'İç eleman'}`,
+          duvarNo: b.duvarNo,
+          lf: b.lf,
+          RwYan: coz.Rw, mYan: coz.mAlan,
+          RwDis: dis.Rw, mDis: dis._cozum.mAlan,
+          birlesim: y.birlesim || 'T',
+          esnek: !!y.esnekBaglanti,
+        });
+      }
+    }
+  }
+
   const sonuc = cepheYalitimi({
     yuzeyselElemanlar: yuzeysel,
     kucukElemanlar: kucuk,
-    V: c.V,
+    V,
     bicim: c.bicim,
     T0: proje.T0,
     emniyetPayi: proje.emniyetPayi,
+    ctr: Number.isFinite(c.ctr) ? c.ctr : 0,
+    yanYollar,
   });
 
   const degerlendirme = cepheDegerlendir({
@@ -254,9 +296,10 @@ export function cepheHesapla(c, proje) {
     disGurultu: c.disGurultu,
     D2mnTw: sonuc.D2mnTw,
     hedefSinif: proje.hedefSinif,
+    manuelHedef: c.manuelHedef,
   });
 
-  return { kayit: c, yuzeysel, kucuk, sonuc, degerlendirme };
+  return { kayit: c, yuzeysel, kucuk, sonuc, degerlendirme, geo, yanElemanlar: yanElemanCozumleri };
 }
 
 /** Bir hacmin reverberasyon hesabı. */

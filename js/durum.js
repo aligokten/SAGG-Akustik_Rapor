@@ -48,6 +48,7 @@ export function yeniAyirici() {
     elemanId: 'ba-200',
     sivaId: 'alci-15',
     sivaliYuzSayisi: 2,
+    manuelHedef: null,        // girilirse yönetmelik DnT,w hedefinin yerine geçer (dB)
     RwBeyan: null,            // beyan edilmiş Rw varsa kestirimin yerine geçer
     yogunlukBeyan: null,      // ürünün gerçek birim hacim ağırlığı (kg/m³)
     giydirmeId: 'yok',
@@ -92,6 +93,7 @@ export function yeniDarbe() {
     ustMekanId: 'konut-oturma',
     altMekanId: 'konut-yatak',
     dosemeId: 'ba-d-160',
+    manuelHedef: null,        // girilirse yönetmelik L'nT,w üst sınırının yerine geçer (dB)
     LnwBeyan: null,
     sapId: 'yuzer-sap-20',
     dLwBeyan: null,
@@ -113,12 +115,36 @@ export function yeniCephe() {
     disGurultu: 65,
     V: 40,
     bicim: 'duz',
+    konum: 'orta',            // orta (tek dış duvar) | kose (iki dış duvar)
+    ctr: -3,                  // spektrum uyarlama terimi — DnT,A,tr için
+    manuelHedef: null,        // girilirse yönetmelik hedefinin yerine geçer (dB)
+    geometri: {               // mod: 'hacim' (V doğrudan) | 'olculer' (L×W×H)
+      mod: 'hacim',
+      L: 4.5, W: 3.4, H: 2.62,
+    },
     elemanlar: [
-      { id: yeniId('e'), ad: 'Dolu cephe duvarı', tur: 'duvar', elemanId: 'ddt-240', sivaId: 'cimento-20', sivaliYuzSayisi: 2, RwBeyan: null, yogunlukBeyan: null, S: 9 },
-      { id: yeniId('e'), ad: 'Pencere', tur: 'dograma', elemanId: 'pencere-6-16-4', RwBeyan: null, S: 4.5 },
+      { id: yeniId('e'), ad: 'Dolu cephe duvarı', tur: 'duvar', duvarNo: 1, elemanId: 'ddt-240', sivaId: 'cimento-20', sivaliYuzSayisi: 2, RwBeyan: null, yogunlukBeyan: null, S: 9, katmanlar: [] },
+      { id: yeniId('e'), ad: 'Pencere', tur: 'dograma', duvarNo: 1, elemanId: 'pencere-6-16-4', RwBeyan: null, S: 4.5 },
     ],
     kucukElemanlar: [],
+    yanElemanlar: varsayilanCepheYanElemanlari(),
   };
+}
+
+/**
+ * Cephe mekânının iç yan elemanları.
+ *
+ * Bunlar cephe alanına dâhil değildir; dış duvarla birleşimlerinden Df yan
+ * yolu oluştururlar. `icArkaDuvar` yalnızca köşe mahalde (konum === 'kose')
+ * değerlendirmeye katılır.
+ */
+export function varsayilanCepheYanElemanlari() {
+  return [
+    { id: yeniId('cy'), rol: 'icTavan',     ad: 'İç tavan döşemesi', elemanId: 'ba-d-160', sivaId: 'alci-10', sivaliYuzSayisi: 1, RwBeyan: null, yogunlukBeyan: null, birlesim: 'T', esnekBaglanti: false, katmanlar: [] },
+    { id: yeniId('cy'), rol: 'icTaban',     ad: 'İç taban döşemesi', elemanId: 'ba-d-160', sivaId: 'alci-10', sivaliYuzSayisi: 1, RwBeyan: null, yogunlukBeyan: null, birlesim: 'T', esnekBaglanti: false, katmanlar: [] },
+    { id: yeniId('cy'), rol: 'icSolDuvar',  ad: 'İç yan duvar', elemanId: 'ddt-190', sivaId: 'alci-15', sivaliYuzSayisi: 2, RwBeyan: null, yogunlukBeyan: null, birlesim: 'T', esnekBaglanti: false, katmanlar: [] },
+    { id: yeniId('cy'), rol: 'icArkaDuvar', ad: 'İç arka duvar', elemanId: 'ddt-190', sivaId: 'alci-15', sivaliYuzSayisi: 2, RwBeyan: null, yogunlukBeyan: null, birlesim: 'T', esnekBaglanti: false, katmanlar: [] },
+  ];
 }
 
 /** Yeni bir hacim (reverberasyon) kaydı. */

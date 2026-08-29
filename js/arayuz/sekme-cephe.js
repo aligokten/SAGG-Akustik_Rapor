@@ -4,8 +4,8 @@
  */
 
 import { kacis, sayi, secenekler, uygunlukRozeti, sinifRozeti } from './ortak.js';
-import { DUVARLAR, DOGRAMALAR, SIVALAR, KUCUK_ELEMANLAR } from '../veri/malzemeler.js';
-import { BICIM_DUZELTMELERI, gerekliCepheYalitimi } from '../cekirdek/en12354-3.js';
+import { DUVARLAR, DOSEMELER, DOGRAMALAR, SIVALAR, KUCUK_ELEMANLAR } from '../veri/malzemeler.js';
+import { BICIM_DUZELTMELERI, gerekliCepheYalitimi, CEPHE_YAN_ROLLERI } from '../cekirdek/en12354-3.js';
 import { HASSASIYET_DERECELERI } from '../veri/yonetmelik.js';
 import { mekanSecenekleri } from './sekme-ayirici.js';
 
@@ -31,6 +31,75 @@ export function ciz(durum, sonuclar) {
   </section>`;
 }
 
+/**
+ * Mekân geometrisi ve iç yan elemanlar.
+ *
+ * Yan yol hesabı yalnızca 'olculer' modunda yapılır: iç tavan/taban ve iç
+ * duvarların dış duvarla birleşim uzunlukları oda boyutlarından türetilir.
+ */
+function geometriBolumu(y, c, h, i) {
+  const g = c.geometri || {};
+  const olcuMu = g.mod === 'olculer';
+  const geo = h.geo;
+
+  if (!olcuMu) {
+    return `
+    <div class="izgara" style="margin-top:14px">
+      <div class="alan"><label>Mekân hacmi V (m³)</label>
+        <input type="number" step="1" min="1" data-yol="${y}.V" data-tur="sayi" value="${c.V}"></div>
+      <div class="alan" style="justify-content:flex-end">
+        <button class="dugme acik kucuk" data-eylem="cephe-olcu-moda-gec" data-idx="${i}">Oda boyutlarından hesapla (L×W×H)</button>
+        <span class="ipucu">İç yan yolların (Df) hesaba katılması için oda boyutları gerekir.</span></div>
+    </div>`;
+  }
+
+  return `
+  <div class="izgara" style="margin-top:14px">
+    <div class="alan"><label>Derinlik L (m)</label>
+      <input type="number" step="0.01" min="0.5" data-yol="${y}.geometri.L" data-tur="sayi" value="${g.L}"></div>
+    <div class="alan"><label>Genişlik W (m)</label>
+      <input type="number" step="0.01" min="0.5" data-yol="${y}.geometri.W" data-tur="sayi" value="${g.W}"></div>
+    <div class="alan"><label>Yükseklik H (m)</label>
+      <input type="number" step="0.01" min="1.5" data-yol="${y}.geometri.H" data-tur="sayi" value="${g.H}"></div>
+    <div class="alan"><label>Hacim V (m³)</label>
+      <input readonly value="${sayi(geo?.V, 2)}"></div>
+    <div class="alan" style="justify-content:flex-end">
+      <button class="dugme acik kucuk" data-eylem="cephe-hacim-moda-don" data-idx="${i}">Hacmi elle gir</button></div>
+  </div>
+  ${geo ? `<p class="soluk" style="font-size:12px">
+    Dış duvar brüt alanları: ${geo.duvarlar.map((dv) => `D${dv.no} = ${sayi(dv.alan, 2)} m²`).join(' · ')}.
+    İç yan elemanlar cephe alanına eklenmez; dış duvarla birleşimlerinden Df yolu oluştururlar.
+  </p>` : ''}
+
+  <h3 style="margin-top:18px">İç yan elemanlar (Df yolları)</h3>
+  <div class="tablo-sar"><table>
+    <thead><tr><th>Yüzey</th><th>Eleman</th><th>Sıva</th><th class="sayi">Yüz</th>
+      <th class="sayi">m′</th><th class="sayi">Rw</th><th>Birleşim</th><th>Esnek</th><th>Bağlantı</th></tr></thead>
+    <tbody>
+    ${(c.yanElemanlar || []).map((ye, j) => {
+      const yy = `${y}.yanElemanlar.${j}`;
+      const hy = h.yanElemanlar?.find((x) => x.rol === ye.rol);
+      const pasif = ye.rol === 'icArkaDuvar' && c.konum !== 'kose';
+      return `<tr${pasif ? ' style="opacity:.45"' : ''}>
+        <td><b>${kacis(CEPHE_YAN_ROLLERI[ye.rol]?.kod || '')}</b> ${kacis(ye.ad)}</td>
+        <td><select data-yol="${yy}.elemanId" style="min-width:200px">${
+              secenekler(ye.rol === 'icTavan' || ye.rol === 'icTaban' ? DOSEMELER : DUVARLAR, ye.elemanId, { gruplu: true })}</select></td>
+        <td><select data-yol="${yy}.sivaId" style="min-width:140px">${secenekler(SIVALAR, ye.sivaId)}</select></td>
+        <td><select data-yol="${yy}.sivaliYuzSayisi" data-tur="sayi" style="width:62px">${[0, 1, 2].map((n) =>
+              `<option value="${n}"${n === ye.sivaliYuzSayisi ? ' selected' : ''}>${n}</option>`).join('')}</select></td>
+        <td class="sayi">${sayi(hy?._cozum?.mAlan)}</td>
+        <td class="sayi">${sayi(hy?._cozum?.Rw)}</td>
+        <td><select data-yol="${yy}.birlesim">
+              <option value="T"${ye.birlesim === 'T' ? ' selected' : ''}>T</option>
+              <option value="X"${ye.birlesim === 'X' ? ' selected' : ''}>X</option></select></td>
+        <td style="text-align:center"><input type="checkbox" data-yol="${yy}.esnekBaglanti" data-tur="bool"${ye.esnekBaglanti ? ' checked' : ''}></td>
+        <td class="soluk" style="font-size:12px">${pasif ? 'orta mahalde pasif' : `${hy?.baglantiSayisi ?? 0} dış duvar`}</td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table></div>`;
+}
+
 function kart(c, i, h) {
   const y = `cepheler.${i}`;
   const d = h.degerlendirme;
@@ -54,15 +123,28 @@ function kart(c, i, h) {
       <div class="alan"><label>Cephedeki gündüz gürültü düzeyi (dBA)</label>
         <input type="number" step="1" min="30" max="90" data-yol="${y}.disGurultu" data-tur="sayi" value="${c.disGurultu}">
         <span class="ipucu">Tablo aralığı: <b>${kacis(d?.aralik?.ad || '—')}</b></span></div>
-      <div class="alan"><label>Mekân hacmi V (m³)</label>
-        <input type="number" step="1" min="1" data-yol="${y}.V" data-tur="sayi" value="${c.V}"></div>
       <div class="alan"><label>Cephe biçimi</label>
         <select data-yol="${y}.bicim">${secenekler(BICIMLER, c.bicim)}</select></div>
+      <div class="alan"><label>Mahal konumu</label>
+        <select data-yol="${y}.konum">
+          <option value="orta"${c.konum !== 'kose' ? ' selected' : ''}>Orta mahal — tek dış duvar</option>
+          <option value="kose"${c.konum === 'kose' ? ' selected' : ''}>Köşe mahal — iki dış duvar</option>
+        </select>
+        <span class="ipucu">Köşe mahalde D1 (L×H) ve D2 (W×H) birlikte değerlendirilir.</span></div>
+      <div class="alan"><label>Spektrum düzeltmesi C<sub>tr</sub> (dB)</label>
+        <input type="number" step="1" min="-20" max="0" data-yol="${y}.ctr" data-tur="sayi" value="${c.ctr ?? -3}">
+        <span class="ipucu">D<sub>nT,A,tr</sub> = D2m,nT,w + C<sub>tr</sub> — bilgi amaçlıdır.</span></div>
+      <div class="alan"><label>Manuel D2m,nT,w hedefi (dB)</label>
+        <input type="number" step="1" data-yol="${y}.manuelHedef" data-tur="sayiVeyaNull" value="${c.manuelHedef ?? ''}"
+               placeholder="${d ? sayi(d.yonetmelikGereken, 0) : '—'} (yönetmelik)">
+        <span class="ipucu">${c.manuelHedef == null ? 'Yönetmelik hedefi etkin.' : 'Manuel hedef etkin — raporda etiketlenir.'}</span></div>
     </div>
+
+    ${geometriBolumu(y, c, h, i)}
 
     <h3 style="margin-top:18px">Yüzeysel cephe elemanları</h3>
     <div class="tablo-sar"><table>
-      <thead><tr><th>Ad</th><th>Tür</th><th>Eleman</th><th>Sıva</th><th class="sayi">Yüz</th>
+      <thead><tr><th>Ad</th><th>Tür</th><th>Duvar</th><th>Eleman</th><th>Sıva</th><th class="sayi">Yüz</th>
         <th class="sayi">S (m²)</th><th class="sayi">Yoğunluk</th><th class="sayi">Rw (dB)</th><th>Beyan Rw</th><th class="sayi">Pay (%)</th><th></th></tr></thead>
       <tbody>
       ${(c.elemanlar || []).map((e, j) => {
@@ -75,6 +157,9 @@ function kart(c, i, h) {
           <td><select data-yol="${ey}.tur" style="min-width:110px">
                 <option value="duvar"${duvarMi ? ' selected' : ''}>Duvar</option>
                 <option value="dograma"${!duvarMi ? ' selected' : ''}>Doğrama</option></select></td>
+          <td><select data-yol="${ey}.duvarNo" data-tur="sayi" style="width:74px">
+                <option value="1"${(e.duvarNo || 1) === 1 ? ' selected' : ''}>D1</option>
+                <option value="2"${e.duvarNo === 2 ? ' selected' : ''}>D2</option></select></td>
           <td><select data-yol="${ey}.elemanId" style="min-width:200px">${
                 secenekler(duvarMi ? DUVARLAR : DOGRAMALAR, e.elemanId, { gruplu: true })}</select></td>
           <td>${duvarMi ? `<select data-yol="${ey}.sivaId" style="min-width:150px">${secenekler(SIVALAR, e.sivaId)}</select>` : '<span class="soluk">—</span>'}</td>
@@ -117,13 +202,24 @@ function kart(c, i, h) {
 
     <div class="sonuc-serit${d && !d.uygun ? ' uygunsuz' : ''}">
       <div class="hucre"><span class="etiket">Bileşik R′w</span><span class="deger">${sayi(s.RwBilesik)} <small>dB</small></span></div>
+      <div class="hucre"><span class="etiket">Yan yollarla R′w</span><span class="deger">${sayi(s.RwGorunur)} <small>dB</small></span></div>
       <div class="hucre"><span class="etiket">Cephe alanı S</span><span class="deger">${sayi(s.S)} <small>m²</small></span></div>
       <div class="hucre"><span class="etiket">ΔLfs + hacim terimi</span><span class="deger">${sayi(s.dLfs + s.hacimTerimi)} <small>dB</small></span></div>
       <div class="hucre one-cikan"><span class="etiket">D2m,nT,w (hesaplanan)</span><span class="deger">${sayi(s.D2mnTw)} <small>dB</small></span></div>
-      <div class="hucre"><span class="etiket">Gereken (${kacis(d?.hedefSinif ?? '—')} sınıfı)</span><span class="deger">${d ? sayi(d.gereken, 0) : '—'} <small>dB</small></span></div>
+      <div class="hucre"><span class="etiket">D<sub>nT,A,tr</sub> (C<sub>tr</sub> ${sayi(s.ctr, 0)})</span><span class="deger">${sayi(s.DnTAtr)} <small>dB</small></span></div>
+      <div class="hucre"><span class="etiket">${d?.hedefKaynagi === 'manuel' ? 'Manuel hedef' : `Gereken (${kacis(d?.hedefSinif ?? '—')} sınıfı)`}</span><span class="deger">${d ? sayi(d.gereken, 0) : '—'} <small>dB</small></span></div>
       <div class="hucre"><span class="etiket">Elde edilen sınıf</span><span>${sinifRozeti(d?.eldeEdilenSinif)}</span></div>
       <div class="hucre"><span class="etiket">Sonuç</span><span>${uygunlukRozeti(d)}${d && Number.isFinite(d.fark) ? ` <small>(${d.fark >= 0 ? '+' : ''}${sayi(d.fark)} dB)</small>` : ''}</span></div>
     </div>
+    ${s.yanYollar?.length ? `<details><summary>Ses iletim yolları ve enerji payları</summary>
+      <div class="tablo-sar"><table>
+        <thead><tr><th>Yol</th><th class="sayi">Yalıtım R</th><th class="sayi">Enerji payı</th></tr></thead>
+        <tbody>${s.yolPaylari.map((p) => `<tr>
+          <td>${kacis(p.ad)}</td><td class="sayi">${sayi(p.R)} dB</td><td class="sayi">%${sayi(p.payYuzde, 1)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </details>` : ''}
+
     <p class="soluk" style="font-size:12px">
       Bilgi: 30 dBA iç gürültü hedefi için gereken kaba yalıtım farkı ${sayi(gerekliFizik, 0)} dB'dir
       (${sayi(c.disGurultu, 0)} − 30). Yönetmelik gereği ile bu değerden büyük olanı esas alınmalıdır.
