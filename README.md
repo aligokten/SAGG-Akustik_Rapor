@@ -337,6 +337,7 @@ index.html                     Dashboard kabuğu (kenar çubuğu + içerik)
 css/stil.css                   Tasarım simgeleri, açık/koyu tema, yazdırma biçemleri
 css/yazi.css                   Inter @font-face tanımları (latin + latin-ext)
 fonts/                         Inter değişken font dosyaları (woff2) + OFL lisansı
+assets/                        Marka işareti (logo.png) ve favicon türevleri
 .github/workflows/pages.yml    Testleri çalıştırıp GitHub Pages'e yayınlar
 js/
   uygulama.js                  Giriş noktası: durum, yönlendirme, tema, olaylar, dosya işlemleri
@@ -430,7 +431,24 @@ Pages açılana kadar uygulama, GitHub'daki dosyaları doğru MIME türleriyle s
 https://raw.githack.com/aligokten/SAGG-Akustik_Rapor/claude/ks-schallschutzrechner-turkish-lgtwfl/index.html
 ```
 
-## Tipografi
+## Marka ve tipografi
+
+### İşaret
+
+Kenar çubuğu, favicon ve rapor antedi aynı **yazısız marka işaretini** kullanır
+(`assets/logo.png` — saydam zeminli PNG, kaynak dosyanın kendisi). Türevleri:
+
+| Dosya | Kullanım |
+|---|---|
+| `assets/logo.png` | Kenar çubuğu, rapor antedi |
+| `assets/favicon-32.png`, `favicon-512.png` | Tarayıcı sekmesi |
+| `assets/apple-touch-icon.png` | iOS ana ekran kısayolu |
+
+İşaret siyah + turuncudur (`#000000` / `#FC3B00`). Koyu kenar çubuğunda ve koyu sekme
+şeridinde kaybolmaması için beyaz, yuvarlatılmış bir levhaya oturtulur — **işaretin
+kendisi hiç değiştirilmez**, yalnızca arkasına bir zemin konur.
+
+### Yazı ailesi
 
 Arayüz ve rapor **Inter** ile dizilir — Helvetica Neue soyundan gelen bir neo-grotesk.
 Font depoda barındırılır (`fonts/`, ~134 KB): dış istek yoktur, çevrimdışı ve kısıtlı

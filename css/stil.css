@@ -109,11 +109,13 @@ a{color:var(--vurgu)}
   border-right:1px solid var(--yan-cizgi);
 }
 .yan-marka{display:flex; gap:11px; align-items:center; padding:20px 18px; border-bottom:1px solid var(--yan-cizgi)}
+/* Marka işareti siyah + turuncudur; koyu kenar çubuğunda kaybolmaması için
+   beyaz bir levhaya oturtulur (işaretin kendisi değiştirilmez). */
 .yan-marka .logo{
-  flex:0 0 auto; display:grid; place-items:center; width:40px; height:40px; border-radius:11px;
-  background:#fff; padding:5px;
+  flex:0 0 auto; display:grid; place-items:center; width:42px; height:42px; border-radius:11px;
+  background:#fff; padding:6px 5px;
 }
-.yan-marka .logo svg{width:100%; height:100%}
+.yan-marka .logo img{width:100%; height:auto; display:block}
 /* Logotip kilidi: "SAGG" ağır, "Akustik Hesap" orta ağırlıkta — marka
    bannerındaki yazı ilişkisini birebir izler. */
 .yan-marka .ad{font-size:15px; line-height:1.2; color:#fff; letter-spacing:-.015em; white-space:nowrap}
@@ -386,9 +388,9 @@ details > *:last-child{margin-bottom:12px}
 .rapor-antet-marka{display:flex; align-items:center; gap:12px}
 .rapor-antet-logo{
   display:inline-flex; align-items:center; justify-content:center;
-  width:44px; height:44px; flex:0 0 auto; background:#fff; border-radius:var(--r-s); padding:5px;
+  width:46px; height:46px; flex:0 0 auto; background:#fff; border-radius:var(--r-s); padding:6px 5px;
 }
-.rapor-antet-logo svg{width:100%; height:100%}
+.rapor-antet-logo img{width:100%; height:auto; display:block}
 .rapor-antet-sirket{font-weight:750; font-size:14.5px}
 .rapor-antet-unvan{font-size:11.5px; color:var(--soluk)}
 .rapor-antet-kod{text-align:right; font-size:12px; display:flex; flex-direction:column; gap:2px}
