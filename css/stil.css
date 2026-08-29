@@ -40,6 +40,11 @@
 
   --r:16px; --r-s:10px; --r-l:22px; --r-hap:999px;
   --yan-genislik:248px;
+
+  /* Yazı ailesi — Helvetica Neue soyundan neo-grotesk.
+     Inter ağdan yüklenir (latin-ext altkümesiyle Türkçe tam desteklenir);
+     yüklenemezse sistemdeki gerçek Helvetica Neue, sonra Arial devreye girer. */
+  --yazi:"Inter","Helvetica Neue",Helvetica,"Segoe UI",Roboto,Arial,sans-serif;
 }
 
 :root[data-tema="koyu"]{
@@ -80,8 +85,9 @@
 html,body{height:100%}
 body{
   margin:0; background:var(--zemin); color:var(--metin);
-  font:14.5px/1.55 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  -webkit-font-smoothing:antialiased;
+  font:14.5px/1.55 var(--yazi);
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  font-feature-settings:"cv05" 1,"ss01" 1;   /* açık uçlu ı/l ayrımı */
 }
 h1,h2,h3,h4{margin:0 0 .35em; line-height:1.25; color:var(--metin); font-weight:650}
 h1{font-size:20px; letter-spacing:-.01em}
@@ -108,8 +114,12 @@ a{color:var(--vurgu)}
   background:#fff; padding:5px;
 }
 .yan-marka .logo svg{width:100%; height:100%}
-.yan-marka .ad{font-size:14px; font-weight:700; color:#fff; line-height:1.25}
-.yan-marka .alt{font-size:11px; color:var(--yan-metin); margin-top:1px}
+/* Logotip kilidi: "SAGG" ağır, "Akustik Hesap" orta ağırlıkta — marka
+   bannerındaki yazı ilişkisini birebir izler. */
+.yan-marka .ad{font-size:15px; line-height:1.2; color:#fff; letter-spacing:-.015em; white-space:nowrap}
+.yan-marka .ad b{font-weight:800; letter-spacing:-.005em}
+.yan-marka .ad span{font-weight:500; color:#e9e6ec}
+.yan-marka .alt{font-size:11px; color:var(--yan-metin); margin-top:2px; letter-spacing:.01em}
 
 .yan-menu{flex:1; overflow-y:auto; padding:14px 10px}
 .yan-baslik{

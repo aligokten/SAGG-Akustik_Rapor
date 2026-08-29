@@ -335,6 +335,8 @@ yükler.
 ```
 index.html                     Dashboard kabuğu (kenar çubuğu + içerik)
 css/stil.css                   Tasarım simgeleri, açık/koyu tema, yazdırma biçemleri
+css/yazi.css                   Inter @font-face tanımları (latin + latin-ext)
+fonts/                         Inter değişken font dosyaları (woff2) + OFL lisansı
 .github/workflows/pages.yml    Testleri çalıştırıp GitHub Pages'e yayınlar
 js/
   uygulama.js                  Giriş noktası: durum, yönlendirme, tema, olaylar, dosya işlemleri
@@ -427,6 +429,26 @@ Pages açılana kadar uygulama, GitHub'daki dosyaları doğru MIME türleriyle s
 ```
 https://raw.githack.com/aligokten/SAGG-Akustik_Rapor/claude/ks-schallschutzrechner-turkish-lgtwfl/index.html
 ```
+
+## Tipografi
+
+Arayüz ve rapor **Inter** ile dizilir — Helvetica Neue soyundan gelen bir neo-grotesk.
+Font depoda barındırılır (`fonts/`, ~134 KB): dış istek yoktur, çevrimdışı ve kısıtlı
+ağlarda da çalışır. Değişken (variable) font olduğu için 100–900 arası tüm ağırlıklar
+tek dosyadan gelir; yalnızca `latin` ve `latin-ext` altkümeleri alınmıştır.
+
+Türkçe'ye özgü **ı İ ğ Ğ ş Ş ç Ç ö Ö ü Ü** karakterleri `latin-ext` altkümesindedir ve
+tam olarak desteklenir. Font yüklenemezse yığın sırayla sistemdeki gerçek **Helvetica
+Neue**'ye, ardından Arial'e düşer — yani her koşulda aynı tipografik karakter korunur:
+
+```css
+--yazi: "Inter", "Helvetica Neue", Helvetica, "Segoe UI", Roboto, Arial, sans-serif;
+```
+
+Excel çıktısı, Office'te her yerde bulunan Arial ile biçimlendirilir.
+
+Inter, SIL Open Font License 1.1 ile dağıtılır; lisans metni `fonts/LICENSE-Inter.txt`
+içindedir.
 
 ## Lisans
 

@@ -118,9 +118,9 @@ export const STIL = { VARSAYILAN: 0, BASLIK: 1, KATEGORI: 2, VERI: 3, VERI_SAG: 
 const STYLES_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   <fonts count="3">
-    <font><sz val="11"/><name val="Calibri"/></font>
-    <font><b/><sz val="11"/><name val="Calibri"/></font>
-    <font><b/><sz val="13"/><name val="Calibri"/></font>
+    <font><sz val="11"/><name val="Arial"/></font>
+    <font><b/><sz val="11"/><name val="Arial"/></font>
+    <font><b/><sz val="13"/><name val="Arial"/></font>
   </fonts>
   <fills count="2">
     <fill><patternFill patternType="none"/></fill>
