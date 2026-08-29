@@ -65,6 +65,83 @@ export function sinifRozeti(sinif, boyut = '') {
   return `<span class="sinif-rozeti ${renk}${boyut === 'buyuk' ? ' buyuk' : ''}" title="Akustik performans sınıfı">${kacis(metin)}</span>`;
 }
 
+/**
+ * Halka (donut) gösterge — ortasında büyük bir sayı taşır.
+ *
+ * @param {number} oran   0–100 arası doluluk yüzdesi.
+ * @param {object} opts   `buyuk` (ortadaki sayı), `kucuk` (alt etiket),
+ *                        `renk` ('iyi' | 'kotu' | ''), `capMm` (piksel çap).
+ */
+export function halka(oran, { buyuk = '', kucuk = '', renk = '', cap = 132 } = {}) {
+  const guvenliOran = Math.max(0, Math.min(100, Number(oran) || 0));
+  const kalinlik = Math.max(7, Math.round(cap * 0.085));
+  const yaricap = (cap - kalinlik) / 2;
+  const cevre = 2 * Math.PI * yaricap;
+  const bosluk = cevre * (1 - guvenliOran / 100);
+
+  return `<div class="halka ${kacis(renk)}" style="width:${cap}px;height:${cap}px">
+    <svg width="${cap}" height="${cap}" viewBox="0 0 ${cap} ${cap}" aria-hidden="true">
+      <circle class="iz" cx="${cap / 2}" cy="${cap / 2}" r="${yaricap}" fill="none" stroke-width="${kalinlik}"/>
+      <circle class="yay" cx="${cap / 2}" cy="${cap / 2}" r="${yaricap}" fill="none" stroke-width="${kalinlik}"
+              stroke-dasharray="${cevre.toFixed(2)}" stroke-dashoffset="${bosluk.toFixed(2)}"/>
+    </svg>
+    <div class="orta">
+      <div>
+        <div class="buyuk">${kacis(buyuk)}</div>
+        ${kucuk ? `<div class="kucuk">${kacis(kucuk)}</div>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+/**
+ * Dikey çubuk grafik — her bileşenin gereksinime göre marjını gösterir.
+ *
+ * Sıfır çizgisi ortadadır: pozitif marj (gereksinimi aşan) yukarı, negatif
+ * marj (açık veren) aşağı çizilir; böylece referans arayüzdeki haftalık
+ * etkinlik grafiğiyle aynı okuma biçimi elde edilir.
+ *
+ * SVG yerine CSS/flex ile kurulur: viewBox ölçeklendiği için SVG metinleri
+ * kart genişliğine göre büyüyüp küçülürdü; HTML çubuklarda yazı puntosu
+ * kart genişliğinden bağımsız kalır.
+ *
+ * @param {Array<{ad:string, deger:number}>} veriler
+ */
+export function marjGrafigi(veriler, { birim = 'dB' } = {}) {
+  if (!veriler.length) return '';
+
+  // Ölçek: en büyük mutlak marj tepeyi doldurur; çok küçük değerlerde
+  // çubukların tümü ezilmesin diye alt sınır konur.
+  const enBuyuk = Math.max(3, ...veriler.map((v) => Math.abs(Number(v.deger)) || 0));
+
+  const sutunlar = veriler.map((v) => {
+    const gecerli = Number.isFinite(v.deger);
+    const deger = gecerli ? v.deger : 0;
+    // Tepe %80'de tutulur: kalan pay, çubuğun dışına yazılan değer etiketine
+    // yer bırakır (aksi hâlde etiket bileşen adının üstüne biner).
+    // Sıfır marj da görünür bir iz bıraksın diye en az %3 yükseklik verilir.
+    const oran = gecerli ? Math.max(3, (Math.abs(deger) / enBuyuk) * 80) : 3;
+    const sinif = !gecerli ? 'sonuk' : (deger >= 0 ? 'iyi' : 'kotu');
+    const etiketMetni = gecerli ? `${deger >= 0 ? '+' : ''}${sayi(deger, 0)}` : '—';
+    const pozitif = gecerli && deger >= 0;
+
+    return `<div class="mg-sutun" title="${kacis(v.ad)}: ${etiketMetni} ${kacis(birim)}">
+      <div class="mg-ust">
+        ${pozitif ? `<span class="mg-deger">${kacis(etiketMetni)}</span>
+                     <i class="mg-bar ${sinif}" style="height:${oran.toFixed(1)}%"></i>` : ''}
+      </div>
+      <div class="mg-alt">
+        ${!pozitif ? `<i class="mg-bar ${sinif}" style="height:${oran.toFixed(1)}%"></i>
+                      <span class="mg-deger">${kacis(etiketMetni)}</span>` : ''}
+      </div>
+      <div class="mg-ad">${kacis(v.ad)}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="marj-grafik" role="img"
+               aria-label="Bileşenlerin gereksinime göre marjı (${kacis(birim)})">${sutunlar}</div>`;
+}
+
 /** Sonuç şeridinde bir hücre. */
 export function olcut(etiket, deger, birim = '', oneCikan = false) {
   return `<div class="hucre${oneCikan ? ' one-cikan' : ''}">

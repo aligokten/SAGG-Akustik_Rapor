@@ -11,10 +11,16 @@ karşılayacak biçimde tasarlanmıştır: yapı elemanlarının ses yalıtım b
 içerecek şekilde** hesaplar, sonucu yönetmeliğin eklerindeki sınır değerlerle karşılaştırır ve
 **akustik performans sınıfını** (A–F) belirler.
 
-Kenar çubuklu bir dashboard olarak çalışır: **Panel** ekranı projenin belirleyici performans sınıfını,
-uygunluk oranını ve gereksinimi sağlamayan bileşenleri marj çubuklarıyla birlikte tek bakışta
-gösterir; menüdeki sayaçlar hangi bölümde kaç bileşen olduğunu ve kaçının sınırda kaldığını
-belirtir. Açık/koyu tema desteklidir ve dar ekranlarda menü çekmeceye dönüşür.
+Kenar çubuklu bir dashboard olarak çalışır. **Panel** ekranı bento (kart ızgarası) düzenindedir:
+soldaki halka gösterge projenin genel uygunluk oranını ve bölüm bölüm dökümünü verir; yanındaki
+**bileşen başarım marjı** grafiği her bileşenin gereksinime göre farkını sıfır çizgisinin
+üstünde/altında gösterir (hap biçimli düğmelerle bölüme göre süzülebilir); altındaki kutucuklar
+belirleyici sınıfı, hedef sınıfı, dikkat gerektiren bileşen sayısını ve proje kapsamını özetler.
+Menüdeki sayaçlar hangi bölümde kaç bileşen olduğunu ve kaçının sınırda kaldığını belirtir.
+
+Arayüz koyu tema için kurgulanmıştır (varsayılan); üst çubuktaki güneş/ay düğmesiyle açık temaya
+geçilebilir ve tercih saklanır. Yazdırmada renkler her hâlükârda açık temaya döndürülür, böylece
+rapor koyu temadan da doğru basılır. Dar ekranlarda menü çekmeceye dönüşür ve kartlar tek sütuna iner.
 
 ---
 

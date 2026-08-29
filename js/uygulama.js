@@ -428,7 +428,8 @@ function temayiUygula(tema) {
   document.documentElement.dataset.tema = tema;
   const d = $('#btn-tema');
   if (d) {
-    d.innerHTML = simge(tema === 'koyu' ? 'gunes' : 'ay');
+    // Referans arayüzdeki gibi iki durum da görünür; etkin olan CSS ile vurgulanır.
+    d.innerHTML = `<span class="gunes">${simge('gunes', '')}</span><span class="ay">${simge('ay', '')}</span>`;
     d.title = tema === 'koyu' ? 'Açık temaya geç' : 'Koyu temaya geç';
   }
   try { localStorage.setItem(TEMA_DEPO, tema); } catch { /* yoksay */ }
@@ -437,9 +438,9 @@ function temayiUygula(tema) {
 function temayiBaslat() {
   let tema = null;
   try { tema = localStorage.getItem(TEMA_DEPO); } catch { /* yoksay */ }
-  if (!tema) {
-    tema = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'koyu' : 'acik';
-  }
+  // Panel tasarımı koyu tema için kurgulandığından varsayılan koyudur;
+  // kullanıcı açık temaya geçerse tercihi kalıcı olarak saklanır.
+  if (!tema) tema = 'koyu';
   temayiUygula(tema);
 }
 
@@ -538,6 +539,7 @@ function olaylariBagla() {
       const j = Number(dugme.dataset.alt);
       if (EYLEMLER[eylem]) { EYLEMLER[eylem](i, j); ciz(); return; }
 
+      if (eylem === 'panel-filtre') { sekmePanel.suzgeciAyarla(dugme.dataset.deger); ciz(); return; }
       if (eylem.startsWith('git-')) { sekmeyeGit(eylem.slice(4)); return; }
       if (eylem === 'ornek-yukle') { durum = D.ornekProje(); ciz(); return; }
       if (eylem === 'yazdir') { window.print(); return; }

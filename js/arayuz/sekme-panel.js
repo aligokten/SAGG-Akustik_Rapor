@@ -3,8 +3,27 @@
  * ekranda özetler; ölçüt kutucukları, bileşen listeleri ve marj çubukları.
  */
 
-import { kacis, sayi, sinifRozeti, uygunlukRozeti } from './ortak.js';
+import { kacis, sayi, sinifRozeti, uygunlukRozeti, halka, marjGrafigi } from './ortak.js';
 import { SINIFLAR, ASGARI_SINIFLAR, BINA_TURLERI, SURUM } from '../veri/yonetmelik.js';
+import { simge } from './simgeler.js';
+
+/**
+ * Marj grafiğindeki bölüm süzgeci. Panel her çizimde yeniden üretildiğinden
+ * seçim modül düzeyinde tutulur; kalıcı proje verisine yazılmaz.
+ */
+let marjSuzgeci = 'hepsi';
+
+/** Süzgeç düğmelerinin (`data-eylem="panel-filtre"`) çağırdığı ayarlayıcı. */
+export function suzgeciAyarla(deger) {
+  marjSuzgeci = deger || 'hepsi';
+}
+
+const BOLUMLER = [
+  { id: 'ayirici', ad: 'Ayırıcı', liste: (s) => s.ayiricilar },
+  { id: 'darbe', ad: 'Darbe', liste: (s) => s.darbeler },
+  { id: 'cephe', ad: 'Cephe', liste: (s) => s.cepheler },
+  { id: 'reverberasyon', ad: 'Reverb.', liste: (s) => s.hacimler },
+];
 
 export function ciz(durum, s) {
   const p = durum.proje;
@@ -19,38 +38,68 @@ export function ciz(durum, s) {
 
   if (s.toplamBilesen === 0 && s.hacimler.length === 0) return bosPanel();
 
+  const hedefTutuyor = s.genelSinif && SINIFLAR.indexOf(s.genelSinif) <= SINIFLAR.indexOf(p.hedefSinif);
+
   return `
   ${uyariBandi()}
 
-  <div class="olcut-izgara">
+  <div class="bento">
+    <section class="kart genis-4">
+      <div class="kart-baslik">
+        <h3>${simge('panel')} Genel uygunluk</h3>
+        <span class="rozet ${oran === 100 ? 'uygun' : 'uygunsuz'}">${uygunSayisi}/${degerlendirilen.length}</span>
+      </div>
+      <div class="halka-yuva">
+        ${halka(oran, {
+          buyuk: `%${oran}`,
+          kucuk: 'sağlıyor',
+          renk: degerlendirilen.length === 0 ? '' : (oran === 100 ? 'iyi' : 'kotu'),
+          cap: 152,
+        })}
+      </div>
+      ${bolumDokumu(s)}
+      <div class="kart-not">
+        ${degerlendirilen.length
+          ? `${degerlendirilen.length} bileşenin ${uygunSayisi} tanesi yönetmelik gereksinimini karşılıyor.`
+          : 'Henüz değerlendirilebilir bileşen yok.'}
+      </div>
+    </section>
+
+    <section class="kart genis-8">
+      <div class="kart-baslik">
+        <h3>${simge('reverberasyon')} Bileşen başarım marjı</h3>
+        ${suzgecSeridi(s)}
+      </div>
+      ${marjBolumu(s)}
+    </section>
+  </div>
+
+  <div class="bento">
     ${olcutKart({
-      etiket: 'Belirleyici performans sınıfı',
+      etiket: 'Belirleyici sınıf',
       icerik: `<span class="deger">${sinifRozeti(s.genelSinif, 'buyuk')}
                  <span>${s.genelSinif ? `${s.genelSinif} sınıfı` : '—'}</span></span>`,
       alt: s.genelSinif
-        ? (SINIFLAR.indexOf(s.genelSinif) <= SINIFLAR.indexOf(p.hedefSinif)
-            ? `Hedeflenen ${p.hedefSinif} sınıfını karşılıyor`
-            : `Hedeflenen ${p.hedefSinif} sınıfının altında`)
+        ? (hedefTutuyor ? `Hedeflenen ${p.hedefSinif} sınıfını karşılıyor`
+                        : `Hedeflenen ${p.hedefSinif} sınıfının altında`)
         : 'Henüz değerlendirilebilir bileşen yok',
-      renk: !s.genelSinif ? 'notr'
-        : (SINIFLAR.indexOf(s.genelSinif) <= SINIFLAR.indexOf(p.hedefSinif) ? 'iyi' : 'kotu'),
-    })}
-    ${olcutKart({
-      etiket: 'Gereksinimi sağlayan bileşen',
-      icerik: `<span class="deger">${uygunSayisi}<small>/ ${degerlendirilen.length}</small></span>
-               <div class="cubuk ${oran === 100 ? 'iyi' : 'kotu'}" style="margin-top:9px"><i style="width:${oran}%"></i></div>`,
-      alt: `%${oran} uygunluk`,
-      renk: degerlendirilen.length === 0 ? 'notr' : (oran === 100 ? 'iyi' : 'kotu'),
+      renk: !s.genelSinif ? 'notr' : (hedefTutuyor ? 'iyi' : 'kotu'),
     })}
     ${olcutKart({
       etiket: 'Hedef sınıf',
-      icerik: `<span class="deger">${kacis(p.hedefSinif)}</span>`,
-      alt: `Yönetmelik asgarisi: ${asgari} · ${hedefYeterli ? 'karşılanıyor' : 'asgarinin altında'}`,
-      renk: hedefYeterli ? '' : 'kotu',
+      icerik: `<span class="deger">${kacis(p.hedefSinif)}<small>sınıfı</small></span>`,
+      alt: `Yönetmelik asgarisi ${asgari} · ${hedefYeterli ? 'karşılanıyor' : 'asgarinin altında'}`,
+      renk: 'dolu',
     })}
     ${olcutKart({
-      etiket: 'Bina türü',
-      icerik: `<span class="deger" style="font-size:19px">${kacis(BINA_TURLERI[p.binaTuru] || p.binaTuru)}</span>`,
+      etiket: 'Dikkat gerektiren',
+      icerik: `<span class="deger">${s.uygunsuzlar.length}<small>bileşen</small></span>`,
+      alt: s.uygunsuzlar.length ? 'Aşağıdaki listeden ayrıntıya gidin' : 'Tüm bileşenler gereksinimi sağlıyor',
+      renk: s.uygunsuzlar.length ? 'kotu' : 'iyi',
+    })}
+    ${olcutKart({
+      etiket: 'Kapsam',
+      icerik: `<span class="deger" style="font-size:17px;line-height:1.3">${kacis(BINA_TURLERI[p.binaTuru] || p.binaTuru)}</span>`,
       alt: `${s.ayiricilar.length} ayırıcı · ${s.darbeler.length} döşeme · ${s.cepheler.length} cephe · ${s.hacimler.length} hacim`,
       renk: 'notr',
     })}
@@ -86,6 +135,74 @@ function olcutKart({ etiket, icerik, alt, renk = '' }) {
     ${icerik}
     ${alt ? `<div class="alt-not">${kacis(alt)}</div>` : ''}
   </div>`;
+}
+
+/** Halkanın altında bölüm bölüm "kaç/kaç sağlıyor" dökümü. */
+function bolumDokumu(s) {
+  const satirlar = BOLUMLER.map((b) => {
+    const liste = b.liste(s).filter((x) => x.degerlendirme);
+    if (!liste.length) return '';
+    const uygun = liste.filter((x) => x.degerlendirme.uygun).length;
+    const tam = uygun === liste.length;
+    return `<div class="dokum-satir">
+      <span class="dokum-ad">${kacis(b.ad)}</span>
+      <div class="cubuk ${tam ? 'iyi' : 'kotu'}"><i style="width:${(uygun / liste.length) * 100}%"></i></div>
+      <span class="dokum-sayi">${uygun}/${liste.length}</span>
+    </div>`;
+  }).join('');
+  return satirlar ? `<div class="dokum">${satirlar}</div>` : '';
+}
+
+/** Marj grafiğinin bölüm süzgeci — yalnızca verisi olan bölümler gösterilir. */
+function suzgecSeridi(s) {
+  const dolu = BOLUMLER.filter((b) => b.liste(s).length > 0);
+  if (dolu.length < 2) return '';
+  const secenekler = [{ id: 'hepsi', ad: 'Tümü' }, ...dolu];
+  // Seçili bölüm bu arada boşalmış olabilir; o durumda "Tümü"ne düşülür.
+  const etkin = secenekler.some((x) => x.id === marjSuzgeci) ? marjSuzgeci : 'hepsi';
+
+  return `<div class="segment">${secenekler.map((x) =>
+    `<button type="button" class="${x.id === etkin ? 'etkin' : ''}"
+             data-eylem="panel-filtre" data-deger="${kacis(x.id)}">${kacis(x.ad)}</button>`
+  ).join('')}</div>`;
+}
+
+/**
+ * Her bileşenin gereksinime göre marjını tek grafikte toplar.
+ *
+ * `degerlendirme.fark` yön farkından bağımsız olarak normalleştirilmiştir
+ * (pozitif = gereksinimi sağlıyor), bu yüzden hava doğuşlu ses, darbe sesi
+ * ve cephe aynı eksende karşılaştırılabilir. Reverberasyonda `fark`
+ * bulunmadığından izin verilen süre ile hesaplanan süre farkı kullanılır.
+ */
+function marjVerileri(s) {
+  const veriler = [];
+  for (const b of BOLUMLER) {
+    if (marjSuzgeci !== 'hepsi' && marjSuzgeci !== b.id) continue;
+    for (const x of b.liste(s)) {
+      const d = x.degerlendirme;
+      if (!d) continue;
+      const deger = b.id === 'reverberasyon'
+        ? (Number.isFinite(d.Tmax) ? d.Tmax - x.sonuc.Torta : NaN)
+        : d.fark;
+      veriler.push({ ad: x.kayit.ad, deger, bolum: b.id });
+    }
+  }
+  return veriler;
+}
+
+function marjBolumu(s) {
+  const veriler = marjVerileri(s);
+  if (!veriler.length) {
+    return '<p class="soluk" style="font-size:13px;margin:18px 0">Bu süzgeçte değerlendirilebilir bileşen yok.</p>';
+  }
+  const birim = marjSuzgeci === 'reverberasyon' ? 's' : 'dB';
+  return `
+    ${marjGrafigi(veriler, { birim })}
+    <div class="efsane">
+      <span><i class="iyi"></i> Gereksinimi sağlıyor (marj ${birim} cinsinden pozitif)</span>
+      <span><i class="kotu"></i> Açık veriyor</span>
+    </div>`;
 }
 
 function uyariBandi() {
