@@ -19,6 +19,7 @@ import { YON_ADLARI } from '../cekirdek/geometri.js';
 import { katmanDizilimiMetni } from '../cekirdek/katmanli-eleman.js';
 import { YALITIM_LEVHALARI, bul } from '../veri/malzemeler.js';
 import { xlsxOlustur, blobIndir, STIL } from './xlsx-yazici.js';
+import { MARKA } from './simgeler.js';
 
 const dolguBul = (id) => bul(YALITIM_LEVHALARI, id);
 
@@ -45,7 +46,7 @@ function antet(p) {
   return `
   <div class="rapor-antet">
     <div class="rapor-antet-marka">
-      <span class="rapor-antet-logo">SAGG</span>
+      <span class="rapor-antet-logo">${MARKA}</span>
       <div>
         <div class="rapor-antet-sirket">${kacis(p.sirket || 'SAGG İnşaat Mimarlık Akustik')}</div>
         ${p.unvan ? `<div class="rapor-antet-unvan">${kacis(p.unvan)}</div>` : ''}

@@ -33,6 +33,20 @@ export const SIMGELER = {
   menu: sar('<path d="M4 6h16M4 12h16M4 18h16"/>'),
 };
 
+/**
+ * SAGG marka simgesi — altıgen içinde bir "gönder" oku, yanında turuncu
+ * ses dalgaları. `currentColor` kullanmaz; sabit iki renklidir (lacivert +
+ * turuncu) ve hem koyu hem açık zeminde çalışır.
+ */
+export const MARKA = `<svg viewBox="0 0 130 120" aria-hidden="true">
+  <polygon points="45,16 83.1,38 83.1,82 45,104 6.9,82 6.9,38" fill="#161c2b"/>
+  <path d="M17,52 H51 V40 L77,60 L51,80 V68 H17 Z" fill="#fff"/>
+  <circle cx="95" cy="60" r="6" fill="#ff6b1a"/>
+  <path d="M110.3,47.7 A16,16 0 0 1 110.3,72.3" fill="none" stroke="#ff6b1a" stroke-width="6" stroke-linecap="round"/>
+  <path d="M116.7,40.1 A26,26 0 0 1 116.7,79.9" fill="none" stroke="#ff6b1a" stroke-width="6" stroke-linecap="round"/>
+  <path d="M123.2,32.4 A36,36 0 0 1 123.2,87.6" fill="none" stroke="#ff6b1a" stroke-width="6" stroke-linecap="round"/>
+</svg>`;
+
 /** Bir simgeyi verilen sınıfla döndürür; bulunamazsa boş dizge. */
 export function simge(ad, sinif = 'simge') {
   const s = SIMGELER[ad];
