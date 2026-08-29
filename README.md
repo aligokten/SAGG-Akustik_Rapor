@@ -261,6 +261,22 @@ hangi döşeme kenarına oturduklarıyla belirlenir. Kural her üç ayırıcı y
 **F1/F3 → spanA**, **F2/F4 → spanB**; döşemede spanA = `min(L1,L2)`, spanB = `min(W1,W2)`.
 Ters eşleşme yan yolları ±3,15 dB kaydırıp DnT,w'yi 1,6 dB düşürür.
 
+### Sınır değer tablosunu Excel'e aktarma
+
+Rapor sekmesindeki **"Sınır değer tablosunu Excel'e aktar"** düğmesi, projedeki tüm ayırıcı/cephe
+kayıtlarını dış duvar (**DD**), iç duvar (**İD**) ve döşeme (**DOS**) olarak kodlayıp iki sayfalı bir
+`.xlsx` dosyası indirir — bu, sahada elle tutulan özet tablolarla aynı düzendedir:
+
+- **"Katman Kesitleri ve Rw Değerler"** — her elemanın kodu ve hesaplanan D<sub>nT,A,tr</sub>/D<sub>nT,w</sub>
+  değeri, kategoriye göre gruplanmış (dış duvar / iç duvar / döşemeler).
+- **"Projedeki Sınır Değerler ve Seç"** — aynı elemanlar, kaynak/alıcı mekân adları, EK-3 Tablo
+  3.1/3.2'den gelen asgari sınır değer (veya manuel geçersiz kılma) ve hesaplanan değerle yan yana.
+
+Cepheler DD, ayırıcı elemanlardan taban/tavan yönlü olanlar DOS, kalan (düşey) ayırıcılar İD olarak
+sınıflandırılır; darbe (L′nT,w) kayıtları bu tabloya dahil değildir (yalnızca hava doğuşlu D<sub>nT,A,tr</sub>
+kapsanır). Dosya, dış bağımlılık kullanmadan tarayıcıda üretilir (`js/arayuz/xlsx-yazici.js` — sıkıştırmasız
+bir ZIP/OOXML yazıcı) ve doğrudan indirilir.
+
 ## Kullanım
 
 Kurulum gerekmez — [canlı sürümü](https://aligokten.github.io/SAGG-Akustik_Rapor/) doğrudan
@@ -345,6 +361,7 @@ js/
     sekme-kutuphane.js         Malzeme kütüphanesi (aranabilir döküm) + katman favorileri
     katman-editor.js           Çok katmanlı yapı elemanı düzenleyici (paylaşılan bileşen)
     oda-cizimi.js              İzometrik oda şeması (SVG) üretici
+    xlsx-yazici.js             Dış bağımlılıksız .xlsx (ZIP/OOXML) yazıcı
     sekme-*.js                 Bölüm ekranları
     simgeler.js                Satır içi SVG simge seti
     ortak.js                   Arayüz yardımcıları
@@ -357,11 +374,12 @@ test/cekirdek.test.js          Hesap çekirdeği testleri
 npm test          # node --test test/*.test.js
 ```
 
-203 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+212 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
 projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
 modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
 hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış), izometrik şema üretimini, cephe iç yan
-yollarını, sayı girdisi davranışını, katman favorileri kitaplığını ve raporda mekân adı çözümünü
+yollarını, sayı girdisi davranışını, katman favorileri kitaplığını, raporda mekân adı çözümünü ve
+Excel sınır değer tablosu çıktısını (DD/İD/DOS kodlaması, sayfa yerleşimi, geçerli ZIP/OOXML paketi)
 kapsar. Ayrıca referans araçtan alınan dört örnek dosya, sonuçları birebir doğrulayan bir kehanet
 (oracle) takımı olarak koşturulur.
 

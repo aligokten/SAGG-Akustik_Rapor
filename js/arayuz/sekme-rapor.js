@@ -18,6 +18,7 @@ import { odaSVG, cepheSVG } from './oda-cizimi.js';
 import { YON_ADLARI } from '../cekirdek/geometri.js';
 import { katmanDizilimiMetni } from '../cekirdek/katmanli-eleman.js';
 import { YALITIM_LEVHALARI, bul } from '../veri/malzemeler.js';
+import { xlsxOlustur, blobIndir, STIL } from './xlsx-yazici.js';
 
 const dolguBul = (id) => bul(YALITIM_LEVHALARI, id);
 
@@ -27,6 +28,7 @@ export function ciz(durum, s) {
   return `
   <div class="yazdirma-gizle" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
     <button class="dugme" data-eylem="yazdir">Raporu yazdır / PDF'e aktar</button>
+    <button class="dugme acik" data-eylem="excel-indir">Sınır değer tablosunu Excel'e aktar</button>
     <span class="soluk" style="align-self:center;font-size:12.5px">Tarayıcının yazdırma penceresinden "PDF olarak kaydet" seçilebilir.</span>
   </div>
 
@@ -353,4 +355,164 @@ function bolumReverberasyon(s) {
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
+}
+
+/* ── Excel'e aktarım — "Katman Kesitleri ve Rw Değerleri" + "Sınır Değerler" ─
+   İki sayfalı, sabit bir yerleşimi olan .xlsx paketi üretir: elemanlar
+   DD (dış duvar/cephe), İD (iç duvar/ayırıcı) ve DOS (döşeme/ayırıcı taban)
+   olarak kodlanır — kullanıcının elle hazırladığı referans tabloyla aynı
+   düzende. ─────────────────────────────────────────────────────────── */
+
+/** Bir dizi ayırıcı/cephe kaydını DD/İD/DOS satırlarına dönüştürür. */
+export function excelKayitlariniTopla(s) {
+  const dd = s.cepheler.map((x, i) => ({
+    kod: `DD${i + 1}`,
+    kaynak: 'Çevresel Gürültü',
+    alici: x.degerlendirme?.mekan?.ad || x.kayit.ad || '—',
+    deger: x.sonuc?.DnTAtr,
+    gereken: x.degerlendirme?.gereken,
+  }));
+
+  const duvarAyiricilar = s.ayiricilar.filter((x) => x.kayit.geometri?.yon !== 'taban');
+  const dosemeAyiricilar = s.ayiricilar.filter((x) => x.kayit.geometri?.yon === 'taban');
+
+  const id = duvarAyiricilar.map((x, i) => ({
+    kod: `İD${i + 1}`,
+    kaynak: x.degerlendirme?.kaynakMekan?.ad || '—',
+    alici: x.degerlendirme?.aliciMekan?.ad || '—',
+    deger: x.sonuc?.DnTw,
+    gereken: x.degerlendirme?.gereken,
+  }));
+
+  const dos = dosemeAyiricilar.map((x, i) => ({
+    kod: `DOS${i + 1}`,
+    kaynak: x.degerlendirme?.kaynakMekan?.ad || '—',
+    alici: x.degerlendirme?.aliciMekan?.ad || '—',
+    deger: x.sonuc?.DnTw,
+    gereken: x.degerlendirme?.gereken,
+  }));
+
+  return { dd, id, dos };
+}
+
+function bosMu(v) { return { deger: '', stil: v }; }
+
+/** Sayfa 1: "Katman Kesitleri ve Rw Değerleri" — kategoriye göre gruplu liste. */
+export function sayfa1Uret({ dd, id, dos }) {
+  const kategoriler = [
+    { baslik: 'DIŞ DUVAR DD', esyaTuru: 'DUVAR', kayitlar: dd },
+    { baslik: 'İÇ DUVAR İD', esyaTuru: 'DUVAR', kayitlar: id },
+    { baslik: 'DÖŞEMELER DOS', esyaTuru: 'DÖŞEME', kayitlar: dos },
+  ];
+
+  const satirlar = [[
+    { deger: 'NİTELİK', stil: STIL.BASLIK },
+    { deger: 'YAPI ELEMANI', stil: STIL.BASLIK },
+    { deger: 'KODU', stil: STIL.BASLIK },
+    { deger: "Standartize Edilmiş Seviye Farkı (DₙT,A,tr)", stil: STIL.BASLIK },
+    bosMu(STIL.BASLIK),
+    { deger: 'Referans', stil: STIL.BASLIK },
+  ]];
+  const birlestirmeler = ['D1:E1'];
+
+  let r = 2;
+  for (const kat of kategoriler) {
+    if (!kat.kayitlar.length) continue;
+    const baslangic = r;
+    kat.kayitlar.forEach((k, i) => {
+      satirlar.push([
+        i === 0 ? { deger: kat.baslik, stil: STIL.KATEGORI } : bosMu(STIL.KATEGORI),
+        { deger: kat.esyaTuru, stil: STIL.VERI },
+        { deger: k.kod, stil: STIL.VERI },
+        Number.isFinite(k.deger) ? { deger: Number(k.deger.toFixed(1)), sayi: true, stil: STIL.VERI } : bosMu(STIL.VERI),
+        { deger: 'dBA', stil: STIL.VERI },
+        { deger: 'Yazılım', stil: STIL.VERI },
+      ]);
+      r += 1;
+    });
+    if (kat.kayitlar.length > 1) birlestirmeler.push(`A${baslangic}:A${r - 1}`);
+  }
+
+  return {
+    ad: 'Katman Kesitleri ve Rw Değerler',
+    sutunGenislikleri: [11, 15, 9, 12, 7, 11],
+    satirlar,
+    birlestirmeler,
+  };
+}
+
+/** Sayfa 2: "Projedeki Sınır Değerler ve Sağlanan Değerler". */
+export function sayfa2Uret({ dd, id, dos }) {
+  const kategoriler = [
+    { ana: 'Dış Yapı Elemanları', kod: 'DD', tur: 'Duvar', kayitlar: dd },
+    { ana: 'İç Yapı Elemanları', kod: 'İD', tur: 'Duvar', kayitlar: id },
+    { ana: 'Döşemeler', kod: 'DOS', tur: 'Döşeme', kayitlar: dos },
+  ];
+
+  const satirlar = [[
+    { deger: 'YAPI ELEMANLARI', stil: STIL.BASLIK },
+    { deger: 'ÖRNEK KOD', stil: STIL.BASLIK },
+    { deger: 'KAYNAK', stil: STIL.BASLIK },
+    { deger: 'ALICI', stil: STIL.BASLIK },
+    { deger: "EN DÜŞÜK SES YALITIMI (DₙT,A,tr)", stil: STIL.BASLIK },
+    bosMu(STIL.BASLIK),
+    { deger: "HAVA DOĞUŞLU DEĞERLER (DₙT,A,tr)", stil: STIL.BASLIK },
+    bosMu(STIL.BASLIK),
+  ]];
+  const birlestirmeler = ['E1:F1', 'G1:H1'];
+
+  let ilkKategoriYazildi = false;
+  for (const kat of kategoriler) {
+    if (!kat.kayitlar.length) continue;
+    const rNo = satirlar.length + 1;
+    const katSatiri = [
+      { deger: kat.ana, stil: STIL.BASLIK },
+      { deger: kat.kod, stil: STIL.BASLIK },
+      bosMu(STIL.BASLIK),
+      bosMu(STIL.BASLIK),
+    ];
+    if (!ilkKategoriYazildi) {
+      katSatiri.push(
+        { deger: 'Sınır Değer', stil: STIL.BASLIK }, bosMu(STIL.BASLIK),
+        { deger: 'Sağlanan Değer', stil: STIL.BASLIK }, bosMu(STIL.BASLIK),
+      );
+      birlestirmeler.push(`E${rNo}:F${rNo}`, `G${rNo}:H${rNo}`);
+      ilkKategoriYazildi = true;
+    } else {
+      katSatiri.push(bosMu(STIL.BASLIK), bosMu(STIL.BASLIK), bosMu(STIL.BASLIK), bosMu(STIL.BASLIK));
+    }
+    satirlar.push(katSatiri);
+
+    for (const k of kat.kayitlar) {
+      satirlar.push([
+        { deger: kat.tur, stil: STIL.BASLIK },
+        { deger: k.kod, stil: STIL.VERI },
+        { deger: k.kaynak, stil: STIL.VERI },
+        { deger: k.alici, stil: STIL.VERI },
+        { deger: Number.isFinite(k.gereken) ? `≥${sayi(k.gereken, 0)}` : '—', stil: STIL.VERI_SAG },
+        { deger: 'dB', stil: STIL.VERI },
+        Number.isFinite(k.deger) ? { deger: Number(k.deger.toFixed(1)), sayi: true, stil: STIL.VERI } : bosMu(STIL.VERI),
+        { deger: 'dB', stil: STIL.VERI },
+      ]);
+    }
+  }
+
+  return {
+    ad: 'Projedeki Sınır Değerler ve Seç',
+    sutunGenislikleri: [15, 9, 20, 19, 9, 5, 9, 5],
+    satirlar,
+    birlestirmeler,
+  };
+}
+
+/**
+ * Hesaplanan sonuçlardan iki sayfalı bir .xlsx paketi üretir ve indirir.
+ * @param {Object} p Proje künyesi (durum.proje)
+ * @param {Object} s Hesap sonuçları (projeyiHesapla çıktısı)
+ */
+export function excelRaporunuIndir(p, s) {
+  const kayitlar = excelKayitlariniTopla(s);
+  const kitap = xlsxOlustur([sayfa1Uret(kayitlar), sayfa2Uret(kayitlar)]);
+  const ad = (p.kod || p.ad || 'akustik-rapor').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'akustik-rapor';
+  blobIndir(kitap, `${ad} - Sinir Degerler.xlsx`);
 }

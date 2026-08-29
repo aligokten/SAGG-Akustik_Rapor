@@ -703,6 +703,10 @@ function olaylariBagla() {
       if (eylem.startsWith('git-')) { sekmeyeGit(eylem.slice(4)); return; }
       if (eylem === 'ornek-yukle') { durum = D.ornekProje(); ciz(); return; }
       if (eylem === 'yazdir') { window.print(); return; }
+      if (eylem === 'excel-indir') {
+        sekmeRapor.excelRaporunuIndir(durum.proje, projeyiHesapla(durum));
+        return;
+      }
       if (eylem === 'yonetmelik-disa') { indir(veriPaketi(), 'yonetmelik-verileri.json'); return; }
       if (eylem === 'yonetmelik-varsayilan') {
         if (confirm('Yönetmelik tablolarındaki düzenlemeleriniz silinip varsayılan değerlere dönülecek. Devam edilsin mi?')) {
