@@ -87,6 +87,11 @@ export function yeniAyirici() {
       oda1: { ad: '', L: 6.0, W: 3.0, H: 2.62 },
       oda2: { ad: '', L: 6.0, W: 3.0, H: 2.62 },
       yon: 'on',
+      // Alıcı mekânın kaynağa göre ayırıcı düzlem üzerindeki kayması (m).
+      // 0 iken iki oda hizalıdır ve ortak alan min() ile bulunur; kayma
+      // arttıkça duvarın yalnızca örtüşen kısmı ayırıcı eleman olur.
+      kaydirmaA: 0,
+      kaydirmaB: 0,
     },
   };
 }
@@ -129,6 +134,9 @@ export function yeniDarbe() {
     mYanOrtalama: 250,
     V: 40,
     katmanlar: [],
+    // Darbe hesabında yalnızca ALICI (alt) mekânın hacmi kullanılır
+    // (L'nT,w = L'n,w − 10·lg(0,032·V)); ortak döşeme alanı bu bağıntıya
+    // girmez. Bu nedenle tek oda kaydı yeterlidir.
     geometri: { mod: 'hacim', L: 6.0, W: 3.0, H: 2.62 },
   };
 }

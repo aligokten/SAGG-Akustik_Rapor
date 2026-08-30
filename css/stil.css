@@ -342,6 +342,7 @@ td select{padding-right:24px; background-position:calc(100% - 13px) 51%, calc(10
   font-size:12.8px; margin:12px 0; line-height:1.55;
 }
 .bilgi-kutu.sari{background:var(--uyari-zemin); border-color:var(--uyari-kontur); border-left-color:var(--uyari)}
+.bilgi-kutu.kirmizi{background:var(--hata-zemin); border-color:var(--hata-kontur); border-left-color:var(--hata)}
 .bilgi-kutu b{color:var(--metin)}
 .bos-durum{
   padding:36px 24px; text-align:center; color:var(--soluk);

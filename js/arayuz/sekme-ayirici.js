@@ -10,7 +10,7 @@ import {
 } from '../veri/yonetmelik.js';
 import { DUVARLAR, DOSEMELER, DOGRAMALAR, SIVALAR, GIYDIRME_KABUKLAR, YALITIM_LEVHALARI } from '../veri/malzemeler.js';
 import { BIRLESIM_TIPLERI } from '../cekirdek/kij.js';
-import { YON_ADLARI } from '../cekirdek/geometri.js';
+import { YON_ADLARI, KAYDIRMA_EKSENLERI } from '../cekirdek/geometri.js';
 import { katmanEditoru } from './katman-editor.js';
 import { odaSVG } from './oda-cizimi.js';
 
@@ -170,10 +170,13 @@ function geometriBolumu(y, a, h) {
       <select data-yol="${y}.geometri.yon">
         ${Object.entries(YON_ADLARI).map(([k, v]) => `<option value="${k}"${k === g.yon ? ' selected' : ''}>${kacis(v)}</option>`).join('')}
       </select>
-      <span class="ipucu">Oda boyutları farklıysa, paylaşılan ayırıcı yüzey iki odanın örtüşen (küçük olan) kısmıyla sınırlanır.</span></div>
+      <span class="ipucu">Ortak ayırıcı yüzey, iki odanın bu düzlemdeki örtüşen kısmıdır.</span></div>
   </div>
+
+  ${kaydirmaBolumu(y, g, h)}
+
   <div class="izgara dar" style="margin-top:8px">
-    <div class="alan"><label>Hesaplanan S</label><input readonly value="${h.geo ? sayi(h.geo.S) + ' m²' : '—'}"></div>
+    <div class="alan"><label>Ortak (ayırıcı) alan S</label><input readonly value="${h.geo ? sayi(h.geo.S) + ' m²' : '—'}"></div>
     <div class="alan"><label>Alıcı mekân hacmi (hesaplanan)</label><input readonly value="${h.geo ? sayi(h.geo.V) + ' m³' : '—'}"></div>
     <div class="alan"><label>Kaynak mekân hacmi (bilgi)</label><input readonly value="${h.geo ? sayi(h.geo.V1) + ' m³' : '—'}"></div>
   </div>
@@ -309,6 +312,52 @@ function sonucBolumu(h) {
     </table></div>
     <p class="soluk" style="font-size:12px">Satır anahtarı: ${kacis(d.anahtar)} (kaynak gürültülülük – alıcı hassasiyet). ${kacis(d.dogrulama)}</p>
   </details>` : ''}`;
+}
+
+/**
+ * Ayırıcı düzlemdeki kaydırma girişi ve örtüşme dökümü.
+ *
+ * İki mekân ayırıcı düzlem üzerinde kaydırılmışsa duvarın/döşemenin
+ * yalnızca örtüşen kısmı ayırıcı elemandır; kalan kısım o odanın kendi
+ * yan duvarı/döşemesidir ve iki mekân arasında iletim yolu değildir.
+ */
+function kaydirmaBolumu(y, g, h) {
+  const eksen = KAYDIRMA_EKSENLERI[g.yon] || KAYDIRMA_EKSENLERI.on;
+  const geo = h.geo;
+  const kA = Number(g.kaydirmaA) || 0;
+  const kB = Number(g.kaydirmaB) || 0;
+  const kaymaVar = kA !== 0 || kB !== 0;
+
+  const dokum = !geo ? '' : !geo.temasVar ? `
+    <div class="bilgi-kutu kirmizi" style="margin-top:8px">
+      <b>Mekânlar bu yüzde temas etmiyor.</b> Kaydırma, iki odanın örtüşmesini
+      tamamen ortadan kaldırdı (ortak alan 0 m²). Aralarında ayırıcı eleman
+      yoktur; hesap anlamlı bir sonuç veremez. Kaydırmayı azaltın ya da
+      ayırıcının bulunduğu yüzü değiştirin.
+    </div>` : geo.tamOrtusme ? `
+    <p class="soluk" style="font-size:12.5px;margin-top:6px">
+      Küçük yüzeyin tamamı paylaşılıyor — kaydırmanın ortak alana etkisi yok.
+    </p>` : `
+    <div class="bilgi-kutu sari" style="margin-top:8px">
+      <b>Kısmi örtüşme.</b> Ortak (ayırıcı) alan
+      <b>${sayi(geo.ortakA)} × ${sayi(geo.ortakB)} = ${sayi(geo.S)} m²</b>.
+      Bu yüzeyin geri kalanı ayırıcı eleman değildir:
+      kaynak odada <b>${sayi(geo.oda1OrtakOlmayan)} m²</b>
+      (toplam ${sayi(geo.oda1Yuzey)} m²),
+      alıcı odada <b>${sayi(geo.oda2OrtakOlmayan)} m²</b>
+      (toplam ${sayi(geo.oda2Yuzey)} m²) o odanın kendi yan duvarı/döşemesidir.
+    </div>`;
+
+  return `
+  <div class="izgara dar" style="margin-top:8px">
+    <div class="alan"><label>Kaydırma — ${kacis(eksen.A)} (m)</label>
+      <input type="text" inputmode="decimal" data-yol="${y}.geometri.kaydirmaA" data-tur="sayi" value="${kA}">
+      <span class="ipucu">Alıcı mekânın kaynağa göre öteleme miktarı; 0 = hizalı</span></div>
+    <div class="alan"><label>Kaydırma — ${kacis(eksen.B)} (m)</label>
+      <input type="text" inputmode="decimal" data-yol="${y}.geometri.kaydirmaB" data-tur="sayi" value="${kB}">
+      <span class="ipucu">${kaymaVar ? 'Ortak alan aşağıda güncellendi.' : 'İki eksende de 0 ise odalar hizalıdır'}</span></div>
+  </div>
+  ${dokum}`;
 }
 
 /**

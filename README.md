@@ -257,8 +257,9 @@ hesapla** moduna geçilebilir: iki mekânın (Oda 1/kaynak, Oda 2/alıcı) **her
 derinlik (L), genişlik (W), yükseklik (H) ile girilir — eşit boyutlu olmaları gerekmez — ve
 ayırıcının bulunduğu yüz seçilir: **ön / arka / sol / sağ duvar** ya da **taban / tavan döşemesi**.
 
-- Ayırıcı elemanın alanı S ve alıcı mekân hacmi V, seçilen yüze göre otomatik hesaplanır. Taban/tavan
-  seçiminde S, iki odanın örtüşen taban izdüşümü (`min(L1,L2) × min(W1,W2)`) olarak bulunur.
+- Ayırıcı elemanın alanı S ve alıcı mekân hacmi V, seçilen yüze göre otomatik hesaplanır. S, iki
+  odanın seçilen düzlemdeki **örtüşen** kısmıdır; odalar hizalıysa bu `min(A1,A2) × min(B1,B2)`
+  demektir (taban/tavan seçiminde `min(L1,L2) × min(W1,W2)`).
 - Standart dört yan elemanın (iki yan duvar + taban + tavan) birleşim uzunluğu (lf) oda
   boyutlarından otomatik türetilir. Kullanıcının sonradan eklediği ek yan elemanlar bu otomasyondan
   etkilenmez, elle girilen lf'lerini korur.
@@ -278,6 +279,43 @@ ayırıcının bulunduğu yüz seçilir: **ön / arka / sol / sağ duvar** ya da
 
 Eksen kuralı, KS-Schallschutzrechner'in oda diyagramıyla doğrulanmıştır: L=6,12 m, W=3,03 m,
 H=2,62 m, ayırıcı "sol duvar"da iken hesaplanan S = 16,03 m² birebir eşleşir.
+
+### Kısmi örtüşme — mekânların birbirine göre kaydırılması
+
+İki mekân ayırıcı düzlem üzerinde her zaman tam karşı karşıya olmayabilir: kat planında yana
+kayabilir, üst kat alt kata göre ötelenmiş olabilir ya da odalar arasında kot farkı bulunabilir.
+Böyle bir durumda duvarın/döşemenin **yalnızca örtüşen kısmı ayırıcı elemandır**; kalan kısım
+kaynak ya da alıcı odanın kendi yan duvarı/döşemesidir ve iki mekân arasında doğrudan bir hava
+doğuşlu iletim yolu oluşturmaz.
+
+Geometri bölümünde ayırıcı düzlemin iki ekseni için birer **kaydırma** değeri girilir. Eksenler
+seçilen yüze göre adlandırılır:
+
+| Ayırıcının bulunduğu yüz | A ekseni | B ekseni |
+| --- | --- | --- |
+| Ön / arka duvar | Genişlik (W) | Yükseklik (H) |
+| Sol / sağ duvar | Derinlik (L) | Yükseklik (H) |
+| Taban / tavan döşemesi | Derinlik (L) | Genişlik (W) |
+
+Kaydırma **hizalı konumdan sapma** olarak ölçülür: yatay eksenlerde (L, W) hizalı konum
+ortalanmış konum, düşey eksende (H) taban hizasıdır (odalar kendi döşemelerine oturur). Her iki
+durumda da kaydırma sıfırken örtüşme `min(A1, A2)` olur — yani **kaydırma alanı taşımayan eski
+projeler birebir aynı sonucu vermeye devam eder**.
+
+- Ortak alan `S = ortakA × ortakB`, aralık kesişimiyle bulunur:
+  `ortak = max(0, min(a, d+b) − max(0, d))` (`js/cekirdek/geometri.js`, `ortakUzunluk`).
+- **Yan eleman birleşim uzunlukları (lf) de örtüşen boyutları izler** — kısalan bir ayırıcının
+  yan yollarının birleşim uzunluğu da kısalır.
+- Arayüzde kaydırmanın sonucu canlı olarak yazılır: ortak alan, ve her iki odada bu yüzeyin
+  ortak **olmayan** kısmının alanı. 3B model kaydırmayı gerçek konumuyla çizer.
+- Kaydırma örtüşmeyi tamamen ortadan kaldırırsa (`S = 0`) mekânlar temas etmiyordur: arayüzde
+  kırmızı bir uyarı çıkar ve rapor, sessizce yanıltıcı bir "SAĞLAMIYOR" satırı yazmak yerine
+  aralarında ayırıcı eleman bulunmadığını açıkça belirtir.
+
+> **Darbe sesi sekmesinde kaydırma yoktur.** TS EN 12354-2'nin bu araçta kullanılan basitleştirilmiş
+> bağıntısı `L'nT,w = L'n,w − 10·lg(0,032·V)` yalnızca **alıcı mekânın hacmini** kullanır; ortak
+> döşeme alanı bağıntıya hiç girmez. Kaydırma bu nedenle yalnızca sonucu gerçekten değiştirdiği
+> yerde — ayırıcı elemanda, ayırıcı yüz bir döşeme (`taban`) olduğunda da — uygulanmıştır.
 
 ### "Katmanlı Model v3" JSON içe aktarma
 

@@ -119,53 +119,60 @@ export function odaSVG(geometriHam, opts = {}) {
   // ekseninde yan yana.
   let K1, K2, ayiracKoseleri, oda1Merkez, oda2Merkez, yanYuzeyler1, yanYuzeyler2;
 
+  // Kaydırma, HİZALI konumdan sapma olarak uygulanır: yatay eksenlerde
+  // ortalanmış, düşey eksende taban hizası. Kaydırma 0 iken çizim eskisiyle
+  // birebir aynıdır. Örtüşme aralığı `cekirdek/geometri.js` ile aynı kuralla
+  // bulunur, böylece şema ve hesap hiçbir zaman ayrışmaz.
+  const dA = Number(geometri.kaydirmaA) || 0;
+  const dB = Number(geometri.kaydirmaB) || 0;
+  const kesisim = (a1, u1, a2, u2) => [Math.max(a1, a2), Math.min(a1 + u1, a2 + u2)];
+
   if (tabanMi) {
-    // Oda1 altta, Oda2 üstte (dikey istif); L ve W ekseni ortak hizada,
-    // her odanın kendi genişliğine göre ortalanır.
-    const Lmax = Math.max(oda1.L, oda2.L), Wmax = Math.max(oda1.W, oda2.W);
-    const k1 = (x, y, z) => proj(x + (Lmax - oda1.L) / 2, y, z + (Wmax - oda1.W) / 2);
-    const k2 = (x, y, z) => proj(x + (Lmax - oda2.L) / 2, oda1.H + y, z + (Wmax - oda2.W) / 2);
-    K1 = {
-      aaa: k1(0, 0, 0), Aaa: k1(oda1.L, 0, 0), aAa: k1(0, oda1.H, 0), AAa: k1(oda1.L, oda1.H, 0),
-      aaZ: k1(0, 0, oda1.W), AaZ: k1(oda1.L, 0, oda1.W), aAZ: k1(0, oda1.H, oda1.W), AAZ: k1(oda1.L, oda1.H, oda1.W),
-    };
-    K2 = {
-      aaa: k2(0, 0, 0), Aaa: k2(oda2.L, 0, 0), aAa: k2(0, oda2.H, 0), AAa: k2(oda2.L, oda2.H, 0),
-      aaZ: k2(0, 0, oda2.W), AaZ: k2(oda2.L, 0, oda2.W), aAZ: k2(0, oda2.H, oda2.W), AAZ: k2(oda2.L, oda2.H, oda2.W),
-    };
-    const ayL = Math.min(oda1.L, oda2.L), ayW = Math.min(oda1.W, oda2.W);
-    const ayX = (Lmax - ayL) / 2, ayZ = (Wmax - ayW) / 2;
-    ayiracKoseleri = [
-      proj(ayX, oda1.H, ayZ), proj(ayX + ayL, oda1.H, ayZ),
-      proj(ayX + ayL, oda1.H, ayZ + ayW), proj(ayX, oda1.H, ayZ + ayW),
-    ];
+    // Oda1 altta, Oda2 üstte (dikey istif). Düzlem içi eksenler: L (x), W (z).
+    const x2 = (oda1.L - oda2.L) / 2 + dA;
+    const z2 = (oda1.W - oda2.W) / 2 + dB;
+    const k1 = (x, y, z) => proj(x, y, z);
+    const k2 = (x, y, z) => proj(x + x2, oda1.H + y, z + z2);
+    K1 = kutuKoseleriOzel(k1, oda1);
+    K2 = kutuKoseleriOzel(k2, oda2);
+    const [xa, xb] = kesisim(0, oda1.L, x2, oda2.L);
+    const [za, zb] = kesisim(0, oda1.W, z2, oda2.W);
+    ayiracKoseleri = xb > xa && zb > za
+      ? [proj(xa, oda1.H, za), proj(xb, oda1.H, za), proj(xb, oda1.H, zb), proj(xa, oda1.H, zb)]
+      : [];
     oda1Merkez = k1(oda1.L / 2, oda1.H * 0.7, oda1.W / 2);
     oda2Merkez = k2(oda2.L / 2, oda2.H * 0.7, oda2.W / 2);
     yanYuzeyler1 = []; yanYuzeyler2 = [];
   } else if (dikeyDuvarMi) {
-    // Z (genişlik) ekseninde yan yana: Oda1 z=[0,W1], Oda2 z=[W1,W1+W2].
-    const Lmax = Math.max(oda1.L, oda2.L);
-    const k1 = (x, y, z) => proj(x + (Lmax - oda1.L) / 2, y, z);
-    const k2 = (x, y, z) => proj(x + (Lmax - oda2.L) / 2, y, oda1.W + z);
+    // Z (genişlik) ekseninde yan yana. Düzlem içi eksenler: L (x), H (y).
+    const x2 = (oda1.L - oda2.L) / 2 + dA;
+    const y2 = dB;
+    const k1 = (x, y, z) => proj(x, y, z);
+    const k2 = (x, y, z) => proj(x + x2, y + y2, oda1.W + z);
     K1 = kutuKoseleriOzel(k1, oda1);
     K2 = kutuKoseleriOzel(k2, oda2);
-    const ayH = Math.min(oda1.H, oda2.H), ayL = Math.min(oda1.L, oda2.L);
-    const ayX = (Lmax - ayL) / 2;
-    ayiracKoseleri = [proj(ayX, 0, oda1.W), proj(ayX + ayL, 0, oda1.W), proj(ayX + ayL, ayH, oda1.W), proj(ayX, ayH, oda1.W)];
+    const [xa, xb] = kesisim(0, oda1.L, x2, oda2.L);
+    const [ya, yb] = kesisim(0, oda1.H, y2, oda2.H);
+    ayiracKoseleri = xb > xa && yb > ya
+      ? [proj(xa, ya, oda1.W), proj(xb, ya, oda1.W), proj(xb, yb, oda1.W), proj(xa, yb, oda1.W)]
+      : [];
     oda1Merkez = k1(oda1.L / 2, oda1.H * 0.72, oda1.W / 2);
     oda2Merkez = k2(oda2.L / 2, oda2.H * 0.72, oda2.W / 2);
     yanYuzeyler1 = [tabanYuz(K1), tavanYuz(K1)];
     yanYuzeyler2 = [tabanYuz(K2), tavanYuz(K2)];
   } else {
-    // X (derinlik) ekseninde yan yana: Oda1 x=[0,L1], Oda2 x=[L1,L1+L2].
-    const Wmax = Math.max(oda1.W, oda2.W);
-    const k1 = (x, y, z) => proj(x, y, z + (Wmax - oda1.W) / 2);
-    const k2 = (x, y, z) => proj(oda1.L + x, y, z + (Wmax - oda2.W) / 2);
+    // X (derinlik) ekseninde yan yana. Düzlem içi eksenler: W (z), H (y).
+    const z2 = (oda1.W - oda2.W) / 2 + dA;
+    const y2 = dB;
+    const k1 = (x, y, z) => proj(x, y, z);
+    const k2 = (x, y, z) => proj(oda1.L + x, y + y2, z + z2);
     K1 = kutuKoseleriOzel(k1, oda1);
     K2 = kutuKoseleriOzel(k2, oda2);
-    const ayH = Math.min(oda1.H, oda2.H), ayW = Math.min(oda1.W, oda2.W);
-    const ayZ = (Wmax - ayW) / 2;
-    ayiracKoseleri = [proj(oda1.L, 0, ayZ), proj(oda1.L, 0, ayZ + ayW), proj(oda1.L, ayH, ayZ + ayW), proj(oda1.L, ayH, ayZ)];
+    const [za, zb] = kesisim(0, oda1.W, z2, oda2.W);
+    const [ya, yb] = kesisim(0, oda1.H, y2, oda2.H);
+    ayiracKoseleri = zb > za && yb > ya
+      ? [proj(oda1.L, ya, za), proj(oda1.L, ya, zb), proj(oda1.L, yb, zb), proj(oda1.L, yb, za)]
+      : [];
     oda1Merkez = k1(oda1.L / 2, oda1.H * 0.72, oda1.W / 2);
     oda2Merkez = k2(oda2.L / 2, oda2.H * 0.72, oda2.W / 2);
     yanYuzeyler1 = [tabanYuz(K1), tavanYuz(K1)];
@@ -228,7 +235,9 @@ export function odaSVG(geometriHam, opts = {}) {
   ${yanYuzeyler.map((y) => `<polygon class="yan-yuz" points="${d(y.koseler)}"><title>${kacis(y.ad)} — yan yol iletim yüzeyi</title></polygon>`).join('\n  ')}
   ${kutuKenarlari.map(([p1, p2]) => cizgi(p1, p2, 'kenar')).join('\n  ')}
 
-  <polygon class="ayirici" points="${d(ayiracKoseleri)}"><title>Ayırıcı eleman</title></polygon>
+  ${ayiracKoseleri.length
+    ? `<polygon class="ayirici" points="${d(ayiracKoseleri)}"><title>Ayırıcı eleman</title></polygon>`
+    : ''}
 
   ${sesKaynagiSimgesi(skx, sky + 20, 1, `Ses kaynağı — ${oda1Adi}`)}
 

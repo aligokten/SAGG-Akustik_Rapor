@@ -117,9 +117,24 @@ function ayiriciRaporu(p, a, indeks, toplam) {
       </tbody>
     </table></div>
     <div class="rapor-kunye-tablo" style="margin-top:10px">
-      <div><b>Ayırıcı alan S</b><span style="font-size:16px;font-weight:700">${sayi(a.geo?.S)} m²</span></div>
+      <div><b>Ortak (ayırıcı) alan S</b><span style="font-size:16px;font-weight:700">${sayi(a.geo?.S)} m²</span></div>
       <div><b>Seçilen yüzey</b><span>${kacis(YON_ADLARI[geo.yon] || '—')}</span></div>
+      ${a.geo && !a.geo.tamOrtusme && a.geo.temasVar ? `
+      <div><b>Kaydırma</b><span>${sayi(a.geo.kaydirmaA)} m / ${sayi(a.geo.kaydirmaB)} m</span></div>
+      <div><b>Ortak olmayan yüzey</b><span>kaynak ${sayi(a.geo.oda1OrtakOlmayan)} m² · alıcı ${sayi(a.geo.oda2OrtakOlmayan)} m²</span></div>` : ''}
     </div>
+    ${a.geo && !a.geo.temasVar ? `
+    <div class="bilgi-kutu kirmizi">
+      <b>Mekânlar bu yüzde temas etmiyor.</b> Kaydırma iki odanın örtüşmesini tamamen
+      ortadan kaldırdığı için ortak alan 0 m²'dir; aralarında ayırıcı eleman yoktur ve
+      aşağıdaki hesap anlamlı değildir.
+    </div>` : a.geo && !a.geo.tamOrtusme ? `
+    <p class="soluk" style="font-size:12.5px">
+      Mekânlar ayırıcı düzlem üzerinde kaydırılmıştır. Hesap yalnızca örtüşen
+      <b>${sayi(a.geo.ortakA)} × ${sayi(a.geo.ortakB)} = ${sayi(a.geo.S)} m²</b>'lik ortak
+      yüzey üzerinden yapılmıştır; bu yüzeyin dışında kalan kısımlar ilgili odanın kendi
+      yan duvarı/döşemesidir ve iki mekân arasında iletim yolu oluşturmaz.
+    </p>` : ''}
     <div class="canli-model yazdirma-goster">
       <div class="canli-model-baslik"><span class="canli-model-nokta"></span> Canlı 3B model</div>
       <div style="padding:6px">${odaSVG(geo, { oda1Adi, oda2Adi, genislik: 720, yukseklik: 320 })}</div>
