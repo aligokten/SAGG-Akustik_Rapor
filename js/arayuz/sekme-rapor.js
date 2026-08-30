@@ -102,6 +102,8 @@ function ayiriciRaporu(p, a, indeks, toplam) {
       <div><b>Hedef sınıf</b><span>${kacis(p.hedefSinif)} sınıfı (asgari ${kacis(asgari)})</span></div>
       <div><b>Kaynak mekân</b><span>${kacis(d?.kaynakMekan?.ad || '—')}</span></div>
       <div><b>Alıcı mekân</b><span>${kacis(d?.aliciMekan?.ad || '—')}</span></div>
+      <div><b>Gereksinim tablosu</b><span>${kacis(d?.tabloAdi || '—')}${d?.komsuluk
+        ? ` · ${kacis(d.komsuluk.kaynak)} → ${kacis(d.komsuluk.alici)}` : ''}</span></div>
     </div>
 
     <h2>1. Mekân geometrisi</h2>
@@ -311,7 +313,7 @@ function bolumDarbe(s) {
   <div class="tablo-sar"><table>
     <thead><tr>
       <th>Döşeme</th><th>Üst → Alt</th><th class="sayi">L′nT,w</th><th class="sayi">İzin verilen</th>
-      <th>Sınıf</th><th>Sonuç</th>
+      <th>Tablo</th><th>Sınıf</th><th>Sonuç</th>
     </tr></thead>
     <tbody>${s.darbeler.map((x) => {
       const d = x.degerlendirme;
@@ -320,6 +322,7 @@ function bolumDarbe(s) {
         <td>${kacis(d?.ustMekan?.ad || '—')} → ${kacis(d?.altMekan?.ad || '—')}</td>
         <td class="sayi"><b>${sayi(x.sonuc.LnTw)}</b></td>
         <td class="sayi">${d ? sayi(d.gereken, 0) : '—'}${d?.hedefKaynagi === 'manuel' ? ' <small>(manuel)</small>' : ''}</td>
+        <td><small>${kacis((d?.tabloAdi || '—').replace('EK-3 ', ''))}</small></td>
         <td>${d?.eldeEdilenSinif || '—'}</td>
         <td>${uygunlukRozeti(d)}</td>
       </tr>`;

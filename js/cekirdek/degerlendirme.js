@@ -6,7 +6,8 @@
 import {
   SINIFLAR, ASGARI_SINIFLAR,
   EK2_TABLO_2_1, EK3_TABLO_3_1, EK3_TABLO_3_2, EK3_TABLO_3_3,
-  EK4_TABLO_4_1, EK6_TABLO_6_1,
+  EK3_TABLO_3_4, EK3_TABLO_3_5,
+  EK4_TABLO_4_1, EK6_TABLO_6_1, komsulukSatiri,
 } from '../veri/yonetmelik.js';
 
 /** Mekân tanımını id ile bulur. */
@@ -112,15 +113,25 @@ function degerlendir(tablo, satir, hesaplanan, hedefSinif, manuelHedef = null) {
  * @param {number} p.DnTw           Hesaplanan DnT,w (dB)
  * @param {string} [p.hedefSinif]
  */
-export function havaDogusluDegerlendir({ kaynakMekanId, aliciMekanId, DnTw, hedefSinif = ASGARI_SINIFLAR.yeniBina, manuelHedef = null }) {
+export function havaDogusluDegerlendir({
+  kaynakMekanId, aliciMekanId, DnTw, hedefSinif = ASGARI_SINIFLAR.yeniBina,
+  manuelHedef = null, komsulukId = null,
+}) {
   const kaynak = mekanBul(kaynakMekanId);
   const alici = mekanBul(aliciMekanId);
   if (!kaynak || !alici) return null;
+
+  // Komşuluk ilişkisi seçilmişse EK-3 Tablo 3.4, seçilmemişse mekân
+  // derecelerine dayanan EK-3 Tablo 3.2 kullanılır.
+  const komsuluk = komsulukId ? komsulukSatiri(EK3_TABLO_3_4, komsulukId) : null;
   const anahtar = `${kaynak.gurultululuk}-${alici.hassasiyet}`;
-  const satir = EK3_TABLO_3_2.degerler[anahtar];
+  const tablo = komsuluk ? EK3_TABLO_3_4 : EK3_TABLO_3_2;
+  const satir = komsuluk || EK3_TABLO_3_2.degerler[anahtar];
+
   return {
-    ...degerlendir(EK3_TABLO_3_2, satir, DnTw, hedefSinif, manuelHedef),
+    ...degerlendir(tablo, satir, DnTw, hedefSinif, manuelHedef),
     kaynakMekan: kaynak, aliciMekan: alici, anahtar,
+    komsuluk, tabloAdi: komsuluk ? 'EK-3 Tablo 3.4' : 'EK-3 Tablo 3.2',
   };
 }
 
@@ -131,17 +142,26 @@ export function havaDogusluDegerlendir({ kaynakMekanId, aliciMekanId, DnTw, hede
  * @param {string} p.altMekanId
  * @param {number} p.LnTw  Hesaplanan L'nT,w (dB)
  */
-export function darbeSesiDegerlendir({ ustMekanId, altMekanId, LnTw, hedefSinif = ASGARI_SINIFLAR.yeniBina, manuelHedef = null }) {
+export function darbeSesiDegerlendir({
+  ustMekanId, altMekanId, LnTw, hedefSinif = ASGARI_SINIFLAR.yeniBina,
+  manuelHedef = null, komsulukId = null,
+}) {
   const ust = mekanBul(ustMekanId);
   const alt = mekanBul(altMekanId);
   if (!ust || !alt) return null;
-  // Resmî Tablo 3.3 YALNIZCA kaynak (üst) mekânın gürültülülük derecesine
-  // bağlıdır; alıcı mekânın hassasiyeti bu tabloya girmez.
+
+  // Komşuluk ilişkisi seçilmişse EK-3 Tablo 3.5 kullanılır. Aksi hâlde
+  // resmî Tablo 3.3 geçerlidir; o tablo YALNIZCA kaynak (üst) mekânın
+  // gürültülülük derecesine bağlıdır, alıcının hassasiyeti girmez.
+  const komsuluk = komsulukId ? komsulukSatiri(EK3_TABLO_3_5, komsulukId) : null;
   const anahtar = ust.gurultululuk;
-  const satir = EK3_TABLO_3_3.degerler[anahtar];
+  const tablo = komsuluk ? EK3_TABLO_3_5 : EK3_TABLO_3_3;
+  const satir = komsuluk || EK3_TABLO_3_3.degerler[anahtar];
+
   return {
-    ...degerlendir(EK3_TABLO_3_3, satir, LnTw, hedefSinif, manuelHedef),
+    ...degerlendir(tablo, satir, LnTw, hedefSinif, manuelHedef),
     ustMekan: ust, altMekan: alt, anahtar,
+    komsuluk, tabloAdi: komsuluk ? 'EK-3 Tablo 3.5' : 'EK-3 Tablo 3.3',
   };
 }
 

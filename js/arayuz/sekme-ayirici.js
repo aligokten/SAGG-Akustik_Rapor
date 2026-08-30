@@ -4,7 +4,10 @@
  */
 
 import { kacis, sayi, secenekler, uygunlukRozeti, sinifRozeti } from './ortak.js';
-import { EK2_TABLO_2_1, GURULTULULUK_DERECELERI, HASSASIYET_DERECELERI } from '../veri/yonetmelik.js';
+import {
+  EK2_TABLO_2_1, GURULTULULUK_DERECELERI, HASSASIYET_DERECELERI,
+  EK3_TABLO_3_4, komsulukSatirlari, BINA_TURLERI,
+} from '../veri/yonetmelik.js';
 import { DUVARLAR, DOSEMELER, DOGRAMALAR, SIVALAR, GIYDIRME_KABUKLAR, YALITIM_LEVHALARI } from '../veri/malzemeler.js';
 import { BIRLESIM_TIPLERI } from '../cekirdek/kij.js';
 import { YON_ADLARI } from '../cekirdek/geometri.js';
@@ -26,15 +29,16 @@ export function ciz(durum, sonuclar) {
       Hesap TS EN 12354-1'in basitleştirilmiş (tek sayılı) modeline göre yapılır: doğrudan yol (Dd) ile
       her yan eleman için üç yan yol (Ff, Fd, Df) enerjik olarak toplanarak <b>R′w</b> bulunur, ardından
       <b>DnT,w = R′w + 10·lg(0,32·V/S)</b> ile yönetmeliğin göstergesine dönüştürülür.
-      Sonuç <b>EK-3 Tablo 3.2</b> ile karşılaştırılır.
+      Sonuç, her eleman için seçilen tabloyla karşılaştırılır: komşuluk ilişkisi seçildiyse
+      <b>EK-3 Tablo 3.4</b>, seçilmediyse mekân derecelerine dayanan <b>EK-3 Tablo 3.2</b>.
     </div>
     ${kayitlar.length === 0
       ? '<div class="bos-durum">Henüz ayırıcı eleman tanımlanmadı. Yukarıdaki düğmeyle ekleyin.</div>'
-      : kayitlar.map((a, i) => kart(a, i, sonuclar.ayiricilar[i])).join('')}
+      : kayitlar.map((a, i) => kart(a, i, sonuclar.ayiricilar[i], durum.proje.binaTuru)).join('')}
   </section>`;
 }
 
-function kart(a, i, h) {
+function kart(a, i, h, binaTuru) {
   const y = `ayiricilar.${i}`;
   const d = h.degerlendirme;
   return `
@@ -62,6 +66,8 @@ function kart(a, i, h) {
                placeholder="${d ? sayi(d.yonetmelikGereken, 0) : '—'} (yönetmelik)">
         <span class="ipucu">${a.manuelHedef == null ? 'Yönetmelik hedefi etkin.' : 'Manuel hedef etkin — raporda etiketlenir.'}</span></div>
     </div>
+
+    ${komsulukBolumu(y, a, d, binaTuru)}
 
     ${geometriBolumu(y, a, h)}
 
@@ -305,15 +311,43 @@ function sonucBolumu(h) {
   </details>` : ''}`;
 }
 
+/**
+ * Gereksinim tablosu seçimi — EK-3 Tablo 3.4 (komşuluk ilişkisi) ya da
+ * mekân derecelerine dayanan Tablo 3.2.
+ *
+ * Tablo 3.4 yalnızca bazı bina işlevlerini kapsar; kapsanmayan bir bina
+ * türünde seçim gösterilmez ve Tablo 3.2 kullanılır.
+ */
+function komsulukBolumu(y, a, d, binaTuru) {
+  const satirlar = komsulukSatirlari(EK3_TABLO_3_4, binaTuru);
+  if (!satirlar.length) {
+    return `<p class="soluk" style="font-size:12.5px">
+      Gereksinim <b>EK-3 Tablo 3.2</b>'den (mekân dereceleri) okunuyor —
+      EK-3 Tablo 3.4 bu bina işlevini kapsamıyor.</p>`;
+  }
+  const secili = a.komsulukId || '';
+  return `
+    <h3 style="margin-top:18px">Gereksinim tablosu</h3>
+    <div class="izgara">
+      <div class="alan"><label>Komşuluk ilişkisi (EK-3 Tablo 3.4)</label>
+        <select data-yol="${y}.komsulukId">
+          <option value=""${secili === '' ? ' selected' : ''}>Kullanma — Tablo 3.2 (mekân dereceleri)</option>
+          ${satirlar.map((r) => `<option value="${kacis(r.id)}"${r.id === secili ? ' selected' : ''}>${kacis(r.kaynak)} → ${kacis(r.alici)}</option>`).join('')}
+        </select>
+        <span class="ipucu">${d?.komsuluk
+          ? '<b>EK-3 Tablo 3.4</b> kullanılıyor.'
+          : '<b>EK-3 Tablo 3.2</b> kullanılıyor (kaynak/alıcı derecelerine göre).'}</span></div>
+    </div>`;
+}
+
 function mekanSecenekleri(secili) {
   const gruplar = new Map();
   for (const m of MEKANLAR) {
     if (!gruplar.has(m.binaTuru)) gruplar.set(m.binaTuru, []);
     gruplar.get(m.binaTuru).push(m);
   }
-  const adlar = { konut: 'Konut', otel: 'Konaklama', okul: 'Eğitim', hastane: 'Sağlık', ofis: 'Büro', ticari: 'Ticari' };
   return Array.from(gruplar.entries()).map(([bt, liste]) =>
-    `<optgroup label="${kacis(adlar[bt] || bt)}">` +
+    `<optgroup label="${kacis(BINA_TURLERI[bt] || bt)}">` +
     liste.map((m) => `<option value="${kacis(m.id)}"${m.id === secili ? ' selected' : ''}>${kacis(m.ad)}</option>`).join('') +
     '</optgroup>').join('');
 }

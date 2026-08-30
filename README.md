@@ -28,8 +28,8 @@ rapor koyu temadan da doğru basılır. Dar ekranlarda menü çekmeceye dönüş
 
 | Bölüm | Gösterge | Yöntem | Karşılaştırma |
 |---|---|---|---|
-| Ayırıcı elemanlar (düşey/yatay) | `DnT,A` | TS EN 12354-1, doğrudan yol + Ff/Fd/Df yan yolları | EK-3 Tablo 3.2 |
-| Döşemeler | `L'nT,w` | TS EN 12354-2, `L'n,w = Ln,w,eq − ΔLw + K` | EK-3 Tablo 3.3 |
+| Ayırıcı elemanlar (düşey/yatay) | `DnT,A` | TS EN 12354-1, doğrudan yol + Ff/Fd/Df yan yolları | EK-3 Tablo **3.4** (varsayılan) / 3.2 |
+| Döşemeler | `L'nT,w` | TS EN 12354-2, `L'n,w = Ln,w,eq − ΔLw + K` | EK-3 Tablo **3.5** (varsayılan) / 3.3 |
 | Cephe (dış yapı elemanı) | `DnT,A,tr` | TS EN 12354-3, bileşik yalıtım + iç yan yollar (Df) + biçim ve hacim düzeltmesi, `+ Ctr` | EK-3 Tablo 3.1 |
 | Hacimler | `T` (çınlama süresi) | Sabine bağıntısı, oktav bantlarında, hava soğurması dahil | EK-6 Tablo 6.1 |
 
@@ -39,6 +39,45 @@ sınıfların öznel karşılıkları (EK-2 Tablo 2.2) veri katmanında yer alı
 
 Raporun son sayfası, **EK-10 Akustik Performans Belgesi**'dir (bkz.
 [Akustik performans belgesi](#akustik-performans-belgesi)).
+
+### Hangi gereksinim tablosu kullanılır?
+
+Yönetmelik, oda-oda ses yalıtımı için iki farklı gereksinim tablosu verir:
+
+| | Neye bakar | Tablo |
+|---|---|---|
+| **Komşuluk ilişkisi** *(varsayılan)* | Bina işlevi + kaynak/alıcı mekân ilişkisi | Hava: **3.4** · Darbe: **3.5** |
+| Mekân dereceleri | Kaynağın gürültülülüğü (YG/OG/DG) + alıcının hassasiyeti (I/II/III) | Hava: 3.2 · Darbe: 3.3 |
+
+Her ayırıcı eleman ve döşeme kaydında **Gereksinim tablosu** başlığı altında bir seçim vardır.
+Varsayılan, komşuluk ilişkisine dayanan **Tablo 3.4 / 3.5**'tir; listeden "Kullanma" seçilirse
+mekân derecelerine dönülür. Seçim raporda da yazılır, böylece hangi tablonun esas alındığı belgede
+görünür.
+
+Fark önemlidir — konutta C sınıfı için:
+
+| Komşuluk ilişkisi | DnT,A gereksinimi |
+|---|---|
+| Ticari işletme / teknik merkez → bağımsız birim | 58 dB |
+| Bağımsız birim / ortak alan → bağımsız birim / ortak alan | 52 dB |
+| **Aynı bağımsız birim içi** (yatak odası ↔ yaşam alanı) | **44 dB** |
+
+Tablo 3.4 / 3.5 yalnızca konut, eğitim, sağlık, büro, konaklama ve yurt işlevlerini kapsar; diğer
+bina türlerinde seçim gösterilmez ve Tablo 3.2 / 3.3 kullanılır.
+
+### Cephede çevresel gürültü düzeyi
+
+Cephe gereksinimi `DnT,A,tr ≥ Lgag − indirim` bağıntısıyla bulunur (EK-3 Tablo 3.1). Yeni cephe
+kayıtlarında **Lgag varsayılanı 58 dBA**'dır; bu, C sınıfı hedefinde şu gereksinimleri verir:
+
+| Alıcı odası hassasiyeti | C sınıfı gereksinimi |
+|---|---|
+| I | 58 − 22 = **36 dB** |
+| II | 58 − 25 = **33 dB** |
+| III | 58 − 28 = **30 dB** |
+
+Projenin gerçek cephe gürültü düzeyi biliniyorsa cephe kaydından değiştirilir; gereksinim
+kendiliğinden kayar.
 
 ### Kullanılan bağıntılar
 
@@ -416,7 +455,7 @@ test/cekirdek.test.js          Hesap çekirdeği testleri
 npm test          # node --test test/*.test.js
 ```
 
-254 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+265 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
 projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
 modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
 hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış), izometrik şema üretimini, cephe iç yan

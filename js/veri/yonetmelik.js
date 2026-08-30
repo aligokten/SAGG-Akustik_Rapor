@@ -637,3 +637,50 @@ export const MEKAN_KIMLIK_GOCU = {
 export function mekanKimligiGuncelle(id) {
   return MEKAN_KIMLIK_GOCU[id] || id;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Komşuluk ilişkisine göre gereksinim (EK-3 Tablo 3.4 / 3.5)
+
+   Tablo 3.2 ve 3.3 mekânların gürültülülük/hassasiyet DERECELERİNE bakar.
+   Tablo 3.4 ve 3.5 ise bina işlevi ve KOMŞULUK İLİŞKİSİNE bakar; resmî
+   dipnotlar konut yapılarında bağımsız birim içindeki elemanlar için
+   bunların kullanılacağını söyler.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/** Bir bina işlevi için tablodaki komşuluk satırları. */
+export function komsulukSatirlari(tablo, binaTuru) {
+  return (tablo?.satirlar || []).filter((r) => r.binaTuru === binaTuru);
+}
+
+/** Kimliğe göre komşuluk satırı (tablo farkı gözetmeden). */
+export function komsulukSatiri(tablo, id) {
+  return (tablo?.satirlar || []).find((r) => r.id === id) || null;
+}
+
+/**
+ * Bina işlevine göre varsayılan komşuluk satırı — bağımsız birimler /
+ * genel mekânlar arası ilişki. Kullanıcı arayüzden değiştirebilir.
+ */
+export const VARSAYILAN_KOMSULUK = {
+  hava: {
+    konut:     'konut-birim-birim',
+    egitim:    'egitim-derslik-derslik',
+    saglik:    'saglik-hasta-hasta',
+    buro:      'buro-genel-ozel',
+    konaklama: 'konaklama-yatak-yatak',
+    yurt:      'yurt-yatakhane',
+  },
+  darbe: {
+    konut:     'konut-birim',
+    egitim:    'egitim-derslik',
+    saglik:    'saglik-hasta',
+    buro:      'buro-genel',
+    konaklama: 'konaklama-yatak',
+    yurt:      'yurt-yatakhane',
+  },
+};
+
+/** Bina işlevi için varsayılan komşuluk kimliği; tablo kapsamıyorsa null. */
+export function varsayilanKomsuluk(tur, binaTuru) {
+  return VARSAYILAN_KOMSULUK[tur]?.[binaTuru] || null;
+}

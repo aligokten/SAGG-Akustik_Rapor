@@ -5,7 +5,10 @@
 
 import { kacis, sayi, secenekler, uygunlukRozeti, sinifRozeti } from './ortak.js';
 import { DOSEMELER, SAP_KAPLAMALAR } from '../veri/malzemeler.js';
-import { GURULTULULUK_DERECELERI, HASSASIYET_DERECELERI } from '../veri/yonetmelik.js';
+import {
+  GURULTULULUK_DERECELERI, HASSASIYET_DERECELERI,
+  EK3_TABLO_3_5, komsulukSatirlari,
+} from '../veri/yonetmelik.js';
 import { mekanSecenekleri } from './sekme-ayirici.js';
 import { katmanEditoru } from './katman-editor.js';
 
@@ -21,15 +24,16 @@ export function ciz(durum, sonuclar) {
       TS EN 12354-2 basitleştirilmiş modeli: <b>L′n,w = Ln,w,eq − ΔLw + K</b>. Çıplak döşemenin
       Ln,w,eq değeri alan kütlesinden (164 − 35·lg m′) kestirilir, yüzer şap/şiltenin ΔLw'si düşülür,
       yan yol düzeltmesi K eklenir. Sonuç <b>L′nT,w = L′n,w − 10·lg(0,032·V)</b> ile yönetmelik
-      göstergesine çevrilir ve <b>EK-3 Tablo 3.3</b> ile karşılaştırılır.
+      göstergesine çevrilir. Karşılaştırma, her döşeme için seçilen tabloyla yapılır: komşuluk
+      ilişkisi seçildiyse <b>EK-3 Tablo 3.5</b>, seçilmediyse <b>EK-3 Tablo 3.3</b>.
     </div>
     ${kayitlar.length === 0
       ? '<div class="bos-durum">Henüz döşeme tanımlanmadı.</div>'
-      : kayitlar.map((d, i) => kart(d, i, sonuclar.darbeler[i])).join('')}
+      : kayitlar.map((d, i) => kart(d, i, sonuclar.darbeler[i], durum.proje.binaTuru)).join('')}
   </section>`;
 }
 
-function kart(k, i, h) {
+function kart(k, i, h, binaTuru) {
   const y = `darbeler.${i}`;
   const d = h.degerlendirme;
   const s = h.sonuc;
@@ -55,6 +59,8 @@ function kart(k, i, h) {
                placeholder="${d ? sayi(d.yonetmelikGereken, 0) : '—'} (yönetmelik)">
         <span class="ipucu">${k.manuelHedef == null ? 'Yönetmelik sınırı etkin.' : 'Manuel sınır etkin — raporda etiketlenir.'}</span></div>
     </div>
+
+    ${komsulukBolumu(y, k, d, binaTuru)}
 
     ${geometriBolumu(y, k, h)}
 
@@ -97,6 +103,32 @@ function kart(k, i, h) {
 }
 
 /* ── Geometri (hacim ↔ boyutlar) ─────────────────────────────────────── */
+
+/**
+ * Gereksinim tablosu seçimi — EK-3 Tablo 3.5 (komşuluk ilişkisi) ya da
+ * kaynak mekân derecesine dayanan Tablo 3.3.
+ */
+function komsulukBolumu(y, k, d, binaTuru) {
+  const satirlar = komsulukSatirlari(EK3_TABLO_3_5, binaTuru);
+  if (!satirlar.length) {
+    return `<p class="soluk" style="font-size:12.5px">
+      Gereksinim <b>EK-3 Tablo 3.3</b>'ten (kaynak mekân derecesi) okunuyor —
+      EK-3 Tablo 3.5 bu bina işlevini kapsamıyor.</p>`;
+  }
+  const secili = k.komsulukId || '';
+  return `
+    <h3 style="margin-top:18px">Gereksinim tablosu</h3>
+    <div class="izgara">
+      <div class="alan"><label>Kaynak odası (üst kat) — EK-3 Tablo 3.5</label>
+        <select data-yol="${y}.komsulukId">
+          <option value=""${secili === '' ? ' selected' : ''}>Kullanma — Tablo 3.3 (kaynak mekân derecesi)</option>
+          ${satirlar.map((r) => `<option value="${kacis(r.id)}"${r.id === secili ? ' selected' : ''}>${kacis(r.kaynak)}</option>`).join('')}
+        </select>
+        <span class="ipucu">${d?.komsuluk
+          ? '<b>EK-3 Tablo 3.5</b> kullanılıyor.'
+          : '<b>EK-3 Tablo 3.3</b> kullanılıyor (kaynak mekân derecesine göre).'}</span></div>
+    </div>`;
+}
 
 function geometriBolumu(y, k, h) {
   const g = k.geometri || { mod: 'hacim' };

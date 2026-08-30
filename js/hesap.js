@@ -195,6 +195,7 @@ export function ayiriciHesapla(a, proje) {
     DnTw: sonuc.DnTw,
     hedefSinif: proje.hedefSinif,
     manuelHedef: a.manuelHedef,
+    komsulukId: a.komsulukId,
   });
 
   return { kayit: a, ana, giydirme, giydirmeCozum, kapiBilgi, RwAyirici, yanElemanlar, sonuc, degerlendirme, geo };
@@ -228,6 +229,8 @@ export function darbeHesapla(d, proje) {
     altMekanId: d.altMekanId,
     LnTw: sonuc.LnTw,
     hedefSinif: proje.hedefSinif,
+    manuelHedef: d.manuelHedef,
+    komsulukId: d.komsulukId,
   });
 
   return { kayit: d, doseme, sap, dLw, sonuc, degerlendirme, geo };

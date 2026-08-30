@@ -68,6 +68,9 @@ export function yeniAyirici() {
     sivaId: 'alci-15',
     sivaliYuzSayisi: 2,
     manuelHedef: null,        // girilirse yönetmelik DnT,w hedefinin yerine geçer (dB)
+    // EK-3 Tablo 3.4 komşuluk satırı. Doluysa gereksinim bu satırdan,
+    // boşsa mekân derecelerine dayanan Tablo 3.2'den okunur.
+    komsulukId: 'konut-birim-birim',
     RwBeyan: null,            // beyan edilmiş Rw varsa kestirimin yerine geçer
     yogunlukBeyan: null,      // ürünün gerçek birim hacim ağırlığı (kg/m³)
     giydirmeId: 'yok',
@@ -115,6 +118,9 @@ export function yeniDarbe() {
     altMekanId: 'konut-yatak-odalari',
     dosemeId: 'ba-d-160',
     manuelHedef: null,        // girilirse yönetmelik L'nT,w üst sınırının yerine geçer (dB)
+    // EK-3 Tablo 3.5 komşuluk satırı. Doluysa gereksinim bu satırdan,
+    // boşsa kaynak mekân derecesine dayanan Tablo 3.3'ten okunur.
+    komsulukId: 'konut-birim',
     LnwBeyan: null,
     sapId: 'yuzer-sap-20',
     dLwBeyan: null,
@@ -133,7 +139,10 @@ export function yeniCephe() {
     id: yeniId('c'),
     ad: 'Yatak odası cephesi',
     mekanId: 'konut-yatak-odalari',
-    disGurultu: 65,
+    // Çevresel gürültü göstergesi Lgag (dBA). 58 dBA, C sınıfı hedefinde
+    // EK-3 Tablo 3.1'e göre I/II/III hassasiyet için 36/33/30 dB gereksinim
+    // verir; proje verisi varsa cephe kaydından değiştirilir.
+    disGurultu: 58,
     V: 40,
     bicim: 'duz',
     konum: 'orta',            // orta (tek dış duvar) | kose (iki dış duvar)
