@@ -804,3 +804,16 @@ details > *:last-child{margin-bottom:12px}
   }
 }
 .belge-dikey-bos{ width:26px; padding:0 !important }
+
+/* Proje künyesi — binanın resmi seçimi */
+.bina-resmi-satir{ display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap }
+.bina-resmi-onizleme{
+  flex:0 0 168px; height:120px; display:grid; place-items:center; overflow:hidden;
+  border:1px solid var(--cizgi); border-radius:var(--r-s); background:var(--yuzey-2);
+  font-size:12px;
+}
+.bina-resmi-onizleme img{ width:100%; height:100%; object-fit:cover; display:block }
+/* İki sütun genişliğinde alan (ör. açık adres) — tek sütuna inen dar ekranda
+   yine tam genişlik kaplar. */
+.izgara .alan.gr-2{ grid-column:span 2 }
+@media (max-width:560px){ .izgara .alan.gr-2{ grid-column:auto } }

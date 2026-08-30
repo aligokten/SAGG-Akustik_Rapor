@@ -14,12 +14,31 @@ export function bosProje() {
     proje: {
       ad: '',
       kod: '',                    // rapor kodu (ör. "ID1", "DOS1") — raporun sağ üst köşesinde gösterilir
-      adaParsel: '',
+
+      // ── Yapı yeri (tapu ve adres bilgileri) ──
+      il: '',
+      ilce: '',
+      mahalle: '',
+      pafta: '',
+      ada: '',
+      parsel: '',
+      adres: '',                  // açık adres (sokak, no)
+      adaParsel: '',              // eski serbest metin alanı; ada/parsel boşsa yedek olarak kullanılır
+
+      // ── Bina bilgileri (EK-10 belgesi) ──
+      insaatYili: '',
+      kapaliAlan: '',             // m² — kapalı kullanım alanı
+      toplamInsaatAlani: '',      // m² — toplam inşaat alanı
+      binaResmi: '',              // data: URL — belgedeki "Binanın Resmi" alanı
+
       isveren: '',
+      isverenAdres: '',           // bina sahibinin adresi (EK-10 belgesi)
       muellif: '',
       akustikUzman: '',
       sirket: 'SAGG İnşaat Mimarlık Akustik',  // rapor antetindeki şirket/ofis adı
       unvan: '',                  // akustik uzmanın unvanı (ör. "D1 Temel Bina Akustiği Uzmanı")
+      odaSicil: '',               // belgeyi düzenleyenin oda sicil numarası (EK-10)
+      belgeNo: '',                // EK-10 belge numarası; boşsa rapor kodu kullanılır
       tarih: new Date().toISOString().slice(0, 10),
       binaTuru: 'konut',
       hedefSinif: 'C',
@@ -234,7 +253,18 @@ export function temizle() {
 export function ornekProje() {
   const p = bosProje();
   p.proje.ad = 'Örnek Konut Projesi — B Blok';
-  p.proje.adaParsel = '1234 ada / 5 parsel';
+  p.proje.il = 'Ankara';
+  p.proje.ilce = 'Çankaya';
+  p.proje.mahalle = 'Bağlar';
+  p.proje.pafta = '12';
+  p.proje.ada = '1234';
+  p.proje.parsel = '5';
+  p.proje.adres = 'Örnek Sokak No: 3';
+  p.proje.insaatYili = '2026';
+  p.proje.kapaliAlan = '1250';
+  p.proje.toplamInsaatAlani = '3400';
+  p.proje.isverenAdres = 'Örnek Cad. No: 10, Çankaya / Ankara';
+  p.proje.odaSicil = '00000';
   p.proje.isveren = 'Örnek Yapı A.Ş.';
   p.proje.muellif = 'Mimarlık Ofisi';
   p.proje.akustikUzman = 'Akustik Uzmanı (Bakanlık kayıtlı)';
@@ -279,4 +309,36 @@ export function ornekProje() {
   p.hacimler[0].nesneler = [];
 
   return p;
+}
+
+/* ── Künye metin yardımcıları ───────────────────────────────────────
+   Ada/parsel ve adres, künyede ayrı alanlarda tutulur ama raporda ve
+   EK-10 belgesinde tek satır olarak basılır. Alanlar boşsa satır da boş
+   kalır; hiçbir yerde "undefined" ya da yarım kalmış ayraç görünmez. */
+
+/** "1234 ada / 5 parsel" — ada/parsel boşsa eski serbest metne düşer. */
+export function adaParselMetni(p) {
+  const parcalar = [];
+  if (p?.pafta) parcalar.push(`${p.pafta} pafta`);
+  if (p?.ada) parcalar.push(`${p.ada} ada`);
+  if (p?.parsel) parcalar.push(`${p.parsel} parsel`);
+  return parcalar.length ? parcalar.join(' / ') : (p?.adaParsel || '');
+}
+
+/** "Bağlar Mah., Sokak No:3, Çankaya / Ankara" biçiminde tek satır adres. */
+export function adresMetni(p) {
+  const parcalar = [];
+  if (p?.mahalle) parcalar.push(`${p.mahalle} Mah.`);
+  if (p?.adres) parcalar.push(p.adres);
+  const ilce = [p?.ilce, p?.il].filter(Boolean).join(' / ');
+  if (ilce) parcalar.push(ilce);
+  return parcalar.join(', ');
+}
+
+/** Alan bilgilerini "Kapalı 1.250 m² · Toplam 3.400 m²" biçiminde özetler. */
+export function alanMetni(p) {
+  const parcalar = [];
+  if (p?.kapaliAlan) parcalar.push(`Kapalı ${p.kapaliAlan} m²`);
+  if (p?.toplamInsaatAlani) parcalar.push(`Toplam ${p.toplamInsaatAlani} m²`);
+  return parcalar.join(' · ');
 }

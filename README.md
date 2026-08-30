@@ -416,14 +416,14 @@ test/cekirdek.test.js          Hesap çekirdeği testleri
 npm test          # node --test test/*.test.js
 ```
 
-243 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+254 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
 projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
 modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
 hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış), izometrik şema üretimini, cephe iç yan
 yollarını, sayı girdisi davranışını, katman favorileri kitaplığını, raporda mekân adı çözümünü ve
 Excel sınır değer tablosu çıktısını (DD/İD/DOS kodlaması, sayfa yerleşimi, geçerli ZIP/OOXML paketi)
 rapor altbilgisindeki lisans künyesini, yönetmelik tablolarının resmî ek dosyasıyla
-birebir örtüşmesini ve EK-10 performans belgesini kapsar. Ayrıca referans araçtan alınan dört örnek dosya, sonuçları birebir doğrulayan bir kehanet
+birebir örtüşmesini, EK-10 performans belgesini ve künye alanlarının rapora akışını kapsar. Ayrıca referans araçtan alınan dört örnek dosya, sonuçları birebir doğrulayan bir kehanet
 (oracle) takımı olarak koşturulur.
 
 ---
@@ -472,6 +472,22 @@ https://raw.githack.com/aligokten/SAGG-Akustik_Rapor/claude/ks-schallschutzrechn
 ```
 
 ## Akustik performans belgesi
+
+### Künye alanları
+
+Belgenin künye bölümü **Proje künyesi** sekmesinden doldurulur:
+
+- **Yapı yeri** — il, ilçe, mahalle, pafta, ada, parsel, açık adres. Bunlar raporda ve belgede
+  tek satır olarak birleştirilir (`1234 ada / 5 parsel`, `Bağlar Mah., Sokak No:3, Çankaya / Ankara`);
+  boş bıraktığınız alanlar satıra hiç girmez, yarım ayraç kalmaz. Ekranda canlı bir önizleme gösterilir.
+- **Bina bilgileri** — inşaat yılı, kapalı kullanım alanı, toplam inşaat alanı ve **binanın resmi**.
+  Resim proje JSON'unun içine `data:` URL olarak gömülür, yani proje dosyası tek başına taşınabilir
+  (en çok 2 MB).
+- **Belge künyesi** — oda sicil numarası ve belge numarası (boşsa rapor kodu kullanılır),
+  işverenin adresi.
+
+Ada/parsel eskiden tek serbest metin alanıydı; o alanda kayıtlı projeler bozulmaz — Ada ve Parsel
+alanları boş kaldığı sürece eski metin kullanılmaya devam eder ve künye ekranında bu durum bildirilir.
 
 Raporun **son sayfası**, Yönetmeliğin EK-10'undaki *Akustik Performans Belgesi*'nin aynı
 düzendeki bir kopyasıdır: sarı başlık bandı, proje/bina künyesi ve bina resmi alanı,

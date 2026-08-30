@@ -100,6 +100,32 @@ function degerCoz(el) {
   return el.value;
 }
 
+/**
+ * Binanın resmini okur ve proje verisine data: URL olarak gömer.
+ *
+ * Resim proje JSON'unun içinde taşınır (harici dosya bağımlılığı olmaz).
+ * localStorage kotasını doldurmamak için 2 MB üstü dosyalar reddedilir.
+ */
+const BINA_RESMI_SINIRI = 2 * 1024 * 1024;
+
+function binaResminiOku(dosya) {
+  if (!dosya.type.startsWith('image/')) {
+    alert('Lütfen bir resim dosyası seçin.');
+    return;
+  }
+  if (dosya.size > BINA_RESMI_SINIRI) {
+    alert(`Resim çok büyük (${(dosya.size / 1024 / 1024).toFixed(1)} MB). En çok 2 MB olmalı.`);
+    return;
+  }
+  const okuyucu = new FileReader();
+  okuyucu.onload = () => {
+    durum.proje.binaResmi = String(okuyucu.result || '');
+    ciz();
+  };
+  okuyucu.onerror = () => alert('Resim okunamadı.');
+  okuyucu.readAsDataURL(dosya);
+}
+
 /* ── Yönetmelik verisi düzenleme ve kalıcılık ───────────────────────── */
 
 function yonetmelikDegistir(el) {
@@ -668,6 +694,9 @@ function olaylariBagla() {
         ciz();
       });
       el.value = '';
+    } else if (el.id === 'bina-resmi' && el.files?.[0]) {
+      binaResminiOku(el.files[0]);
+      el.value = '';
     } else if (el.id === 'favori-ice' && el.files?.[0]) {
       dosyaOku(el.files[0], (veri) => {
         const r = FAV.favorileriIceAktar(veri);
@@ -706,6 +735,11 @@ function olaylariBagla() {
       if (eylem === 'favori-sil') {
         const f = FAV.favoriBul(dugme.dataset.favoriId);
         if (f && confirm(`"${f.ad}" favorisi silinsin mi?`)) { FAV.favoriSil(f.id); ciz(); }
+        return;
+      }
+      if (eylem === 'bina-resmi-sil') {
+        durum.proje.binaResmi = '';
+        ciz();
         return;
       }
       if (eylem === 'favori-disa') { indir(FAV.favoriPaketi(), 'katman-favorileri.json'); return; }

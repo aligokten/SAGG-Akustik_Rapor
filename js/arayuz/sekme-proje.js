@@ -1,6 +1,7 @@
 /** sekme-proje.js — Proje künyesi, hedef sınıf ve hesap ayarları. */
 
 import { kacis, secenekler, sinifRozeti } from './ortak.js';
+import { adaParselMetni, adresMetni } from '../durum.js';
 import { BINA_TURLERI, SINIFLAR, ASGARI_SINIFLAR, EK2_TABLO_2_2 } from '../veri/yonetmelik.js';
 import { MODELLER } from '../cekirdek/kutle-kanunu.js';
 
@@ -22,10 +23,10 @@ export function ciz(durum) {
         <input id="pr-ad" data-yol="proje.ad" value="${kacis(p.ad)}" placeholder="Örn. Yeşil Vadi Konutları A Blok"></div>
       <div class="alan"><label for="pr-kod">Rapor kodu</label>
         <input id="pr-kod" data-yol="proje.kod" value="${kacis(p.kod)}" placeholder="Örn. ID1, DOS1"></div>
-      <div class="alan"><label for="pr-ap">Ada / parsel</label>
-        <input id="pr-ap" data-yol="proje.adaParsel" value="${kacis(p.adaParsel)}"></div>
-      <div class="alan"><label for="pr-is">İşveren</label>
+      <div class="alan"><label for="pr-is">İşveren / bina sahibi</label>
         <input id="pr-is" data-yol="proje.isveren" value="${kacis(p.isveren)}"></div>
+      <div class="alan"><label for="pr-isadr">İşverenin adresi</label>
+        <input id="pr-isadr" data-yol="proje.isverenAdres" value="${kacis(p.isverenAdres)}"></div>
       <div class="alan"><label for="pr-mu">Proje müellifi</label>
         <input id="pr-mu" data-yol="proje.muellif" value="${kacis(p.muellif)}"></div>
       <div class="alan"><label for="pr-au">Akustik uzman</label>
@@ -36,14 +37,81 @@ export function ciz(durum) {
   </section>
 
   <section class="kart">
-    <div class="kart-baslik"><h2>Rapor antedi</h2></div>
+    <div class="kart-baslik"><h2>Yapı yeri</h2></div>
+    <div class="bilgi-kutu">
+      Tapu ve adres bilgileri. Rapor künyesinde ve EK-10 Akustik Performans Belgesinde
+      tek satır olarak birleştirilir; boş bıraktığınız alanlar satıra girmez.
+    </div>
+    <div class="izgara">
+      <div class="alan"><label for="pr-il">İl</label>
+        <input id="pr-il" data-yol="proje.il" value="${kacis(p.il)}"></div>
+      <div class="alan"><label for="pr-ilce">İlçe</label>
+        <input id="pr-ilce" data-yol="proje.ilce" value="${kacis(p.ilce)}"></div>
+      <div class="alan"><label for="pr-mah">Mahalle</label>
+        <input id="pr-mah" data-yol="proje.mahalle" value="${kacis(p.mahalle)}"></div>
+      <div class="alan"><label for="pr-pafta">Pafta</label>
+        <input id="pr-pafta" data-yol="proje.pafta" value="${kacis(p.pafta)}"></div>
+      <div class="alan"><label for="pr-ada">Ada</label>
+        <input id="pr-ada" data-yol="proje.ada" value="${kacis(p.ada)}"></div>
+      <div class="alan"><label for="pr-parsel">Parsel</label>
+        <input id="pr-parsel" data-yol="proje.parsel" value="${kacis(p.parsel)}"></div>
+      <div class="alan gr-2"><label for="pr-adres">Açık adres</label>
+        <input id="pr-adres" data-yol="proje.adres" value="${kacis(p.adres)}" placeholder="Sokak, kapı no"></div>
+    </div>
+    ${adaParselMetni(p) || adresMetni(p) ? `<p class="soluk" style="font-size:12.5px;margin-top:4px">
+      Raporda şöyle görünecek: <b>${kacis([adaParselMetni(p), adresMetni(p)].filter(Boolean).join(' · '))}</b></p>` : ''}
+    ${p.adaParsel && !(p.ada || p.parsel) ? `<div class="bilgi-kutu sari" style="margin-top:8px">
+      Bu projede ada/parsel eski tek alanda kayıtlı: <b>${kacis(p.adaParsel)}</b>.
+      Yukarıdaki Ada ve Parsel alanlarını doldurursanız bunun yerine onlar kullanılır.</div>` : ''}
+  </section>
+
+  <section class="kart">
+    <div class="kart-baslik"><h2>Bina bilgileri</h2></div>
+    <div class="bilgi-kutu">EK-10 Akustik Performans Belgesinin künye bölümünde yer alır.</div>
+    <div class="izgara">
+      <div class="alan"><label for="pr-yil">İnşaat yılı</label>
+        <input id="pr-yil" data-yol="proje.insaatYili" inputmode="numeric" value="${kacis(p.insaatYili)}" placeholder="Örn. 2026"></div>
+      <div class="alan"><label for="pr-kapali">Kapalı kullanım alanı (m²)</label>
+        <input id="pr-kapali" data-yol="proje.kapaliAlan" inputmode="decimal" value="${kacis(p.kapaliAlan)}"></div>
+      <div class="alan"><label for="pr-toplam">Toplam inşaat alanı (m²)</label>
+        <input id="pr-toplam" data-yol="proje.toplamInsaatAlani" inputmode="decimal" value="${kacis(p.toplamInsaatAlani)}"></div>
+    </div>
+
+    <h3 style="margin-top:16px">Binanın resmi</h3>
+    <div class="bina-resmi-satir">
+      <div class="bina-resmi-onizleme">
+        ${p.binaResmi ? `<img src="${kacis(p.binaResmi)}" alt="Binanın resmi">`
+                      : '<span class="soluk">Resim seçilmedi</span>'}
+      </div>
+      <div>
+        <label class="dugme acik" for="bina-resmi">Resim seç</label>
+        <input type="file" id="bina-resmi" accept="image/*" hidden>
+        ${p.binaResmi ? '<button type="button" class="dugme tehlike kucuk" data-eylem="bina-resmi-sil" style="margin-left:6px">Kaldır</button>' : ''}
+        <p class="soluk" style="font-size:12px;margin-top:7px;max-width:340px">
+          Resim proje dosyasının içine gömülür (harici dosya gerekmez). Belgede
+          ölçeklenerek basılır; 2 MB'a kadar dosya kabul edilir.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="kart">
+    <div class="kart-baslik"><h2>Rapor antedi ve belge künyesi</h2></div>
     <div class="bilgi-kutu">Yazdırılabilir raporun üst bilgisinde (letterhead) gösterilir.</div>
     <div class="izgara">
       <div class="alan"><label for="pr-sirket">Şirket / ofis adı</label>
         <input id="pr-sirket" data-yol="proje.sirket" value="${kacis(p.sirket)}"></div>
       <div class="alan"><label for="pr-unvan">Akustik uzmanın unvanı</label>
         <input id="pr-unvan" data-yol="proje.unvan" value="${kacis(p.unvan)}" placeholder="Örn. D1 Temel Bina Akustiği Uzmanı"></div>
+      <div class="alan"><label for="pr-sicil">Oda sicil numarası</label>
+        <input id="pr-sicil" data-yol="proje.odaSicil" value="${kacis(p.odaSicil)}" placeholder="Belgeyi düzenleyenin sicil no"></div>
+      <div class="alan"><label for="pr-belgeno">Belge numarası</label>
+        <input id="pr-belgeno" data-yol="proje.belgeNo" value="${kacis(p.belgeNo)}" placeholder="Boşsa rapor kodu kullanılır"></div>
     </div>
+    <p class="soluk" style="font-size:12.5px">
+      Belgenin son geçerlilik tarihi, veriliş tarihinden 10 yıl sonrası olarak
+      kendiliğinden hesaplanır (EK-10 §10.1/1).
+    </p>
   </section>
 
   <section class="kart">

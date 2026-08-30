@@ -20,6 +20,7 @@ import { katmanDizilimiMetni } from '../cekirdek/katmanli-eleman.js';
 import { YALITIM_LEVHALARI, bul } from '../veri/malzemeler.js';
 import { xlsxOlustur, blobIndir, STIL } from './xlsx-yazici.js';
 import { LISANS, telifSatiri } from '../veri/lisans.js';
+import { adaParselMetni, adresMetni, alanMetni } from '../durum.js';
 import { SINIFLAR, EK2_TABLO_2_2 } from '../veri/yonetmelik.js';
 import { belgeVerisi } from '../cekirdek/performans-belgesi.js';
 
@@ -94,7 +95,9 @@ function ayiriciRaporu(p, a, indeks, toplam) {
       <div><b>Proje müellifi</b><span>${kacis(p.muellif || '—')}</span></div>
       <div><b>Akustik uzman</b><span>${kacis(p.akustikUzman || '—')}</span></div>
       <div><b>İşveren</b><span>${kacis(p.isveren || '—')}</span></div>
-      <div><b>Ada / parsel</b><span>${kacis(p.adaParsel || '—')}</span></div>
+      <div><b>Ada / parsel</b><span>${kacis(adaParselMetni(p) || '—')}</span></div>
+      ${adresMetni(p) ? `<div><b>Yapı yeri</b><span>${kacis(adresMetni(p))}</span></div>` : ''}
+      ${alanMetni(p) ? `<div><b>İnşaat alanı</b><span>${kacis(alanMetni(p))}</span></div>` : ''}
       <div><b>Yapı kapsamı</b><span>${kacis(BINA_TURLERI[p.binaTuru] || p.binaTuru)} · ${kacis(durumMetni(p.durum))}</span></div>
       <div><b>Hedef sınıf</b><span>${kacis(p.hedefSinif)} sınıfı (asgari ${kacis(asgari)})</span></div>
       <div><b>Kaynak mekân</b><span>${kacis(d?.kaynakMekan?.ad || '—')}</span></div>
@@ -604,9 +607,10 @@ function performansBelgesi(p, s) {
         <div class="belge-alt-baslik">Binanın</div>
         <div class="belge-satir"><span class="e">Tipi</span><i>:</i><span>${kacis(BINA_TURLERI[p.binaTuru] || p.binaTuru || '')}</span></div>
         <div class="belge-satir"><span class="e">İnşaat Yılı</span><i>:</i><span>${kacis(p.insaatYili || '')}</span></div>
-        <div class="belge-satir"><span class="e">Kapalı Kullanım Alanı</span><i>:</i><span>${kacis(p.kapaliAlan || '')}</span></div>
-        <div class="belge-satir"><span class="e">Ada, Parseli</span><i>:</i><span>${kacis(p.adaParsel || '')}</span></div>
-        <div class="belge-satir"><span class="e">Adresi</span><i>:</i><span>${kacis(p.adres || '')}</span></div>
+        <div class="belge-satir"><span class="e">Kapalı Kullanım Alanı</span><i>:</i><span>${kacis(p.kapaliAlan ? `${p.kapaliAlan} m²` : '')}</span></div>
+        <div class="belge-satir"><span class="e">Toplam İnşaat Alanı</span><i>:</i><span>${kacis(p.toplamInsaatAlani ? `${p.toplamInsaatAlani} m²` : '')}</span></div>
+        <div class="belge-satir"><span class="e">Ada, Parseli</span><i>:</i><span>${kacis(adaParselMetni(p))}</span></div>
+        <div class="belge-satir"><span class="e">Adresi</span><i>:</i><span>${kacis(adresMetni(p))}</span></div>
         <div class="belge-alt-baslik">Bina Sahibinin</div>
         <div class="belge-satir"><span class="e">Adı Soyadı</span><i>:</i><span>${kacis(p.isveren || '')}</span></div>
         <div class="belge-satir"><span class="e">Adresi</span><i>:</i><span>${kacis(p.isverenAdres || '')}</span></div>
@@ -673,7 +677,7 @@ function performansBelgesi(p, s) {
     <div class="belge-imza">
       <div>
         <div class="belge-alt-baslik">Belgenin</div>
-        <div class="belge-satir"><span class="e">Numarası</span><i>:</i><span>${kacis(p.kod || '')}</span></div>
+        <div class="belge-satir"><span class="e">Numarası</span><i>:</i><span>${kacis(p.belgeNo || p.kod || '')}</span></div>
         <div class="belge-satir"><span class="e">Veriliş Tarihi</span><i>:</i><span>${kacis(p.tarih || '')}</span></div>
         <div class="belge-satir"><span class="e">Son Geçerlilik Tarihi</span><i>:</i><span>${kacis(sonGecerlilik(p.tarih))}</span></div>
       </div>
