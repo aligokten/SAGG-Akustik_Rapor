@@ -16,7 +16,7 @@ const DOS1 = {
   version: 3, projectName: 'MARINA VISTA BODRUM', projectCode: 'DOS1', parcel: '',
   employer: 'MARLIN OTEL', architect: 'SAGG İnşaat Mimarlık Akustik', author: 'ALİ GÖKTEN',
   date: '2026-08-27', buildingType: 'otel', buildingStatus: 'esasliTadilat', targetClass: 'D',
-  sourceRoomUseId: 'otel-oda', receiverRoomUseId: 'otel-oda', rwModel: 'en12354',
+  sourceRoomUseId: 'konaklama-yatak-odalari', receiverRoomUseId: 'konaklama-yatak-odalari', rwModel: 'en12354',
   referenceT0: 0.5, projectNotes: '',
   room1: { name: 'TİP 2 YATAK ODASI', length: 6.25, width: 3.18, height: 2.65 },
   room2: { name: 'TİP 1 YATAK ODASI', length: 10.25, width: 3.03, height: 2.62 },

@@ -20,6 +20,8 @@ import { katmanDizilimiMetni } from '../cekirdek/katmanli-eleman.js';
 import { YALITIM_LEVHALARI, bul } from '../veri/malzemeler.js';
 import { xlsxOlustur, blobIndir, STIL } from './xlsx-yazici.js';
 import { LISANS, telifSatiri } from '../veri/lisans.js';
+import { SINIFLAR, EK2_TABLO_2_2 } from '../veri/yonetmelik.js';
+import { belgeVerisi } from '../cekirdek/performans-belgesi.js';
 
 const dolguBul = (id) => bul(YALITIM_LEVHALARI, id);
 
@@ -37,7 +39,9 @@ export function ciz(durum, s) {
     ? '<div class="bos-durum">Henüz ayırıcı eleman tanımlanmadı. Rapor, en az bir ayırıcı eleman gerektirir.</div>'
     : s.ayiricilar.map((a, i) => ayiriciRaporu(p, a, i, s.ayiricilar.length)).join('')}
 
-  ${ekBolumler(p, s)}`;
+  ${ekBolumler(p, s)}
+
+  ${performansBelgesi(p, s)}`;
 }
 
 /* ── Antet ────────────────────────────────────────────────────────── */
@@ -346,8 +350,10 @@ function bolumCephe(s) {
   <p class="soluk" style="font-size:12px">
     Yan yollu R′w, bileşik cephe yalıtımı ile iç tavan/taban ve iç yan duvarların dış duvarla
     birleşimlerinden doğan Df yollarının enerjik toplamıdır (yalnızca oda boyutları girilmiş
-    cephelerde hesaplanır). D<sub>nT,A,tr</sub> = D2m,nT,w + C<sub>tr</sub> bilgi amaçlıdır;
-    uygunluk kararı EK-3 Tablo 3.1 ile D2m,nT,w üzerinden verilir.
+    cephelerde hesaplanır). Uygunluk kararı EK-3 Tablo 3.1 ile
+    <b>D<sub>nT,A,tr</sub> = D2m,nT,w + C<sub>tr</sub></b> üzerinden verilir; resmî tablonun
+    göstergesi budur ve gereken değer sabit bir matristen değil,
+    L<sub>gag</sub>'dan hassasiyet ve sınıfa bağlı bir indirim çıkarılarak bulunur.
   </p>
 
   ${s.cepheler.filter((x) => x.kayit.geometri?.mod === 'olculer').map((x) => `
@@ -532,4 +538,166 @@ export function excelRaporunuIndir(p, s) {
   const kitap = xlsxOlustur([sayfa1Uret(kayitlar), sayfa2Uret(kayitlar)]);
   const ad = (p.kod || p.ad || 'akustik-rapor').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'akustik-rapor';
   blobIndir(kitap, `${ad} - Sinir Degerler.xlsx`);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   EK-10 · AKUSTİK PERFORMANS BELGESİ
+
+   Yönetmeliğin EK-10 bölümündeki belge, raporun son sayfası olarak birebir
+   düzende üretilir: künye + bina resmi alanı, A–F merdiveni ve sınıf
+   tanımları, altı ölçütlü değerlendirme tablosu, açıklamalar ve imza
+   bloğu. Sınıflar `cekirdek/performans-belgesi.js` içinde EK-10 §10.1(9)
+   kuralıyla (en alt sınıf belirleyicidir) hesaplanır.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/** Sınıf tanımları — resmî belgedeki "Akustik Performans Sınıflarına ilişkin Tanımlamalar". */
+const SINIF_TANIMLARI = {
+  A: 'Gürültüye karşı yüksek koruma ile sağlanan sessiz bir ortam',
+  B: 'Normal koşullarda, kullanıcının davranışlarını sınırlaması gerekmeksizin iyi bir koruma',
+  C: 'Kullanıcıların davranışlarının normal sınırda olması durumunda rahatsızlığın fazla olmaması',
+  D: 'Kullanıcıların davranışlarının normal sınırda olmasına rağmen genellikle rahatsızlık',
+  E: 'Gürültüye karşı düşük koruma sağlanan bir ortam',
+  F: 'Gürültüye karşı korumasız bir ortam',
+};
+
+/** A–F merdiveni: her sınıf bir ok biçiminde, seçili olan işaretlenir. */
+function sinifMerdiveni(secili) {
+  return `
+  <div class="belge-merdiven">
+    <div class="belge-merdiven-uc ust">Yüksek</div>
+    ${SINIFLAR.map((s, i) => `
+      <div class="belge-ok belge-ok-${s.toLowerCase()}${s === secili ? ' secili' : ''}"
+           style="width:${44 + i * 9}%">
+        <span>${s}</span>
+      </div>`).join('')}
+    <div class="belge-merdiven-uc alt">Düşük</div>
+  </div>`;
+}
+
+function performansBelgesi(p, s) {
+  const b = belgeVerisi(s);
+  const T = b.toplamSinif;
+
+  // Dikey "DEĞERLENDİRME ÖLÇÜTLERİ" başlığı ilk gövde satırında yer alır:
+  // rowspan thead/tbody sınırını aşamaz, thead'de kalsaydı sütunu ayırmazdı.
+  const satir = (r, ilk) => `
+    <tr>
+      ${ilk ? '<th class="belge-dikey" rowspan="7">DEĞERLENDİRME ÖLÇÜTLERİ</th>' : ''}
+      <td class="belge-no">${r.no}</td>
+      <td class="belge-olcut">${kacis(r.ad)} <span class="belge-gosterge">(${r.gosterge})</span></td>
+      <td class="sayi">${r.toplam ? `${r.ornek} / ${r.toplam}` : '—'}</td>
+      <td class="sayi">${r.enDusuk == null ? '—' : `${sayi(r.enDusuk, 1)} – ${sayi(r.enYuksek, 1)}`}</td>
+      <td class="sayi">—</td>
+      <td class="belge-sinif-hucre">${sinifSecimi(r.sinif)}</td>
+    </tr>`;
+
+  return `
+  <div class="rapor rapor-sayfa-sonu belge">
+    <div class="belge-baslik">
+      <span class="belge-baslik-logo"><img src="assets/logo.png" alt=""></span>
+      <h1>AKUSTİK PERFORMANS BELGESİ</h1>
+    </div>
+
+    <div class="belge-ust">
+      <div class="belge-kutu belge-kunye">
+        <div class="belge-satir"><b>Proje Adı</b><i>:</i><span>${kacis(p.ad || '')}</span></div>
+        <div class="belge-alt-baslik">Binanın</div>
+        <div class="belge-satir"><span class="e">Tipi</span><i>:</i><span>${kacis(BINA_TURLERI[p.binaTuru] || p.binaTuru || '')}</span></div>
+        <div class="belge-satir"><span class="e">İnşaat Yılı</span><i>:</i><span>${kacis(p.insaatYili || '')}</span></div>
+        <div class="belge-satir"><span class="e">Kapalı Kullanım Alanı</span><i>:</i><span>${kacis(p.kapaliAlan || '')}</span></div>
+        <div class="belge-satir"><span class="e">Ada, Parseli</span><i>:</i><span>${kacis(p.adaParsel || '')}</span></div>
+        <div class="belge-satir"><span class="e">Adresi</span><i>:</i><span>${kacis(p.adres || '')}</span></div>
+        <div class="belge-alt-baslik">Bina Sahibinin</div>
+        <div class="belge-satir"><span class="e">Adı Soyadı</span><i>:</i><span>${kacis(p.isveren || '')}</span></div>
+        <div class="belge-satir"><span class="e">Adresi</span><i>:</i><span>${kacis(p.isverenAdres || '')}</span></div>
+      </div>
+      <div class="belge-kutu belge-resim">
+        <div class="belge-kutu-baslik">Binanın Resmi</div>
+        <div class="belge-resim-alan">${p.binaResmi
+          ? `<img src="${kacis(p.binaResmi)}" alt="Binanın resmi">`
+          : '<span class="belge-resim-yer">—</span>'}</div>
+      </div>
+    </div>
+
+    <div class="belge-orta">
+      <div class="belge-kutu belge-merdiven-kutu">
+        ${sinifMerdiveni(T)}
+        <div class="belge-rozet">
+          <span>Bina Akustik<br>Performans Sınıfı</span>
+          <b>${T || '—'}</b>
+        </div>
+      </div>
+      <div class="belge-kutu belge-tanimlar">
+        <div class="belge-kutu-baslik">Akustik Performans Sınıflarına ilişkin Tanımlamalar</div>
+        ${SINIFLAR.map((k) => `
+          <div class="belge-tanim${k === T ? ' secili' : ''}">
+            <b>${k}</b><i>:</i><span>${kacis(SINIF_TANIMLARI[k])}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="tablo-sar"><table class="belge-tablo">
+      <thead>
+        <tr>
+          <th class="belge-dikey-bos"></th>
+          <th colspan="2"></th>
+          <th>Ölçülen örnek sayısı / Toplam</th>
+          <th>Max – Min değer</th>
+          <th>Belirsizlik (standart sapma), dB</th>
+          <th>Akustik Performans Sınıfı</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${b.satirlar.map((r, i) => satir(r, i === 0)).join('')}
+        <tr class="belge-toplam">
+          <td colspan="5">Toplam</td>
+          <td class="belge-sinif-hucre">${sinifSecimi(T)}</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="belge-kutu belge-aciklama">
+      <div class="belge-kutu-baslik">Açıklamalar</div>
+      <p>
+        Bu belge, ${kacis(SURUM.yonetmelik)} EK-10'a göre düzenlenmiştir.
+        Sınıflandırma, EK-10 §10.1(9) uyarınca elde edilen <b>en alt performans
+        sınıfı</b> esas alınarak yapılmıştır.
+        ${b.belirlenemeyen.length ? `<br><b>Performans belirlenemedi:</b> ${kacis(b.belirlenemeyen.join(', '))}
+        — bu ölçütler yönetmelikçe ölçüme dayandırılır (EK-10 §10.1/4) ve bu araçta hesaplanmaz.` : ''}
+        <br>Değerler, TS EN 12354 serisine göre yapılmış <b>ön boyutlandırma hesaplarıdır</b>;
+        EK-9'da belirtilen standartlara uygun saha ölçümleriyle doğrulanmadan
+        akustik performans belgesi yerine geçmez.
+      </p>
+    </div>
+
+    <div class="belge-imza">
+      <div>
+        <div class="belge-alt-baslik">Belgenin</div>
+        <div class="belge-satir"><span class="e">Numarası</span><i>:</i><span>${kacis(p.kod || '')}</span></div>
+        <div class="belge-satir"><span class="e">Veriliş Tarihi</span><i>:</i><span>${kacis(p.tarih || '')}</span></div>
+        <div class="belge-satir"><span class="e">Son Geçerlilik Tarihi</span><i>:</i><span>${kacis(sonGecerlilik(p.tarih))}</span></div>
+      </div>
+      <div>
+        <div class="belge-alt-baslik">Belgeyi Düzenleyenin</div>
+        <div class="belge-satir"><span class="e">Adı Soyadı</span><i>:</i><span>${kacis(p.akustikUzman || '')}</span></div>
+        <div class="belge-satir"><span class="e">Firması</span><i>:</i><span>${kacis(p.sirket || '')}</span></div>
+        <div class="belge-satir"><span class="e">Oda Sicil Nosu</span><i>:</i><span>${kacis(p.odaSicil || '')}</span></div>
+      </div>
+      <div class="belge-imza-alan">İmza</div>
+    </div>
+
+    ${altbilgi(p)}
+  </div>`;
+}
+
+/** A B C D E F dizisi; belirlenen sınıf işaretlenir. */
+function sinifSecimi(secili) {
+  return `<span class="belge-sinif-dizi">${SINIFLAR.map((s) =>
+    `<b class="${s === secili ? 'secili' : ''}">${s}</b>`).join('')}</span>`;
+}
+
+/** Akustik Performans Belgesi geçerliliği 10 yıldır (EK-10 §10.1/1). */
+function sonGecerlilik(tarih) {
+  const m = /^(\d{4})(-\d{2}-\d{2})$/.exec(String(tarih || ''));
+  return m ? `${Number(m[1]) + 10}${m[2]}` : '';
 }

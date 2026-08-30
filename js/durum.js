@@ -41,8 +41,8 @@ export function yeniAyirici() {
   return {
     id: yeniId('a'),
     ad: 'Daireler arası duvar',
-    kaynakMekanId: 'konut-oturma',
-    aliciMekanId: 'konut-yatak',
+    kaynakMekanId: 'konut-yasam-alanlari',
+    aliciMekanId: 'konut-yatak-odalari',
     S: 12,
     V: 40,
     elemanId: 'ba-200',
@@ -92,8 +92,8 @@ export function yeniDarbe() {
   return {
     id: yeniId('d'),
     ad: 'Daireler arası döşeme',
-    ustMekanId: 'konut-oturma',
-    altMekanId: 'konut-yatak',
+    ustMekanId: 'konut-yasam-alanlari',
+    altMekanId: 'konut-yatak-odalari',
     dosemeId: 'ba-d-160',
     manuelHedef: null,        // girilirse yönetmelik L'nT,w üst sınırının yerine geçer (dB)
     LnwBeyan: null,
@@ -113,7 +113,7 @@ export function yeniCephe() {
   return {
     id: yeniId('c'),
     ad: 'Yatak odası cephesi',
-    mekanId: 'konut-yatak',
+    mekanId: 'konut-yatak-odalari',
     disGurultu: 65,
     V: 40,
     bicim: 'duz',
@@ -195,7 +195,7 @@ export function yeniHacim() {
   return {
     id: yeniId('h'),
     ad: 'Derslik',
-    mekanId: 'okul-derslik',
+    mekanId: 'egitim-derslikler',
     V: 180,
     yuzeyler: [
       { id: yeniId('s'), sogurucuId: 'siva', alan: 190 },
@@ -251,8 +251,8 @@ export function ornekProje() {
 
   const a2 = yeniAyirici();
   a2.ad = 'Merdiven sahanlığı ile daire arası duvar (kapılı)';
-  a2.kaynakMekanId = 'konut-merdiven';
-  a2.aliciMekanId = 'konut-hol';
+  a2.kaynakMekanId = 'konut-sirkulasyon-alanlari';
+  a2.aliciMekanId = 'konut-sirkulasyon-alanlari';
   a2.elemanId = 'ddt-240';
   a2.S = 10; a2.V = 55;
   a2.kapiVar = true; a2.kapiId = 'daire-kapisi'; a2.kapiAlani = 2.0;
@@ -269,7 +269,7 @@ export function ornekProje() {
 
   p.hacimler.push(yeniHacim());
   p.hacimler[0].ad = 'Ortak merdiven / hol';
-  p.hacimler[0].mekanId = 'konut-merdiven';
+  p.hacimler[0].mekanId = 'konut-sirkulasyon-alanlari';
   p.hacimler[0].V = 90;
   p.hacimler[0].yuzeyler = [
     { id: yeniId('s'), sogurucuId: 'siva', alan: 96 },

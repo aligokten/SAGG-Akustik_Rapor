@@ -28,13 +28,17 @@ rapor koyu temadan da doğru basılır. Dar ekranlarda menü çekmeceye dönüş
 
 | Bölüm | Gösterge | Yöntem | Karşılaştırma |
 |---|---|---|---|
-| Ayırıcı elemanlar (düşey/yatay) | `DnT,w` | TS EN 12354-1, doğrudan yol + Ff/Fd/Df yan yolları | EK-3 Tablo 3.2 |
+| Ayırıcı elemanlar (düşey/yatay) | `DnT,A` | TS EN 12354-1, doğrudan yol + Ff/Fd/Df yan yolları | EK-3 Tablo 3.2 |
 | Döşemeler | `L'nT,w` | TS EN 12354-2, `L'n,w = Ln,w,eq − ΔLw + K` | EK-3 Tablo 3.3 |
-| Cephe (dış yapı elemanı) | `D2m,nT,w` | TS EN 12354-3, bileşik yalıtım + iç yan yollar (Df) + biçim ve hacim düzeltmesi | EK-3 Tablo 3.1 |
-| Hacimler | `T` (çınlama süresi) | Sabine bağıntısı, oktav bantlarında, hava soğurması dahil | EK-5 |
+| Cephe (dış yapı elemanı) | `DnT,A,tr` | TS EN 12354-3, bileşik yalıtım + iç yan yollar (Df) + biçim ve hacim düzeltmesi, `+ Ctr` | EK-3 Tablo 3.1 |
+| Hacimler | `T` (çınlama süresi) | Sabine bağıntısı, oktav bantlarında, hava soğurması dahil | EK-6 Tablo 6.1 |
 
-Ayrıca: mekân içi gürültü düzeyi sınırları (EK-4 Tablo 4.1) ve mekânların gürültülülük/hassasiyet
-dereceleri (EK-2 Tablo 2.1) veri katmanında yer alır.
+Ayrıca: mekân içi gürültü düzeyi sınırları (EK-4 Tablo 4.1), mekânların gürültülülük/hassasiyet
+dereceleri (EK-2 Tablo 2.1), bina tipine göre komşuluk tabloları (EK-3 Tablo 3.4 / 3.5) ve
+sınıfların öznel karşılıkları (EK-2 Tablo 2.2) veri katmanında yer alır.
+
+Raporun son sayfası, **EK-10 Akustik Performans Belgesi**'dir (bkz.
+[Akustik performans belgesi](#akustik-performans-belgesi)).
 
 ### Kullanılan bağıntılar
 
@@ -62,15 +66,34 @@ seçilebilir: **TS EN 12354-1 Ek-B** (varsayılan) ve karşılaştırma amaçlı
 ## ⚠️ Doğrulama uyarısı — önce okuyun
 
 Yönetmelik eklerindeki **sayısal sınır değerleri**, `js/veri/yonetmelik.js` dosyasında ayrı ve
-düzenlenebilir bir veri katmanında tutulur. Bu değerler yönetmeliğin ekler yapısına uygun biçimde
-kodlanmıştır, ancak **resmî metinle satır satır karşılaştırılmamıştır** ve her tablo
-`dogrulama: 'TASLAK — resmî metinle doğrulanmalıdır'` olarak işaretlidir.
+düzenlenebilir bir veri katmanında tutulur.
 
-Resmî bir işlemde kullanmadan önce:
+**Veri sürümü 2.0.0'dan itibaren** bu tablolar, Yönetmeliğin resmî ek dosyasından
+([7.5.23616-Ek.docx](https://www.mevzuat.gov.tr/mevzuatmetin/yonetmelik/7.5.23616-Ek.docx))
+**programlı olarak çıkarılmıştır** — elle kopyalanmamıştır. Çıkarılan değerler
+`test/yonetmelik-resmi.test.js` ile sabitlenmiştir.
+
+Sürüm 1.x'te tabloların bir bölümü hatalıydı; bunlar düzeltilmiştir:
+
+| Tablo | 1.x'teki durum | 2.0.0 |
+|---|---|---|
+| **3.1** (cephe) | Lgag bantlarına göre sabit dB matrisi, gösterge `D2m,nT,w` | Resmî hâli: `DnT,A,tr ≥ Lgag − indirim` |
+| **3.2** (hava doğuşlu) | Tekdüze 4 dB adımlı, hatalı değerler | Resmî değerler (B→C adımı 6 dB), gösterge `DnT,A` |
+| **3.3** (darbe) | Kaynak **ve** alıcıya göre 9 satır | Resmî hâli: yalnızca kaynak gürültülülüğü, 3 satır |
+| **4.1** (iç gürültü) | Hatalı değerler | Resmî değerler (4 dB adımlı) |
+| **6.1** (reverberasyon) | "EK-5" adıyla, eksik/uydurma liste | EK-6 Tablo 6.1, 41 mekân |
+| **2.1** (mekân dereceleri) | 35 mekân, bir bölümü hatalı derecelendirilmiş | Resmî liste: 12 bina işlevi, 65 mekân |
+| **3.4 / 3.5** | Yoktu | Eklendi (bina tipine göre komşuluk) |
+
+Eski projeleriniz açılmaya devam eder: mekân kimlikleri `MEKAN_KIMLIK_GOCU` ile yeni
+karşılıklarına otomatik çevrilir.
+
+Yine de resmî bir işlemde kullanmadan önce:
 
 1. Uygulamada **Yönetmelik verileri** sekmesini açın.
 2. Tablolardaki değerleri [mevzuat.gov.tr](https://www.mevzuat.gov.tr) üzerindeki yürürlükteki metin
-   (Mevzuat No: 23616) ile karşılaştırın.
+   (Mevzuat No: 23616) ile karşılaştırın. Yönetmelik değişebilir; bu araçtaki veri, çıkarıldığı
+   tarihteki ek dosyasını yansıtır.
 3. Farklı olanları doğrudan arayüzden düzeltin — kod değiştirmeye gerek yoktur.
 4. **JSON olarak indir** ile doğrulanmış veri setini kaydedin; ekibinizle paylaşıp
    **JSON yükle** ile geri yükleyebilirsiniz.
@@ -368,6 +391,7 @@ js/
     en12354-3.js               Cephe
     reverberasyon.js           Sabine
     degerlendirme.js           Yönetmelik gereksinimleri ve sınıf belirleme
+    performans-belgesi.js      EK-10 Akustik Performans Belgesi verisi
   veri/
     yonetmelik.js              ★ Yönetmelik ekleri — düzenlenebilir veri katmanı
     malzemeler.js              ★ Malzeme kütüphanesi + eski kimlik göç haritası
@@ -392,13 +416,14 @@ test/cekirdek.test.js          Hesap çekirdeği testleri
 npm test          # node --test test/*.test.js
 ```
 
-217 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+243 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
 projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
 modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
 hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış), izometrik şema üretimini, cephe iç yan
 yollarını, sayı girdisi davranışını, katman favorileri kitaplığını, raporda mekân adı çözümünü ve
 Excel sınır değer tablosu çıktısını (DD/İD/DOS kodlaması, sayfa yerleşimi, geçerli ZIP/OOXML paketi)
-ve rapor altbilgisindeki lisans künyesini kapsar. Ayrıca referans araçtan alınan dört örnek dosya, sonuçları birebir doğrulayan bir kehanet
+rapor altbilgisindeki lisans künyesini, yönetmelik tablolarının resmî ek dosyasıyla
+birebir örtüşmesini ve EK-10 performans belgesini kapsar. Ayrıca referans araçtan alınan dört örnek dosya, sonuçları birebir doğrulayan bir kehanet
 (oracle) takımı olarak koşturulur.
 
 ---
@@ -445,6 +470,36 @@ Pages açılana kadar uygulama, GitHub'daki dosyaları doğru MIME türleriyle s
 ```
 https://raw.githack.com/aligokten/SAGG-Akustik_Rapor/claude/ks-schallschutzrechner-turkish-lgtwfl/index.html
 ```
+
+## Akustik performans belgesi
+
+Raporun **son sayfası**, Yönetmeliğin EK-10'undaki *Akustik Performans Belgesi*'nin aynı
+düzendeki bir kopyasıdır: sarı başlık bandı, proje/bina künyesi ve bina resmi alanı,
+A–F performans merdiveni ile sınıf tanımları, altı ölçütlü değerlendirme tablosu,
+açıklamalar ve imza bloğu.
+
+Sınıf belirleme EK-10 §10.1(9) kuralını izler: **elde edilen en alt performans sınıfı**
+hem her ölçüt için hem de "Toplam" satırı için belirleyicidir. Altı ölçüt:
+
+| # | Ölçüt | Gösterge | Kaynak |
+|---|---|---|---|
+| 1 | İç gürültü düzeyleri | LAeq | *hesaplanmaz — ölçüme dayanır* |
+| 2 | Dış yapı elemanı yalıtımı | DnT,A,tr | Cephe kayıtları |
+| 3 | Hava doğuşlu ses | DnT,A | Ayırıcı eleman kayıtları |
+| 4 | Darbe sesi | L′nT,w | Döşeme kayıtları |
+| 5 | Tesisat gürültüsü | LAeq,nT / LAF,max,nT | *hesaplanmaz — ölçüme dayanır* |
+| 6 | Reverberasyon süresi | T | Hacim kayıtları |
+
+1. ve 5. ölçütler Yönetmelikçe saha ölçümüne dayandırılır (EK-10 §10.1/4); bu araç onları
+hesaplamaz ve belgede EK-10 §10.2(3) uyarınca **"performans belirlenemedi"** olarak işaretler.
+Belgenin son geçerlilik tarihi, veriliş tarihinden 10 yıl sonrasıdır (EK-10 §10.1/1).
+
+> Bu çıktı bir **ön boyutlandırma** belgesidir; EK-9'daki standartlara uygun saha ölçümleriyle
+> doğrulanmadan resmî akustik performans belgesi yerine geçmez. Belge sayfasında bu uyarı
+> ayrıca basılır.
+
+Kod: `js/cekirdek/performans-belgesi.js` (sınıf mantığı) ve `js/arayuz/sekme-rapor.js`
+(`performansBelgesi`).
 
 ## Marka ve tipografi
 

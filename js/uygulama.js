@@ -24,13 +24,15 @@ import * as sekmeYonetmelik from './arayuz/sekme-yonetmelik.js';
 import * as sekmeRapor from './arayuz/sekme-rapor.js';
 import {
   EK2_TABLO_2_1, EK3_TABLO_3_1, EK3_TABLO_3_2, EK3_TABLO_3_3,
-  EK4_TABLO_4_1, EK5_REVERBERASYON, veriPaketi, SURUM,
+  EK3_TABLO_3_4, EK3_TABLO_3_5,
+  EK4_TABLO_4_1, EK6_TABLO_6_1, veriPaketi, SURUM,
 } from './veri/yonetmelik.js';
 
 const YONETMELIK_DEPO = 'sagg-akustik-yonetmelik-v1';
 const YONETMELIK_TABLOLARI = {
   EK2_TABLO_2_1, EK3_TABLO_3_1, EK3_TABLO_3_2, EK3_TABLO_3_3,
-  EK4_TABLO_4_1, EK5_REVERBERASYON,
+  EK3_TABLO_3_4, EK3_TABLO_3_5,
+  EK4_TABLO_4_1, EK6_TABLO_6_1,
 };
 
 // Kayıtlı bir çalışma varsa ondan devam edilir; yoksa panel boş bir projeyle
@@ -51,22 +53,22 @@ const SEKMELER = [
     baslik: 'Proje künyesi', yol: 'Künye, hedef sınıf ve hesap ayarları' },
 
   { grup: 'Hesaplar', id: 'ayirici', ad: 'Ayırıcı elemanlar', simge: '▥',
-    baslik: 'Ayırıcı elemanlarda hava doğuşlu ses yalıtımı', yol: 'TS EN 12354-1 · DnT,w · EK-3 Tablo 3.2',
+    baslik: 'Ayırıcı elemanlarda hava doğuşlu ses yalıtımı', yol: 'TS EN 12354-1 · DnT,A · EK-3 Tablo 3.2',
     sayim: (d) => d.ayiricilar.length, eksik: (s) => s.ayiricilar.filter((x) => x.degerlendirme && !x.degerlendirme.uygun).length },
   { id: 'darbe',   ad: 'Darbe sesi',         simge: '▤',
     baslik: 'Döşemelerde darbe sesi yalıtımı', yol: "TS EN 12354-2 · L'nT,w · EK-3 Tablo 3.3",
     sayim: (d) => d.darbeler.length, eksik: (s) => s.darbeler.filter((x) => x.degerlendirme && !x.degerlendirme.uygun).length },
   { id: 'cephe',   ad: 'Cephe',              simge: '▦',
-    baslik: 'Cephede (dış yapı elemanı) ses yalıtımı', yol: 'TS EN 12354-3 · D2m,nT,w · EK-3 Tablo 3.1',
+    baslik: 'Cephede (dış yapı elemanı) ses yalıtımı', yol: 'TS EN 12354-3 · DnT,A,tr · EK-3 Tablo 3.1',
     sayim: (d) => d.cepheler.length, eksik: (s) => s.cepheler.filter((x) => x.degerlendirme && !x.degerlendirme.uygun).length },
   { id: 'reverberasyon', ad: 'Reverberasyon', simge: '◍',
-    baslik: 'Reverberasyon (çınlama) süresi', yol: 'Sabine bağıntısı · EK-5',
+    baslik: 'Reverberasyon (çınlama) süresi', yol: 'Sabine bağıntısı · EK-6 Tablo 6.1',
     sayim: (d) => d.hacimler.length, eksik: (s) => s.hacimler.filter((x) => x.degerlendirme && !x.degerlendirme.uygun).length },
 
   { grup: 'Başvuru', id: 'kutuphane', ad: 'Malzeme kütüphanesi',
     baslik: 'Malzeme kütüphanesi', yol: 'Yapı elemanları, yalıtım ürünleri ve yüzey kaplamaları' },
   { id: 'yonetmelik', ad: 'Yönetmelik verileri', simge: '⚖',
-    baslik: 'Yönetmelik verileri', yol: 'EK-2 – EK-5 sınır değerleri · düzenlenebilir' },
+    baslik: 'Yönetmelik verileri', yol: 'EK-2 – EK-6 sınır değerleri · düzenlenebilir' },
   { id: 'rapor',   ad: 'Akustik rapor',      simge: '🖹',
     baslik: 'Akustik rapor', yol: 'Yazdırılabilir özet çıktı' },
 ];
@@ -111,9 +113,12 @@ function yonetmelikDegistir(el) {
 
   if (tabloAdi === 'EK2_TABLO_2_1') {
     tablo.mekanlar[Number(anahtar)][alanAdi] = el.value;
-  } else if (tabloAdi === 'EK5_REVERBERASYON') {
+  } else if (tabloAdi === 'EK5_REVERBERASYON' || tabloAdi === 'EK6_TABLO_6_1') {
     const v = el.value.trim() === '' ? null : sayiOku(el.value, null);
     tablo.mekanlar[Number(anahtar)][alanAdi] = v;
+  } else if (anahtar === 'indirim') {
+    // EK-3 Tablo 3.1 sabit matris değil, Lgag'dan çıkarılan indirimdir.
+    tablo.indirim[altAnahtar][sinif] = sayiOku(el.value, null);
   } else if (altAnahtar) {
     tablo.degerler[anahtar][altAnahtar][sinif] = sayiOku(el.value, null);
   } else {
@@ -126,7 +131,9 @@ function yonetmeligiKaydet() {
   try {
     const paket = {};
     for (const [ad, t] of Object.entries(YONETMELIK_TABLOLARI)) {
-      paket[ad] = t.degerler ? { degerler: t.degerler } : { mekanlar: t.mekanlar };
+      paket[ad] = t.indirim ? { indirim: t.indirim }
+                : t.degerler ? { degerler: t.degerler }
+                : { mekanlar: t.mekanlar };
     }
     localStorage.setItem(YONETMELIK_DEPO, JSON.stringify(paket));
   } catch { /* yoksay */ }
@@ -145,6 +152,7 @@ function yonetmeligiUygula(paket) {
     const t = YONETMELIK_TABLOLARI[ad];
     if (!t || !veri) continue;
     if (veri.degerler && t.degerler) Object.assign(t.degerler, veri.degerler);
+    if (veri.indirim && t.indirim) Object.assign(t.indirim, veri.indirim);
     if (veri.mekanlar && t.mekanlar) {
       veri.mekanlar.forEach((m, i) => { if (t.mekanlar[i]) Object.assign(t.mekanlar[i], m); });
     }

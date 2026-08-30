@@ -6,7 +6,7 @@
 import {
   SINIFLAR, ASGARI_SINIFLAR,
   EK2_TABLO_2_1, EK3_TABLO_3_1, EK3_TABLO_3_2, EK3_TABLO_3_3,
-  EK4_TABLO_4_1, EK5_REVERBERASYON, DIS_GURULTU_ARALIKLARI,
+  EK4_TABLO_4_1, EK6_TABLO_6_1,
 } from '../veri/yonetmelik.js';
 
 /** Mekân tanımını id ile bulur. */
@@ -14,10 +14,23 @@ export function mekanBul(id, tablo = EK2_TABLO_2_1) {
   return tablo.mekanlar.find((m) => m.id === id) || null;
 }
 
-/** Çevresel gürültü göstergesi Lgag'ın (dBA) hangi aralığa düştüğünü bulur. */
-export function disGurultuAraligi(Lgag) {
-  return DIS_GURULTU_ARALIKLARI.find((a) => Lgag > a.alt && Lgag <= a.ust)
-      || DIS_GURULTU_ARALIKLARI[DIS_GURULTU_ARALIKLARI.length - 1];
+/**
+ * EK-3 Tablo 3.1 satırını üretir.
+ *
+ * Resmî tablo sabit bir dB matrisi değildir: her sınıf için gereken yalıtım,
+ * cephedeki çevresel gürültü göstergesi Lgag'dan hassasiyet ve sınıfa bağlı
+ * bir indirim çıkarılarak bulunur (DnT,A,tr ≥ Lgag − indirim).
+ *
+ * @param {number} Lgag       Cephedeki çevresel gürültü göstergesi (dBA)
+ * @param {string} hassasiyet 'cok' | 'orta' | 'az'  (I / II / III)
+ * @returns {Object|null} { A..F } biçiminde sınıf-değer satırı
+ */
+export function cepheSatiri(Lgag, hassasiyet) {
+  const ind = EK3_TABLO_3_1.indirim[hassasiyet];
+  if (!ind || !Number.isFinite(Lgag)) return null;
+  const satir = {};
+  for (const s of SINIFLAR) satir[s] = Lgag - ind[s];
+  return satir;
 }
 
 /**
@@ -122,7 +135,9 @@ export function darbeSesiDegerlendir({ ustMekanId, altMekanId, LnTw, hedefSinif 
   const ust = mekanBul(ustMekanId);
   const alt = mekanBul(altMekanId);
   if (!ust || !alt) return null;
-  const anahtar = `${ust.gurultululuk}-${alt.hassasiyet}`;
+  // Resmî Tablo 3.3 YALNIZCA kaynak (üst) mekânın gürültülülük derecesine
+  // bağlıdır; alıcı mekânın hassasiyeti bu tabloya girmez.
+  const anahtar = ust.gurultululuk;
   const satir = EK3_TABLO_3_3.degerler[anahtar];
   return {
     ...degerlendir(EK3_TABLO_3_3, satir, LnTw, hedefSinif, manuelHedef),
@@ -137,14 +152,13 @@ export function darbeSesiDegerlendir({ ustMekanId, altMekanId, LnTw, hedefSinif 
  * @param {number} p.disGurultu Cephedeki çevresel gürültü göstergesi Lgag (dBA)
  * @param {number} p.D2mnTw     Hesaplanan D2m,nT,w (dB)
  */
-export function cepheDegerlendir({ mekanId, disGurultu, D2mnTw, hedefSinif = ASGARI_SINIFLAR.yeniBina, manuelHedef = null }) {
+export function cepheDegerlendir({ mekanId, disGurultu, DnTAtr, hedefSinif = ASGARI_SINIFLAR.yeniBina, manuelHedef = null }) {
   const mekan = mekanBul(mekanId);
   if (!mekan) return null;
-  const aralik = disGurultuAraligi(disGurultu);
-  const satir = EK3_TABLO_3_1.degerler[mekan.hassasiyet]?.[aralik.id];
+  const satir = cepheSatiri(disGurultu, mekan.hassasiyet);
   return {
-    ...degerlendir(EK3_TABLO_3_1, satir, D2mnTw, hedefSinif, manuelHedef),
-    mekan, aralik, disGurultu,
+    ...degerlendir(EK3_TABLO_3_1, satir, DnTAtr, hedefSinif, manuelHedef),
+    mekan, disGurultu, indirim: EK3_TABLO_3_1.indirim[mekan.hassasiyet],
   };
 }
 
@@ -167,19 +181,24 @@ export function icGurultuDegerlendir({ mekanId, LAeq, hedefSinif = ASGARI_SINIFL
  * @param {number} p.T Hesaplanan reverberasyon süresi (s, 500–2000 Hz ort.)
  */
 export function reverberasyonDegerlendir({ mekanId, T }) {
-  const kayit = EK5_REVERBERASYON.mekanlar.find((m) => m.id === mekanId);
+  const kayit = EK6_TABLO_6_1.mekanlar.find((m) => m.id === mekanId);
   if (!kayit) return null;
   const altUygun = kayit.Tmin == null || T >= kayit.Tmin;
   const ustUygun = kayit.Tmax == null || T <= kayit.Tmax;
+  const uygun = altUygun && ustUygun;
   return {
     gosterge: 'T (500–2000 Hz ort.)',
     birim: 's',
     hesaplanan: T,
     Tmin: kayit.Tmin,
     Tmax: kayit.Tmax,
-    uygun: altUygun && ustUygun,
-    kaynak: EK5_REVERBERASYON.kaynak,
-    dogrulama: EK5_REVERBERASYON.dogrulama,
+    uygun,
+    // EK-6 Tablo 6.1 tek bir sınır verir; bu sınır C–D bandı içindir.
+    // Belge (EK-10) tüm ölçütlerde sınıf beklediğinden sınır sağlanıyorsa
+    // C, sağlanmıyorsa E atanır. Değer verilmeyen mekânlarda sınıf yoktur.
+    eldeEdilenSinif: kayit.Tmax == null ? null : (uygun ? 'C' : 'E'),
+    kaynak: EK6_TABLO_6_1.kaynak,
+    dogrulama: EK6_TABLO_6_1.dogrulama,
     mekanAdi: kayit.ad,
   };
 }

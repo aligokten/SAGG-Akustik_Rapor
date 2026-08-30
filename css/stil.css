@@ -693,3 +693,114 @@ details > *:last-child{margin-bottom:12px}
   color:var(--vurgu); padding:0; text-decoration:none;
 }
 .kart-baglanti:hover{text-decoration:underline}
+
+/* ═══════════════════════════════════════════════════════════════════
+   EK-10 · Akustik Performans Belgesi
+   Resmî belgenin yerleşimini izler: sarı başlık bandı, künye + resim,
+   A–F merdiveni + tanımlar, altı ölçütlü tablo, imza bloğu.
+   ═══════════════════════════════════════════════════════════════════ */
+.belge{ background:#fff; color:#111; }
+:root[data-tema="koyu"] .belge{ background:#f7f7f5; }
+
+.belge-baslik{
+  display:flex; align-items:stretch; gap:0; margin-bottom:12px;
+  border:1px solid #b9b9b9;
+}
+.belge-baslik-logo{
+  flex:0 0 62px; display:grid; place-items:center; background:#fff;
+  border-right:1px solid #b9b9b9; padding:7px;
+}
+.belge-baslik-logo img{ width:100%; height:auto; display:block }
+.belge-baslik h1{
+  flex:1; margin:0; padding:11px 16px; background:#f2dfa0; color:#111;
+  font-size:23px; font-weight:800; letter-spacing:.14em; text-align:center; align-self:stretch;
+  display:flex; align-items:center; justify-content:center;
+}
+
+.belge-kutu{ border:1px solid #b9b9b9; border-radius:9px; padding:11px 13px; background:#fff }
+.belge-kutu-baslik{ font-weight:700; font-size:12px; margin-bottom:7px; color:#111 }
+
+.belge-ust{ display:grid; grid-template-columns:minmax(0,1.9fr) minmax(0,1fr); gap:10px; margin-bottom:10px }
+.belge-satir{ display:flex; gap:6px; font-size:11.5px; line-height:1.75; align-items:baseline }
+.belge-satir b, .belge-satir .e{ flex:0 0 128px; font-weight:600; color:#111 }
+.belge-satir b{ font-weight:700 }
+.belge-satir i{ flex:0 0 6px; font-style:normal; color:#666 }
+.belge-satir span:last-child{ flex:1; min-width:0; border-bottom:1px dotted #c8c8c8 }
+.belge-alt-baslik{ font-weight:750; font-size:12px; margin:9px 0 2px; color:#111 }
+.belge-resim-alan{
+  display:grid; place-items:center; min-height:150px; background:#efefef;
+  border-radius:6px; overflow:hidden;
+}
+.belge-resim-alan img{ width:100%; height:100%; object-fit:cover; display:block }
+.belge-resim-yer{ color:#a5a5a5; font-size:22px }
+
+.belge-orta{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:10px; margin-bottom:10px }
+.belge-merdiven-kutu{ position:relative; display:flex; align-items:center; gap:10px }
+.belge-merdiven{ flex:1; min-width:0 }
+.belge-merdiven-uc{ font-size:10.5px; font-weight:700 }
+.belge-merdiven-uc.ust{ color:#2f9e44; margin-bottom:3px }
+.belge-merdiven-uc.alt{ color:#e03131; margin-top:3px }
+.belge-ok{
+  position:relative; height:23px; margin:3px 0; display:flex; align-items:center;
+  padding-left:11px; color:#fff; font-weight:800; font-size:12.5px;
+  clip-path:polygon(0 0, calc(100% - 13px) 0, 100% 50%, calc(100% - 13px) 100%, 0 100%);
+}
+.belge-ok.secili{ outline:2px solid #111; outline-offset:1px }
+.belge-ok-a{ background:#2f9e44 } .belge-ok-b{ background:#5cb338 }
+.belge-ok-c{ background:#94c11f } .belge-ok-d{ background:#f5d000 }
+.belge-ok-e{ background:#f08c1f } .belge-ok-f{ background:#e8412a }
+.belge-rozet{
+  flex:0 0 96px; text-align:center; border:1px solid #b9b9b9; border-radius:7px;
+  padding:7px 5px; background:#fff; font-size:9.5px; line-height:1.3; font-weight:650;
+}
+.belge-rozet b{ display:block; font-size:27px; margin-top:3px; color:#111 }
+
+.belge-tanim{ display:flex; gap:6px; font-size:10.5px; line-height:1.45; margin-bottom:4px }
+.belge-tanim b{ flex:0 0 12px; font-weight:800 }
+.belge-tanim i{ flex:0 0 6px; font-style:normal; color:#666 }
+.belge-tanim.secili{ background:#fff5cf; border-radius:4px; padding:2px 4px; margin-left:-4px }
+
+.belge-tablo{ font-size:11px; width:100% }
+.belge-tablo th, .belge-tablo td{ border:1px solid #b9b9b9; padding:5px 7px; vertical-align:middle }
+.belge-tablo th{ background:#dedede !important; color:#111; font-weight:700; text-align:center; font-size:10.5px }
+.belge-dikey{
+  writing-mode:vertical-rl; transform:rotate(180deg);
+  white-space:nowrap; letter-spacing:.05em; width:26px; font-size:10px;
+}
+.belge-no{ text-align:center; width:22px; background:#efefef }
+.belge-olcut{ min-width:190px }
+.belge-gosterge{ color:#666; font-size:10px }
+.belge-sinif-hucre{ text-align:center; white-space:nowrap }
+.belge-sinif-dizi b{ display:inline-block; width:15px; font-weight:600; color:#9a9a9a }
+.belge-sinif-dizi b.secili{
+  color:#fff; background:#111; border-radius:3px; font-weight:800;
+}
+.belge-toplam td{ background:#efefef; font-weight:750; text-align:center }
+
+.belge-aciklama{ margin-top:10px }
+.belge-aciklama p{ font-size:10.5px; line-height:1.6; margin:0; color:#333 }
+
+.belge-imza{
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) 118px; gap:14px;
+  margin-top:12px; padding-top:11px; border-top:1px solid #b9b9b9;
+}
+.belge-imza-alan{
+  display:grid; place-items:center; color:#c2c2c2; font-size:17px; font-weight:700;
+  border:1px dashed #cfcfcf; border-radius:7px;
+}
+
+@media (max-width:820px){
+  .belge-ust, .belge-orta{ grid-template-columns:minmax(0,1fr) }
+  .belge-imza{ grid-template-columns:minmax(0,1fr) }
+}
+
+@media print{
+  /* Belge tek sayfaya sığar ve bölünmez. */
+  .belge{ background:#fff !important }
+  .belge-baslik, .belge-orta, .belge-ust, .belge-tablo, .belge-imza{ break-inside:avoid }
+  .belge-baslik h1{ background:#f2dfa0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact }
+  .belge-ok, .belge-tablo th, .belge-toplam td, .belge-sinif-dizi b.secili{
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+}
+.belge-dikey-bos{ width:26px; padding:0 !important }

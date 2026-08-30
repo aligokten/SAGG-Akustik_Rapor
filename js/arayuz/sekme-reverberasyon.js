@@ -5,7 +5,7 @@
 
 import { kacis, sayi, secenekler, uygunlukRozeti } from './ortak.js';
 import { SOGURUCULAR, NESNELER } from '../veri/malzemeler.js';
-import { EK5_REVERBERASYON } from '../veri/yonetmelik.js';
+import { EK6_TABLO_6_1 } from '../veri/yonetmelik.js';
 import { gerekliIlaveSogurma } from '../cekirdek/reverberasyon.js';
 import { OKTAV_BANTLARI } from '../cekirdek/temel.js';
 import { mekanSecenekleri } from './sekme-ayirici.js';
@@ -49,7 +49,7 @@ function kart(k, i, h) {
     <div class="izgara">
       <div class="alan"><label>Mekân türü (EK-5 gereksinimi için)</label>
         <select data-yol="${y}.mekanId">
-          ${secenekler(EK5_REVERBERASYON.mekanlar, k.mekanId)}
+          ${secenekler(EK6_TABLO_6_1.mekanlar, k.mekanId)}
         </select>
         ${d ? `<span class="ipucu">İzin verilen: ${d.Tmin != null ? `${sayi(d.Tmin, 2)} – ` : '≤ '}${d.Tmax != null ? sayi(d.Tmax, 2) : '—'} s</span>`
              : '<span class="ipucu" style="color:var(--uyari)">Bu mekân için EK-5\'te gereksinim tanımlı değil.</span>'}</div>

@@ -10,7 +10,7 @@ import { kacis, sayi } from './ortak.js';
 import {
   SURUM, SINIFLAR, ASGARI_SINIFLAR,
   EK2_TABLO_2_1, EK3_TABLO_3_1, EK3_TABLO_3_2, EK3_TABLO_3_3,
-  EK4_TABLO_4_1, EK5_REVERBERASYON, DIS_GURULTU_ARALIKLARI,
+  EK4_TABLO_4_1, EK6_TABLO_6_1,
   GURULTULULUK_DERECELERI, HASSASIYET_DERECELERI,
 } from '../veri/yonetmelik.js';
 
@@ -80,18 +80,21 @@ function cepheTablosu() {
   return `
   <section class="kart">
     <div class="kart-baslik"><h3>${kacis(t.kaynak)}</h3><span class="rozet notr">${kacis(t.dogrulama)}</span></div>
-    <p class="soluk" style="font-size:12.5px">Mekânın hassasiyet derecesi ve cephedeki L<sub>gag</sub> gürültü düzeyine göre en az D2m,nT,w (dB)</p>
+    <p class="soluk" style="font-size:12.5px">
+      Resmî tablo sabit bir dB matrisi değildir: gereken yalıtım, cephedeki
+      L<sub>gag</sub> değerinden hassasiyet ve sınıfa bağlı bir indirim
+      çıkarılarak bulunur — <b>D<sub>nT,A,tr</sub> ≥ L<sub>gag</sub> − indirim</b>.
+      Aşağıdaki değerler bu indirimlerdir (dB).
+    </p>
     <div class="tablo-sar"><table>
-      <thead><tr><th>Hassasiyet</th><th>L<sub>gag</sub> aralığı</th>${SINIFLAR.map((s) => `<th class="sayi">${s}</th>`).join('')}</tr></thead>
+      <thead><tr><th>Alıcı odası hassasiyeti</th>${SINIFLAR.map((s) => `<th class="sayi">${s}</th>`).join('')}</tr></thead>
       <tbody>
-      ${Object.entries(t.degerler).map(([hass, aralik]) =>
-        DIS_GURULTU_ARALIKLARI.map((a, k) => `<tr>
-          ${k === 0 ? `<td rowspan="${DIS_GURULTU_ARALIKLARI.length}"><b>${kacis(HASSASIYET_DERECELERI[hass])}</b></td>` : ''}
-          <td>${kacis(a.ad)}</td>
+      ${Object.entries(t.indirim).map(([hass, satir]) => `<tr>
+          <td><b>${kacis(HASSASIYET_DERECELERI[hass])}</b></td>
           ${SINIFLAR.map((s) => `<td class="sayi"><input type="text" inputmode="decimal" style="width:64px;text-align:right"
-              data-yonetmelik="EK3_TABLO_3_1" data-anahtar="${kacis(hass)}" data-alt-anahtar="${kacis(a.id)}" data-sinif="${s}"
-              value="${aralik[a.id]?.[s] ?? ''}"></td>`).join('')}
-        </tr>`).join('')).join('')}
+              data-yonetmelik="EK3_TABLO_3_1" data-anahtar="indirim" data-alt-anahtar="${kacis(hass)}" data-sinif="${s}"
+              value="${satir[s] ?? ''}"></td>`).join('')}
+        </tr>`).join('')}
       </tbody>
     </table></div>
   </section>`;
@@ -119,7 +122,7 @@ function icGurultuTablosu() {
 }
 
 function reverberasyonTablosu() {
-  const t = EK5_REVERBERASYON;
+  const t = EK6_TABLO_6_1;
   return `
   <section class="kart">
     <div class="kart-baslik"><h3>${kacis(t.kaynak)}</h3><span class="rozet notr">${kacis(t.dogrulama)}</span></div>
@@ -129,9 +132,9 @@ function reverberasyonTablosu() {
       ${t.mekanlar.map((m, i) => `<tr>
         <td>${kacis(m.ad)}</td>
         <td class="sayi"><input type="text" inputmode="decimal" style="width:80px;text-align:right"
-            data-yonetmelik="EK5_REVERBERASYON" data-anahtar="${i}" data-alan="Tmin" value="${m.Tmin ?? ''}" placeholder="—"></td>
+            data-yonetmelik="EK6_TABLO_6_1" data-anahtar="${i}" data-alan="Tmin" value="${m.Tmin ?? ''}" placeholder="—"></td>
         <td class="sayi"><input type="text" inputmode="decimal" style="width:80px;text-align:right"
-            data-yonetmelik="EK5_REVERBERASYON" data-anahtar="${i}" data-alan="Tmax" value="${m.Tmax ?? ''}" placeholder="—"></td>
+            data-yonetmelik="EK6_TABLO_6_1" data-anahtar="${i}" data-alan="Tmax" value="${m.Tmax ?? ''}" placeholder="—"></td>
       </tr>`).join('')}
       </tbody>
     </table></div>

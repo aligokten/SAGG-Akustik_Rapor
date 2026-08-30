@@ -73,11 +73,14 @@ export function ciz(durum) {
     <details>
       <summary>Akustik performans sınıflarının öznel karşılığı (EK-2 Tablo 2.2)</summary>
       <div class="tablo-sar"><table>
-        <thead><tr><th>Sınıf</th><th>Hava doğuşlu ses</th><th>Darbe sesi</th></tr></thead>
-        <tbody>${SINIFLAR.map((s) => `<tr>
-          <td>${sinifRozeti(s)}</td>
-          <td>${kacis(EK2_TABLO_2_2.siniflar[s].hava)}</td>
-          <td>${kacis(EK2_TABLO_2_2.siniflar[s].darbe)}</td></tr>`).join('')}</tbody>
+        <thead><tr><th>Gürültü kaynağı</th>${SINIFLAR.map((s) => `<th>${sinifRozeti(s)}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${EK2_TABLO_2_2.satirlar.map((r) => `<tr>
+            <td><b>${kacis(r.grup)}</b> — ${kacis(r.kaynak)}</td>
+            ${SINIFLAR.map((s) => `<td>${kacis(r[s])}</td>`).join('')}</tr>`).join('')}
+          <tr><td><b>Ses yalıtımının zayıf nitelendirilme oranı</b></td>
+            ${SINIFLAR.map((s) => `<td>${kacis(EK2_TABLO_2_2.zayifOran[s])}</td>`).join('')}</tr>
+        </tbody>
       </table></div>
       <p class="soluk" style="font-size:12px">Kaynak: ${kacis(EK2_TABLO_2_2.kaynak)} — ${kacis(EK2_TABLO_2_2.dogrulama)}</p>
     </details>

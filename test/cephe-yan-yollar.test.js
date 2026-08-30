@@ -138,7 +138,7 @@ test('Yol payları %100 toplar ve doğrudan yolu içerir', () => {
 /* ── Manuel hedef ─────────────────────────────────────────────────── */
 
 test('Manuel hedef, yönetmelik hedefinin yerine geçer ve etiketlenir', () => {
-  const ortak = { mekanId: 'konut-yatak', disGurultu: 68, D2mnTw: 44.2, hedefSinif: 'C' };
+  const ortak = { mekanId: 'konut-yatak-odalari', disGurultu: 68, DnTAtr: 44.2, hedefSinif: 'C' };
 
   const yonetmelik = cepheDegerlendir(ortak);
   assert.equal(yonetmelik.hedefKaynagi, 'yonetmelik');
@@ -154,7 +154,7 @@ test('Manuel hedef, yönetmelik hedefinin yerine geçer ve etiketlenir', () => {
 });
 
 test('Manuel hedef null/NaN ise yönetmelik hedefi korunur', () => {
-  const ortak = { mekanId: 'konut-yatak', disGurultu: 68, D2mnTw: 44.2, hedefSinif: 'C' };
+  const ortak = { mekanId: 'konut-yatak-odalari', disGurultu: 68, DnTAtr: 44.2, hedefSinif: 'C' };
   for (const m of [null, undefined, NaN]) {
     const d = cepheDegerlendir({ ...ortak, manuelHedef: m });
     assert.equal(d.hedefKaynagi, 'yonetmelik');

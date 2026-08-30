@@ -20,6 +20,8 @@
 /* ═══════════════════════════════════════════════════════════════════════
    Sıvalar — tek yüzdeki alan kütlesi (kg/m²)
    ═══════════════════════════════════════════════════════════════════════ */
+import { mekanKimligiGuncelle } from './yonetmelik.js';
+
 export const SIVALAR = [
   { id: 'sivasiz',    ad: 'Sıvasız',                              mAlan: 0 },
   { id: 'alci-10',    ad: 'Alçı sıva, 10 mm',                     mAlan: 10 },
@@ -490,11 +492,16 @@ export function kimligiGuncelle(id) {
  */
 export function projeKimliklerinigGuncelle(nesne) {
   const ANAHTARLAR = ['elemanId', 'dosemeId', 'sapId', 'giydirmeId', 'kapiId', 'sogurucuId', 'nesneId', 'dolguId'];
+  // Mekân kimlikleri ayrı bir sözlükten geçer (EK-2 Tablo 2.1, veri sürümü 2.0.0).
+  const MEKAN_ANAHTARLARI = ['mekanId', 'kaynakMekanId', 'aliciMekanId', 'ustMekanId', 'altMekanId'];
   const gez = (o) => {
     if (Array.isArray(o)) return o.forEach(gez);
     if (o && typeof o === 'object') {
       for (const a of ANAHTARLAR) {
         if (typeof o[a] === 'string') o[a] = kimligiGuncelle(o[a]);
+      }
+      for (const a of MEKAN_ANAHTARLARI) {
+        if (typeof o[a] === 'string') o[a] = mekanKimligiGuncelle(o[a]);
       }
       Object.values(o).forEach(gez);
     }

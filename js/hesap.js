@@ -321,10 +321,12 @@ export function cepheHesapla(c, proje) {
     yanYollar,
   });
 
+  // Uygunluk kararı EK-3 Tablo 3.1 ile DnT,A,tr üzerinden verilir
+  // (resmî tablonun göstergesi budur; D2m,nT,w değildir).
   const degerlendirme = cepheDegerlendir({
     mekanId: c.mekanId,
     disGurultu: c.disGurultu,
-    D2mnTw: sonuc.D2mnTw,
+    DnTAtr: sonuc.DnTAtr,
     hedefSinif: proje.hedefSinif,
     manuelHedef: c.manuelHedef,
   });

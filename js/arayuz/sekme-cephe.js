@@ -161,7 +161,7 @@ function kart(c, i, h) {
         <span class="ipucu">Köşe mahalde D1 (L×H) ve D2 (W×H) birlikte değerlendirilir.</span></div>
       <div class="alan"><label>Spektrum düzeltmesi C<sub>tr</sub> (dB)</label>
         <input type="text" inputmode="decimal" data-yol="${y}.ctr" data-tur="sayi" value="${c.ctr ?? -3}">
-        <span class="ipucu">D<sub>nT,A,tr</sub> = D2m,nT,w + C<sub>tr</sub> — bilgi amaçlıdır.</span></div>
+        <span class="ipucu">D<sub>nT,A,tr</sub> = D2m,nT,w + C<sub>tr</sub> — uygunluk bu değerle karara bağlanır (EK-3 Tablo 3.1).</span></div>
       <div class="alan"><label>Manuel D2m,nT,w hedefi (dB)</label>
         <input type="text" inputmode="decimal" data-yol="${y}.manuelHedef" data-tur="sayiVeyaNull" value="${c.manuelHedef ?? ''}"
                placeholder="${d ? sayi(d.yonetmelikGereken, 0) : '—'} (yönetmelik)">
@@ -232,9 +232,14 @@ function kart(c, i, h) {
     ${d ? `<details><summary>${kacis(d.kaynak)} — sınıf değerleri</summary>
       <div class="tablo-sar"><table>
         <thead><tr><th>Sınıf</th>${Object.keys(d.satir).map((c2) => `<th class="sayi">${c2}</th>`).join('')}</tr></thead>
-        <tbody><tr><td>D2m,nT,w en az (dB)</td>${Object.values(d.satir).map((v) => `<td class="sayi">${v}</td>`).join('')}</tr></tbody>
+        <tbody>
+          <tr><td>D<sub>nT,A,tr</sub> en az (dB)</td>${Object.values(d.satir).map((v) => `<td class="sayi">${sayi(v, 0)}</td>`).join('')}</tr>
+          <tr><td class="soluk">L<sub>gag</sub>'dan indirim (dB)</td>${Object.keys(d.satir).map((c2) => `<td class="sayi soluk">−${sayi(d.indirim?.[c2], 0)}</td>`).join('')}</tr>
+        </tbody>
       </table></div>
-      <p class="soluk" style="font-size:12px">Hassasiyet: ${kacis(d.mekan.hassasiyet)} · L<sub>gag</sub> aralığı: ${kacis(d.aralik.ad)}. ${kacis(d.dogrulama)}</p>
+      <p class="soluk" style="font-size:12px">
+        Hassasiyet: ${kacis(HASSASIYET_DERECELERI[d.mekan.hassasiyet] || d.mekan.hassasiyet)} ·
+        L<sub>gag</sub> = ${sayi(d.disGurultu, 0)} dBA. ${kacis(d.dogrulama)}</p>
     </details>` : ''}
   </section>`;
 }

@@ -140,7 +140,7 @@ katmanı `boşluk` türünde eklemeniz gerekir — bu, referansta bulunmayan bir
 |---|---|---|
 | 1 | **Cephe iç yan yolları** | Uygulandı. İç tavan, iç taban ve iç yan duvarlar dış duvara Df yolu olarak bağlanır: `R'w,görünür = −10·lg(10^(−Rw,bileşik/10) + Σ10^(−R_Df/10))`. Yalnızca cephe kaydında oda boyutları girilmişse etkindir. |
 | 2 | **Köşe mahal** | Uygulandı. Orta mahalde tek dış duvar (D1 = L×H), köşe mahalde iki dış duvar (D2 = W×H). Yüzeysel elemanlar D1/D2'ye atanır; iç tavan/taban her aktif duvara, iç yan duvar D1'e, iç arka duvar (yalnız köşede) D2'ye bağlanır. |
-| 3 | **Ctr → DnT,A,tr** | Uygulandı. `DnT,A,tr = D2m,nT,w + Ctr` hesaplanır ve raporda gösterilir. **Uygunluk kararı yine EK-3 Tablo 3.1 ile D2m,nT,w üzerinden verilir** (bkz. §2.4); DnT,A,tr bilgi amaçlıdır. |
+| 3 | **Ctr → DnT,A,tr** | Uygulandı. `DnT,A,tr = D2m,nT,w + Ctr` hesaplanır ve **uygunluk kararı bu değer üzerinden verilir** — resmî EK-3 Tablo 3.1'in göstergesi budur (bkz. §2.4). |
 | 4 | **Manuel hedef** | Uygulandı. Hava (DnT,w), darbe (L'nT,w) ve cephe (D2m,nT,w) hedefleri elle geçersiz kılınabilir. Yönetmelik değeri `yonetmelikGereken` alanında korunur, elde edilen sınıf yine tablodan okunur, rapor ve arayüzde "manuel" etiketi gösterilir. |
 
 ### 2.2 Referansta olup bizde olmayan
@@ -160,10 +160,22 @@ katmanı `boşluk` türünde eklemeniz gerekir — bu, referansta bulunmayan bir
 | 5 | Tek projede sınırsız sayıda ayırıcı / döşeme / cephe / hacim kaydı |
 | 6 | Sürüklenerek döndürülebilen izometrik 3B oda modeli (saf SVG, dış bağımlılık yok) |
 
-### 2.4 Bilinçli olarak benimsenmeyen
+### 2.4 Düzeltme — cephe hedefi (önceki değerlendirme hatalıydı)
 
-**Cephe hedef matrisi.** Referans, cephe hedefini `hedef = L_dış − sınıf_indirimi`
-bağıntısıyla kendi tablosundan üretir (A–D sınıflarında 30 dB alt sınırıyla). Referans
-belge bu matrisi kendi ifadesiyle "uygulamadaki kabul verileri" olarak niteler.
-Bu araçta cephe hedefi **EK-3 Tablo 3.1**'den, yani yönetmelik verisinden gelir;
-yönetmelik bağlılığını azaltmamak için referansın kabul matrisi benimsenmemiştir.
+Bu bölümde daha önce, referansın `hedef = L_dış − sınıf_indirimi` bağıntısının
+"uygulamanın kendi kabul verisi" olduğu ve yönetmelik bağlılığını azaltmamak için
+benimsenmediği yazıyordu. **Bu değerlendirme yanlıştı.**
+
+Yönetmeliğin resmî ek dosyası (7.5.23616-Ek.docx) incelendiğinde EK-3 Tablo 3.1'in
+sabit bir dB matrisi *olmadığı* görülmüştür; tablo tam olarak bu bağıntıyı verir:
+
+| Alıcı odası hassasiyeti | A | B | C | D | E | F |
+|---|---|---|---|---|---|---|
+| I   | Lgag−14 | Lgag−18 | Lgag−22 | Lgag−26 | Lgag−30 | Lgag−34 |
+| II  | Lgag−17 | Lgag−21 | Lgag−25 | Lgag−29 | Lgag−33 | Lgag−37 |
+| III | Lgag−20 | Lgag−24 | Lgag−28 | Lgag−32 | Lgag−36 | Lgag−40 |
+
+Tablonun göstergesi de D2m,nT,w değil **DnT,A,tr**'dir. Yani referans araç bu
+noktada yönetmeliğe uygundu, bu araç değildi. Veri sürümü 2.0.0'da hem tablo yapısı
+hem de gösterge düzeltilmiş, uygunluk kararı DnT,A,tr üzerinden verilir hâle
+getirilmiştir (`js/veri/yonetmelik.js` → `EK3_TABLO_3_1.indirim`).

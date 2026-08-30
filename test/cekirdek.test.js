@@ -18,7 +18,7 @@ import { cepheYalitimi, bilesikCepheYalitimi } from '../js/cekirdek/en12354-3.js
 import { reverberasyonSuresi, gerekliIlaveSogurma } from '../js/cekirdek/reverberasyon.js';
 import {
   sinifBelirle, havaDogusluDegerlendir, darbeSesiDegerlendir,
-  cepheDegerlendir, disGurultuAraligi, genelSinif,
+  cepheDegerlendir, cepheSatiri, genelSinif,
 } from '../js/cekirdek/degerlendirme.js';
 import { projeyiHesapla, elemanCoz } from '../js/hesap.js';
 import { ornekProje, bosProje, yeniAyirici } from '../js/durum.js';
@@ -229,33 +229,37 @@ test('sinifBelirle küçük değerin iyi olduğu tabloda doğru çalışır (enC
   assert.equal(sinifBelirle(satir, 70, 'enCok'), null);
 });
 
-test('Dış gürültü aralığı doğru seçilir', () => {
-  assert.equal(disGurultuAraligi(50).id, 'a');
-  assert.equal(disGurultuAraligi(60).id, 'b');
-  assert.equal(disGurultuAraligi(61).id, 'c');
-  assert.equal(disGurultuAraligi(90).id, 'f');
+test('Cephe satırı Lgag\u0027dan indirimle üretilir (EK-3 Tablo 3.1)', () => {
+  // I. derece hassasiyet, C sınıfı: Lgag − 22
+  assert.equal(cepheSatiri(65, 'cok').C, 65 - 22);
+  assert.equal(cepheSatiri(65, 'orta').C, 65 - 25);
+  assert.equal(cepheSatiri(65, 'az').C, 65 - 28);
+  // A en sıkı, F en gevşek olmalı
+  const s = cepheSatiri(70, 'cok');
+  assert.ok(s.A > s.B && s.B > s.C && s.C > s.D && s.D > s.E && s.E > s.F);
+  assert.equal(cepheSatiri(NaN, 'cok'), null);
 });
 
 test('Hava doğuşlu değerlendirme, sınırda "uygun" sayar', () => {
   const d = havaDogusluDegerlendir({
-    kaynakMekanId: 'konut-oturma', aliciMekanId: 'konut-yatak', DnTw: 56, hedefSinif: 'C',
+    kaynakMekanId: 'konut-yasam-alanlari', aliciMekanId: 'konut-yatak-odalari', DnTw: 52, hedefSinif: 'C',
   });
-  assert.equal(d.gereken, 56);
+  assert.equal(d.gereken, 52);
   assert.equal(d.uygun, true);
   assert.equal(d.fark, 0);
 });
 
 test('Darbe sesinde sınırın üstü uygunsuzdur', () => {
   const d = darbeSesiDegerlendir({
-    ustMekanId: 'konut-oturma', altMekanId: 'konut-yatak', LnTw: 60, hedefSinif: 'C',
+    ustMekanId: 'konut-yasam-alanlari', altMekanId: 'konut-yatak-odalari', LnTw: 60, hedefSinif: 'C',
   });
   assert.equal(d.uygun, false);
   assert.ok(d.fark < 0);
 });
 
 test('Cephe değerlendirmesi dış gürültü arttıkça sıkılaşır', () => {
-  const az = cepheDegerlendir({ mekanId: 'konut-yatak', disGurultu: 52, D2mnTw: 40 });
-  const cok = cepheDegerlendir({ mekanId: 'konut-yatak', disGurultu: 78, D2mnTw: 40 });
+  const az = cepheDegerlendir({ mekanId: 'konut-yatak-odalari', disGurultu: 52, DnTAtr: 40 });
+  const cok = cepheDegerlendir({ mekanId: 'konut-yatak-odalari', disGurultu: 78, DnTAtr: 40 });
   assert.ok(cok.gereken > az.gereken);
 });
 
