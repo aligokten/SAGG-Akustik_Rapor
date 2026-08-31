@@ -1,13 +1,40 @@
 {
   "name": "sagg-akustik-hesap",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Binaların Gürültüye Karşı Korunması Hakkında Yönetmelik ve eklerine göre bina akustiği hesap aracı",
   "type": "module",
   "private": true,
   "scripts": {
     "test": "node --test test/*.test.js",
-    "start": "python3 -m http.server 8080"
+    "start": "python3 -m http.server 8080",
+    "masaustu": "electron .",
+    "paketle": "electron-builder --win --publish never",
+    "yayinla": "electron-builder --win --publish always"
   },
-  "keywords": ["akustik", "ses-yalitimi", "yonetmelik", "TS-EN-12354", "bina-akustigi"],
-  "license": "MIT"
+  "keywords": [
+    "akustik",
+    "ses-yalitimi",
+    "yonetmelik",
+    "TS-EN-12354",
+    "bina-akustigi"
+  ],
+  "license": "MIT",
+  "main": "masaustu/ana.js",
+  "author": {
+    "name": "SAGG+ App",
+    "email": "aligokten99@gmail.com"
+  },
+  "homepage": "https://aligokten.github.io/SAGG-Akustik_Rapor/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aligokten/SAGG-Akustik_Rapor.git"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  },
+  "devDependencies": {
+    "electron": "^38.2.1",
+    "electron-builder": "^26.0.12",
+    "js-yaml": "^5.4.1"
+  }
 }

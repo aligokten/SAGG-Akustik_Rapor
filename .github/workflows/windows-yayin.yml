@@ -1,0 +1,113 @@
+# Windows kurulum dosyasını (.exe) üretir ve GitHub Releases'e yayınlar.
+#
+# Neden bir Windows koşucusu? NSIS kurulum sihirbazı ve imzalanabilir bir .exe
+# ancak Windows üzerinde güvenilir biçimde üretilir. GitHub'ın ücretsiz
+# `windows-latest` koşucusu bunu her push'ta yapar.
+#
+# Yayın ölçütü: `package.json` içindeki SÜRÜM NUMARASI. Sürüm artırılmadan
+# yapılan push'lar yalnızca test edilir, yeni sürüm yayınlanmaz. Sürüm
+# artırıldığında iş akışı kendiliğinden:
+#   1. `v<sürüm>` etiketini bu commit'e atar,
+#   2. kurulum .exe'sini derler,
+#   3. .exe ile birlikte otomatik güncelleme beslemesi olan `latest.yml`
+#      dosyasını Releases'e yükler.
+# Uygulama içindeki electron-updater bu `latest.yml` dosyasını okuyarak
+# kullanıcıyı güncellemeye yönlendirir.
+name: Windows kurulum dosyası yayını
+
+on:
+  push:
+    branches: [claude/ks-schallschutzrechner-turkish-lgtwfl, main]
+  workflow_dispatch:
+    inputs:
+      zorla:
+        description: 'Sürüm zaten yayınlanmış olsa da yeniden derle ve yükle'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-yayin
+  cancel-in-progress: false
+
+jobs:
+  hazirlik:
+    name: Sürüm denetimi
+    runs-on: ubuntu-latest
+    outputs:
+      surum: ${{ steps.bilgi.outputs.surum }}
+      yayinla: ${{ steps.bilgi.outputs.yayinla }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: bilgi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ZORLA: ${{ inputs.zorla }}
+        run: |
+          SURUM=$(node -p "require('./package.json').version")
+          echo "surum=$SURUM" >> "$GITHUB_OUTPUT"
+          if [ "$ZORLA" = "true" ]; then
+            echo "Zorlama istendi → yayınlanacak."
+            echo "yayinla=true" >> "$GITHUB_OUTPUT"
+          elif gh release view "v$SURUM" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "v$SURUM zaten yayınlanmış → yalnızca test edilecek."
+            echo "yayinla=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "v$SURUM henüz yayınlanmamış → yayınlanacak."
+            echo "yayinla=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  testler:
+    name: Hesap çekirdeği testleri
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: node --test test/*.test.js
+
+  kurulum:
+    name: Kurulum .exe derle ve yayınla
+    needs: [hazirlik, testler]
+    if: needs.hazirlik.outputs.yayinla == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Bağımlılıkları kur
+        run: npm ci
+
+      # Etiketi önce bu commit'e atıyoruz ki Releases kaydı gerçekten derlenen
+      # kaynağı göstersin (electron-builder aksi hâlde varsayılan dalı işaretler).
+      - name: Sürüm etiketini oluştur
+        shell: bash
+        run: |
+          ETIKET="v${{ needs.hazirlik.outputs.surum }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --tags origin "refs/tags/$ETIKET" >/dev/null 2>&1; then
+            echo "$ETIKET etiketi zaten var, olduğu gibi bırakılıyor."
+          else
+            git tag -a "$ETIKET" -m "SAGG Akustik Hesap Aracı $ETIKET"
+            git push origin "$ETIKET"
+          fi
+
+      - name: Kurulum dosyasını derle ve Releases'e yükle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --publish always
+
+      - name: Kurulum dosyasını iş akışı çıktısı olarak da sakla
+        uses: actions/upload-artifact@v4
+        with:
+          name: SAGG-Akustik-Hesap-Kurulum-${{ needs.hazirlik.outputs.surum }}
+          path: |
+            dist/*.exe
+            dist/latest.yml
+          if-no-files-found: error

@@ -1,0 +1,64 @@
+/**
+ * yardimcilar.js — Masaüstü kabuğunun Electron'a ihtiyaç duymayan saf mantığı.
+ *
+ * Ana süreç ve güncelleyici, `electron` modülünü içe aktardıkları için ancak
+ * Electron çalışırken yüklenebilir. Sınanmaya değer mantık bu dosyada durur:
+ * böylece `node --test` ile depo genelindeki diğer testlerle birlikte koşar.
+ */
+
+import path from 'node:path';
+
+/**
+ * `sagg://yerel/<yol>` adresini depo kökündeki gerçek dosya yoluna çevirir.
+ *
+ * Dizin dışına çıkma (path traversal) girişimlerinde `null` döner; ana süreç
+ * bunu 403 olarak yanıtlar. Yol boşsa `index.html` varsayılır.
+ *
+ * @param {string} kok Web uygulamasının kök dizini (mutlak)
+ * @param {string} url İstenen tam adres
+ * @returns {string|null} Mutlak dosya yolu ya da izin verilmiyorsa null
+ */
+export function guvenliYol(kok, url) {
+  let pathname;
+  try { ({ pathname } = new URL(url)); } catch { return null; }
+  const goreli = decodeURIComponent(pathname).replace(/^[\\/]+/, '') || 'index.html';
+
+  // 1. katman: çözülmüş yolda '..' parçası varsa reddet. Bu denetim platformdan
+  // bağımsızdır — ters bölü (\) Linux'ta sıradan bir karakter, Windows'ta ise
+  // dizin ayırıcısıdır; uygulama Windows'ta çalıştığı için ikisi de ayırıcı
+  // sayılır. (Düz '../' dizileri new URL() aşamasında zaten erimiş olur;
+  // buraya yalnızca %2e%2e gibi kodlanmış olanlar ulaşır.)
+  if (goreli.split(/[\\/]+/).some((parca) => parca === '..')) return null;
+
+  // 2. katman: her ihtimale karşı sonucun gerçekten kökün altında kaldığını doğrula.
+  const kokMutlak = path.resolve(kok);
+  const hedef = path.resolve(path.join(kokMutlak, goreli));
+  if (hedef !== kokMutlak && !hedef.startsWith(kokMutlak + path.sep)) return null;
+  return hedef;
+}
+
+/**
+ * Sürüm notlarını (GitHub'dan HTML ya da dizi olarak gelebilir) pencerede
+ * gösterilebilecek düz metne indirger.
+ */
+export function surumNotu(bilgi) {
+  const ham = bilgi?.releaseNotes;
+  const metin = Array.isArray(ham)
+    ? ham.map((n) => (typeof n === 'string' ? n : n?.note || '')).join('\n')
+    : (ham || '');
+  return String(metin)
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|li|h\d)>/gi, '\n')
+    .replace(/<li>/gi, '• ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+    .slice(0, 1200);
+}
+
+/** İndirme ilerlemesini 0–100 arası tam sayıya sıkıştırır. */
+export function yuzde(ilerleme) {
+  const d = Number(ilerleme?.percent);
+  if (!Number.isFinite(d)) return 0;
+  return Math.min(100, Math.max(0, Math.round(d)));
+}

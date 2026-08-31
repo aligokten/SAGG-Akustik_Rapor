@@ -3,8 +3,13 @@
 **Binaların Gürültüye Karşı Korunması Hakkında Yönetmelik** (Resmî Gazete 31/05/2017 – 30082;
 değişik: 01/07/2018 – 30465) ve eklerine göre bina akustiği hesabı yapan Türkçe web aracı.
 
-**▶ Canlı sürüm: <https://aligokten.github.io/SAGG-Akustik_Rapor/>**
+**▶ Canlı sürüm (tarayıcı): <https://aligokten.github.io/SAGG-Akustik_Rapor/>**
 *(Bağlantının çalışması için Pages'in bir kez açılması gerekir — bkz. [Yayın](#yayın).)*
+
+**▶ Windows kurulum dosyası (.exe):
+[Releases](https://github.com/aligokten/SAGG-Akustik_Rapor/releases/latest)** — aynı uygulamanın
+kurulabilir masaüstü sürümü. Çevrimdışı çalışır, açılışta kendi güncellemesini denetler ve
+kullanıcıyı yeni sürüme yönlendirir; bkz. [Windows uygulaması](#windows-uygulaması-exe).
 
 Alman *KS-Schallschutzrechner*'ın (Kalksandstein, DIN 4109) yaptığı işi Türkiye mevzuatı için
 karşılayacak biçimde tasarlanmıştır: yapı elemanlarının ses yalıtım başarımını **yan yol iletimini de
@@ -395,6 +400,79 @@ npm start                 # veya: python3 -m http.server 8080
 
 GitHub Pages gibi bir statik barındırmaya olduğu gibi yüklenebilir.
 
+### Windows uygulaması (.exe)
+
+Aynı uygulama Windows'ta kurulabilir bir masaüstü programı olarak da çalışır. Kurulum dosyası
+her sürümde otomatik derlenip **[Releases](https://github.com/aligokten/SAGG-Akustik_Rapor/releases)**
+sayfasına yüklenir:
+
+> **SAGG-Akustik-Hesap-Kurulum-\<sürüm\>.exe**
+
+Kurulum sihirbazı Türkçedir, **yönetici hakkı istemez** (kullanıcı profiline kurar), masaüstü ve
+başlat menüsü kısayolu oluşturur. Program çevrimdışı çalışır; hiçbir proje verisi dışarı gönderilmez.
+
+Masaüstü sürümü web sürümünün **birebir aynı kodudur** — `js/`, `css/`, `index.html` olduğu gibi
+paketlenir, hesap çekirdeğinde tek satır fark yoktur. Üzerine yalnızca ince bir Electron kabuğu
+(`masaustu/`) eklenir: pencere, Türkçe menü, yazdırma ve otomatik güncelleme.
+
+**Neden `file://` değil, `sagg://` özel protokolü?** Uygulama projeleri, malzeme favorilerini ve
+temayı `localStorage`'da tutar. Chromium `file://` kaynağına opak bir origin verdiği için orada
+`localStorage` erişimi `SecurityError` atar — yani dosyadan açılan bir pencerede hiçbir şey
+kaydedilemezdi. Depo içeriği bu yüzden `sagg://yerel/...` adresinden, gerçek ve güvenli bir origin
+üzerinden servis edilir; kayıt davranışı web sürümüyle birebir aynı olur. Protokol işleyicisi yalnızca
+uygulama kökünün altındaki dosyaları verir (`masaustu/yardimcilar.js`, `guvenliYol`).
+
+#### Otomatik güncelleme
+
+Program **her açılışta** (ve açıkken 6 saatte bir) GitHub Releases'i sessizce denetler:
+
+1. Yeni sürüm yoksa kullanıcı hiçbir şey görmez.
+2. Yeni sürüm varsa Türkçe bir pencere çıkar ve sürüm notlarını gösterir. **İndirme, kullanıcı
+   onaylamadan başlamaz** (`autoDownload = false`).
+3. İndirme sırasında görev çubuğu simgesinde ilerleme çubuğu, pencere başlığında yüzde görünür.
+4. İndirme bitince "şimdi yeniden başlat" ya da "çıkışta yükle" sorulur. İkincisinde güncelleme,
+   program bir sonraki kapatılışında kendiliğinden kurulur.
+
+Menüden **Yardım → Güncellemeleri denetle…** ile elle de denetlenebilir; orada sonuç her hâlükârda
+(güncel olsa da, ağ hatası olsa da) bildirilir. Sessiz denetimde ağ hatası kullanıcıyı rahatsız etmez.
+Geliştirme kopyasında (paketlenmemiş) güncelleme hiç aranmaz.
+
+Sürüm karşılaştırmasını, imza/bütünlük denetimini ve fark (differential) indirmeyi `electron-updater`
+yapar; beslemesi `electron-builder`'ın kurulum .exe'sinin yanına koyduğu `latest.yml` dosyasıdır.
+Taslak (draft) sürümler bu akışta görünmez — bu yüzden yayın türü `release` olarak sabitlenmiştir.
+
+#### Yeni sürüm yayınlama
+
+Yayın ölçütü tek bir şeydir: **`package.json` içindeki sürüm numarası.**
+
+```bash
+npm version minor --no-git-tag-version     # ya da elle: "version": "1.2.0"
+git commit -am "Sürüm 1.2.0" && git push
+```
+
+Push'tan sonra `.github/workflows/windows-yayin.yml` kendiliğinden:
+
+1. testleri koşar (düşerse yayın yapılmaz),
+2. `v<sürüm>` etiketini o commit'e atar,
+3. `windows-latest` koşucusunda kurulum .exe'sini derler,
+4. .exe ile `latest.yml`'i Releases'e yükler.
+
+Sürüm artırılmadan yapılan push'lar yalnızca test edilir; aynı sürüm iki kez yayınlanmaz. Bir yayını
+yeniden derlemek gerekirse Actions sekmesinden iş akışı **"zorla"** seçeneğiyle elle çalıştırılabilir.
+
+Kurulum dosyasını yerelde denemek için (Windows üzerinde):
+
+```bash
+npm install
+npm run masaustu          # uygulamayı derlemeden çalıştırır
+npm run paketle           # dist/ içine kurulum .exe'si üretir, yayınlamaz
+```
+
+> Kurulum dosyası **kod imzalama sertifikasıyla imzalı değildir.** Windows SmartScreen ilk kurulumda
+> "Bilinmeyen yayımcı" uyarısı gösterebilir; **Daha fazla bilgi → Yine de çalıştır** ile geçilir.
+> Uyarıyı tümüyle kaldırmak için ücretli bir kod imzalama sertifikası gerekir; sertifika alındığında
+> `electron-builder.yml` içine `win.certificateFile`/`certificatePassword` eklenmesi yeterlidir.
+
 ### Akış
 
 0. **Panel** — genel görünüm: belirleyici performans sınıfı, uygunluk oranı, dikkat gerektiren
@@ -453,6 +531,14 @@ css/yazi.css                   Inter @font-face tanımları (latin + latin-ext)
 fonts/                         Inter değişken font dosyaları (woff2) + OFL lisansı
 assets/                        Marka işareti (logo.png) ve favicon türevleri
 .github/workflows/pages.yml    Testleri çalıştırıp GitHub Pages'e yayınlar
+.github/workflows/windows-yayin.yml
+                               Windows kurulum .exe'sini derleyip Releases'e yayınlar
+electron-builder.yml           Masaüstü paketleme ve yayın yapılandırması
+masaustu/
+  ana.js                       Electron ana süreci: pencere, menü, sagg:// protokolü
+  guncelleyici.js              GitHub Releases üzerinden otomatik güncelleme akışı
+  yardimcilar.js               Kabuğun Electron'suz sınanabilen saf mantığı
+  onyukleme.cjs                Ön yükleme köprüsü (yalnızca sürüm/platform künyesi)
 js/
   uygulama.js                  Giriş noktası: durum, yönlendirme, tema, olaylar, dosya işlemleri
   durum.js                     Proje verisi, kalıcılık, örnek proje
@@ -485,6 +571,7 @@ js/
     simgeler.js                Satır içi SVG simge seti
     ortak.js                   Arayüz yardımcıları
 test/cekirdek.test.js          Hesap çekirdeği testleri
+test/masaustu.test.js          Masaüstü kabuğu ve paketleme yapılandırması testleri
 ```
 
 ## Testler
@@ -493,14 +580,16 @@ test/cekirdek.test.js          Hesap çekirdeği testleri
 npm test          # node --test test/*.test.js
 ```
 
-265 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+297 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
 projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
 modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
 hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış), izometrik şema üretimini, cephe iç yan
 yollarını, sayı girdisi davranışını, katman favorileri kitaplığını, raporda mekân adı çözümünü ve
 Excel sınır değer tablosu çıktısını (DD/İD/DOS kodlaması, sayfa yerleşimi, geçerli ZIP/OOXML paketi)
 rapor altbilgisindeki lisans künyesini, yönetmelik tablolarının resmî ek dosyasıyla
-birebir örtüşmesini, EK-10 performans belgesini ve künye alanlarının rapora akışını kapsar. Ayrıca referans araçtan alınan dört örnek dosya, sonuçları birebir doğrulayan bir kehanet
+birebir örtüşmesini, EK-10 performans belgesini, künye alanlarının rapora akışını, ayırıcı elemanda kısmi örtüşme
+(kaydırma) hesabını ve Windows masaüstü kabuğunu (özel protokol yol çözümü ve dizin dışına çıkma
+koruması, güncelleme penceresi metinleri, paketleme yapılandırması) kapsar. Ayrıca referans araçtan alınan dört örnek dosya, sonuçları birebir doğrulayan bir kehanet
 (oracle) takımı olarak koşturulur.
 
 ---
