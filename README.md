@@ -523,11 +523,12 @@ Push'tan sonra `.github/workflows/windows-yayin.yml` kendiliğinden:
 4. yayının Releases'e ulaştığını (`.exe` + `latest.yml`, taslak değil) doğrular;
    eksikse iş kırmızı düşer.
 
-> electron-builder aynı etiket için **birden çok taslak** açıyor (her yükleyici
-> kendi taslağını) ve dosyalar bunlardan yalnızca birine gidiyor. Bu yüzden iş
-> akışı, etikete göre körlemesine yayımlamak yerine **kurulum dosyasını taşıyan
-> taslağı** seçip onu yayımlar; boş kalanları siler. Etikete göre seçim, boş bir
-> taslağı yayımlama riski taşıyordu.
+> electron-builder aynı etiket için **iki taslak** açıyor: biri `.exe` +
+> `latest.yml`, öteki yalnızca `.exe.blockmap` alıyor. Bu yüzden iş akışı,
+> etikete göre körlemesine yayımlamak yerine **`.exe` ve `latest.yml`'i birlikte
+> taşıyan** taslağı seçip onu yayımlar, ikizini siler. Seçim dosya adlarını
+> **tam** eşleştirir: alt dize araması burada yanlış taslağı seçer, çünkü
+> kurulum dosyasının adı `...exe.blockmap` adının içinde alt dize olarak geçer.
 
 Sürüm artırılmadan yapılan push'lar yalnızca test edilir; aynı sürüm iki kez yayınlanmaz. Bir yayını
 yeniden derlemek gerekirse Actions sekmesinden iş akışı **"zorla"** seçeneğiyle elle çalıştırılabilir.
