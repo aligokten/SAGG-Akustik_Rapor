@@ -550,6 +550,12 @@ npm run paketle           # dist/ içine kurulum .exe'si üretir, yayınlamaz
 
 İki ayrıntı bilinçlidir:
 
+**Çıktı her koşulda beyaz A4'tür.** Sayfa boyutu `@page { size: A4; margin: 10mm }` ile tanımlıdır;
+masaüstü sürümü de `preferCSSPageSize` ile aynı kuralı okur, böylece tarayıcıdan ve uygulamadan alınan
+PDF birebir aynı kâğıda basılır. Renk şeması yazdırmada `light`a sabitlenir — bu şart, çünkü uygulama
+koyu temada çalışıyor ve sayfa zemini (aşağıdaki nedenle) saydam bırakılıyor: zemini olmayan kâğıdı
+tarayıcı `color-scheme`e göre boyar ve koyu şemada **#121212**, yani simsiyah bir PDF üretirdi.
+
 **Sayfa boyu zemin dolgusu basılmaz.** Bir zemin rengi tanımlıysa Chromium, PDF'e sayfanın tamamını
 kaplayan bir dolgu dikdörtgeni koyar. Kâğıt zaten beyaz olduğu için bu dolgu görünürde hiçbir şey
 katmaz, ama PDF'i düzenleyen programlarda (Nitro, Acrobat) içeriğin üstünde duran, seçilebilir bir
@@ -690,7 +696,7 @@ test/masaustu.test.js          Masaüstü kabuğu ve paketleme yapılandırması
 npm test          # node --test test/*.test.js
 ```
 
-329 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+332 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
 projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
 modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
 hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış), izometrik şema üretimini, cephe iç yan

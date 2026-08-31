@@ -473,7 +473,31 @@ details > *:last-child{margin-bottom:12px}
 }
 
 /* ── Yazdırma ───────────────────────────────────────────────────── */
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ *  SAYFA BOYUTU — A4
+ * ─────────────────────────────────────────────────────────────────────────
+ *  Rapor her koşulda A4'e basılır. Sayfa boyutu burada tanımlıdır ki hem
+ *  tarayıcının yazdırma penceresi hem de masaüstü sürümünün doğrudan PDF
+ *  dışa aktarımı (printToPDF, preferCSSPageSize) aynı ölçüyü kullansın;
+ *  aksi hâlde iki yol farklı kâğıt boyutu üretebiliyordu (ör. ABD Letter).
+ */
+@page{ size:A4; margin:10mm }
+
 @media print{
+  /*
+   * BEYAZ SAYFA — HER KOŞULDA.
+   *
+   * `color-scheme` burada kritiktir: index.html "light dark" bildirir ve
+   * uygulama koyu temada çalışır. Sayfanın kendi zemini saydam bırakıldığında
+   * (dolgu dikdörtgeni üretmemek için) tarayıcı, kâğıdı color-scheme'e göre
+   * boyar ve koyu şemada #121212 bir zemin çıkar — yani PDF simsiyah basılır.
+   * Yazdırmada şema açıkça "light"a sabitlenir: kâğıt beyaz olur, üstelik
+   * bunun için bir zemin rengi tanımlamak (ve sayfayı kaplayan dolgu nesnesi
+   * üretmek) gerekmez.
+   */
+  :root{ color-scheme:light !important }
+
   /*
    * Koyu tema varsayılan olduğundan, yazdırmada renk simgeleri açık tema
    * değerlerine geri çevrilir; aksi hâlde beyaz kâğıda açık gri metin basılır.

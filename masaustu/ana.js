@@ -140,9 +140,12 @@ async function pdfeAktar(pencere, dosyaAdi) {
 
   try {
     const veri = await pencere.webContents.printToPDF({
-      pageSize: 'A4',
+      // Sayfa boyutu ve kenar boşlukları css/stil.css içindeki `@page`
+      // kuralından okunur (preferCSSPageSize). Böylece masaüstü çıktısı ile
+      // tarayıcının yazdırma penceresinden alınan çıktı birebir aynı olur.
+      preferCSSPageSize: true,
+      pageSize: 'A4',            // @page okunamazsa yedek
       printBackground: true,
-      margins: { top: 0.4, bottom: 0.4, left: 0.4, right: 0.4 },   // inç
     });
     await fs.writeFile(secim.filePath, veri);
     shell.showItemInFolder(secim.filePath);

@@ -86,3 +86,25 @@ test('Sığdırma ölçüleri yerinde', () => {
     assert.ok(YAZDIRMA.includes(kural), kural);
   }
 });
+
+/* ── Beyaz sayfa ve A4 ───────────────────────────────────────────── */
+
+test('Yazdırmada renk şeması açığa sabitlenir', () => {
+  // index.html "light dark" bildirir ve uygulama koyu temada çalışır. Sayfa
+  // zemini saydam bırakıldığı için (dolgu nesnesi üretmemek adına) kâğıdı
+  // tarayıcı color-scheme'e göre boyar; koyu şemada #121212 çıkar, yani PDF
+  // simsiyah basılırdı. Bu kural olmadan çıktı temaya göre değişir.
+  assert.match(YAZDIRMA, /:root\{ color-scheme:light !important \}/);
+});
+
+test('Sayfa boyutu A4 olarak tanımlıdır', () => {
+  assert.match(CSS, /@page\{ size:A4; margin:10mm \}/);
+});
+
+test('Masaüstü PDF dışa aktarımı CSS sayfa boyutunu kullanır', () => {
+  const ana = fs.readFileSync(path.join(KOK, 'masaustu', 'ana.js'), 'utf8');
+  // preferCSSPageSize olmadan Electron kendi kâğıt boyutunu seçer ve
+  // tarayıcı çıktısıyla masaüstü çıktısı ayrışır.
+  assert.match(ana, /preferCSSPageSize:\s*true/);
+  assert.match(ana, /pageSize:\s*'A4'/);
+});
