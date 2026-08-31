@@ -201,6 +201,38 @@ export function ayiriciHesapla(a, proje) {
   return { kayit: a, ana, giydirme, giydirmeCozum, kapiBilgi, RwAyirici, yanElemanlar, sonuc, degerlendirme, geo };
 }
 
+/**
+ * Darbe sesi kaydının geometrisini çözer.
+ *
+ * Üç kip de ALT (alıcı) mekânın hacmini üretir — bağıntıya giren hacim odur:
+ * L'nT,w = L'n,w − 10·lg(0,032·V).
+ *
+ * 'iki-oda' kipinde döşeme, iki mekânın örtüşen kısmıdır; `geometriHesapla`
+ * bunu `yon: 'taban'` ile hesaplar ve ortak/ortak olmayan alanları da verir.
+ * Bu alanlar basitleştirilmiş TS EN 12354-2 modelinde L'nT,w'yi DEĞİŞTİRMEZ
+ * (bağıntıda alan yoktur); raporlama ve "mekânlar hiç temas etmiyor"
+ * uyarısı için taşınırlar.
+ *
+ * @param {Object} g Kaydın geometri alanı
+ * @returns {Object|null}
+ */
+export function darbeGeometrisi(g) {
+  if (!g) return null;
+  if (g.mod === 'iki-oda') {
+    return geometriHesapla({
+      oda1: g.ustOda, oda2: g.altOda, yon: 'taban',
+      kaydirmaA: g.kaydirmaA, kaydirmaB: g.kaydirmaB,
+    });
+  }
+  if (g.mod === 'olculer') {
+    // Tek oda kipi: kaydın kökündeki L/W/H alt mekânı tarif eder. Kayıtta
+    // ustOda/altOda da bulunduğu için nesne olduğu gibi geçirilemez —
+    // geometriHesapla iki oda görürse onları kullanırdı.
+    return geometriHesapla({ L: g.L, W: g.W, H: g.H });
+  }
+  return null;
+}
+
 /** Bir döşemenin darbe sesi hesabı. */
 export function darbeHesapla(d, proje) {
   const doseme = (d.katmanlar && d.katmanlar.length > 0)
@@ -210,7 +242,7 @@ export function darbeHesapla(d, proje) {
   const dLw = Number.isFinite(d.dLwBeyan) ? d.dLwBeyan : (sap?.dLw || 0);
   // Yüzer şapın kütlesi taşıyıcı döşemenin kütlesine eklenmez (esnek ayrılmıştır).
 
-  const geo = d.geometri?.mod === 'olculer' ? geometriHesapla(d.geometri) : null;
+  const geo = darbeGeometrisi(d.geometri);
   const V = geo ? geo.V : d.V;
 
   const sonuc = darbeSesiYalitimi({

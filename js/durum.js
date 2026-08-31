@@ -134,11 +134,56 @@ export function yeniDarbe() {
     mYanOrtalama: 250,
     V: 40,
     katmanlar: [],
-    // Darbe hesabında yalnızca ALICI (alt) mekânın hacmi kullanılır
-    // (L'nT,w = L'n,w − 10·lg(0,032·V)); ortak döşeme alanı bu bağıntıya
-    // girmez. Bu nedenle tek oda kaydı yeterlidir.
+    // Geometri üç kipte çalışır:
+    //   'hacim'   → alt mekân hacmi V doğrudan girilir
+    //   'olculer' → tek oda: ALT (alıcı) mekânın L×W×H'si
+    //   'iki-oda' → üst (kaynak) ve alt (alıcı) mekân ayrı ayrı, döşeme
+    //               düzleminde kaydırma ile
+    //
+    // Üçünde de bağıntıya giren hacim ALT (alıcı) mekânın hacmidir:
+    // L'nT,w = L'n,w − 10·lg(0,032·V). İki oda kipi, üst ve alt mekân
+    // ölçüleri farklı olduğunda doğru hacmin karıştırılmamasını sağlar ve
+    // ortak döşeme alanını ayrıca raporlar.
+    // 'iki-oda' kipinin alanları (ustOda, altOda, kaydirmaA, kaydirmaB) burada
+    // BİLEREK yer almaz; kipe ilk geçişte oluşturulurlar. Böylece o ana kadar
+    // tek oda kipinde girilmiş ölçüler her iki odaya taşınabiliyor — hazır
+    // duran varsayılan bir üst oda, kullanıcının yazdığı ölçüyü gölgelemiyor.
     geometri: { mod: 'hacim', L: 6.0, W: 3.0, H: 2.62 },
   };
+}
+
+/**
+ * Darbe sesi kaydının geometri kipini değiştirir (yerinde).
+ *
+ * Kipler arasında geçerken kullanıcının ekranda gördüğü ölçü değişmemelidir.
+ * Kural: tek oda kipindeki L/W/H her zaman ALICI (alt) mekânı tarif eder,
+ * çünkü bağıntıya giren hacim odur. Dolayısıyla:
+ *   • tek oda → iki oda : alt mekân bu ölçüleri alır; üst mekân daha önce
+ *     ayrıca tanımlanmadıysa aynı ölçüde başlatılır,
+ *   • iki oda → tek oda : tek oda alanlarına alt mekânın ölçüleri yazılır.
+ *
+ * İki oda alanları kayıtta baştan bulunmaz; ilk geçişte burada oluşturulur.
+ * Hazır duran varsayılan bir üst oda, kullanıcının girdiği ölçüyü gölgelerdi.
+ *
+ * @param {Object} g Kaydın geometri alanı (değiştirilir)
+ * @param {'hacim'|'olculer'|'iki-oda'} kip
+ * @returns {Object} Aynı geometri nesnesi
+ */
+export function darbeKipiDegistir(g, kip) {
+  if (!g) return g;
+  const tek = { L: g.L ?? 6, W: g.W ?? 3, H: g.H ?? 2.62 };
+
+  if (kip === 'iki-oda') {
+    if (g.mod === 'olculer' || !g.altOda) g.altOda = { ad: g.altOda?.ad || '', ...tek };
+    if (!g.ustOda) g.ustOda = { ad: '', ...tek };
+    if (!Number.isFinite(g.kaydirmaA)) g.kaydirmaA = 0;
+    if (!Number.isFinite(g.kaydirmaB)) g.kaydirmaB = 0;
+  } else if (kip === 'olculer' && g.mod === 'iki-oda' && g.altOda) {
+    g.L = g.altOda.L; g.W = g.altOda.W; g.H = g.altOda.H;
+  }
+
+  g.mod = kip;
+  return g;
 }
 
 /** Yeni bir cephe kaydı. */

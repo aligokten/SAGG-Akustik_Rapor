@@ -342,7 +342,50 @@ function bolumDarbe(s) {
         <td>${uygunlukRozeti(d)}</td>
       </tr>`;
     }).join('')}</tbody>
-  </table></div>`;
+  </table></div>
+  ${darbeGeometriNotlari(s)}`;
+}
+
+/**
+ * İki oda kipiyle tanımlanmış döşemeler için geometri dökümü.
+ *
+ * Ortak döşeme alanı basitleştirilmiş TS EN 12354-2 bağıntısına girmez, ama
+ * projenin kabulünü belgeler: hangi mekân hangi ölçüde, ne kadarı ortak.
+ * Mekânlar hiç örtüşmüyorsa bu, sessizce geçilecek bir durum değildir.
+ */
+function darbeGeometriNotlari(s) {
+  const kayitlar = s.darbeler.filter((x) => x.kayit.geometri?.mod === 'iki-oda' && x.geo);
+  if (!kayitlar.length) return '';
+  return `
+  <div class="tablo-sar" style="margin-top:10px"><table>
+    <thead><tr>
+      <th>Döşeme</th><th>Üst mekân (kaynak)</th><th>Alt mekân (alıcı)</th>
+      <th class="sayi">Kaydırma L / W</th><th class="sayi">Ortak döşeme</th><th class="sayi">V (alıcı)</th>
+    </tr></thead>
+    <tbody>${kayitlar.map((x) => {
+      const g = x.kayit.geometri, o = x.geo;
+      const olcu = (r) => `${sayi(r.L)} × ${sayi(r.W)} × ${sayi(r.H)} m`;
+      return `<tr>
+        <td>${kacis(x.kayit.ad)}</td>
+        <td>${kacis(g.ustOda.ad || x.degerlendirme?.ustMekan?.ad || '—')}<br><small>${olcu(g.ustOda)}</small></td>
+        <td>${kacis(g.altOda.ad || x.degerlendirme?.altMekan?.ad || '—')}<br><small>${olcu(g.altOda)}</small></td>
+        <td class="sayi">${sayi(g.kaydirmaA || 0)} / ${sayi(g.kaydirmaB || 0)} m</td>
+        <td class="sayi">${o.temasVar ? `${sayi(o.S)} m²` : '<b>yok</b>'}</td>
+        <td class="sayi">${sayi(o.V)} m³</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>
+  ${kayitlar.some((x) => !x.geo.temasVar) ? `
+  <div class="bilgi-kutu kirmizi" style="margin-top:8px">
+    <b>Uyarı:</b> Yukarıdaki döşemelerden en az birinde üst ve alt mekân hiç örtüşmüyor
+    (ortak döşeme alanı 0 m²). Bu mekânlar arasında ortak bir döşeme bulunmadığından
+    darbe sesi hesabı anlamlı değildir; geometri düzeltilmelidir.
+  </div>` : `
+  <p class="soluk" style="font-size:12px;margin-top:6px">
+    Ortak döşeme alanı, basitleştirilmiş TS EN 12354-2 bağıntısına
+    (L′nT,w = L′n,w − 10·lg(0,032·V)) girmez; bağıntı yalnızca alıcı mekânın hacmini kullanır.
+    Tablo, projenin geometrik kabulünü belgelemek için verilmiştir.
+  </p>`}`;
 }
 
 function bolumCephe(s) {

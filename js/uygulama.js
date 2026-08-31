@@ -329,13 +329,13 @@ function yolTabaniEylemiUygula(dugme) {
     return true;
   }
 
-  if (eylem === 'geometri-moda-gec') {
+  // Geometri kipi değişimleri. Darbe kaydında kipler arası ölçü taşıma
+  // kuralı durum.js'te (darbeKipiDegistir) — orada sınanabiliyor.
+  if (eylem === 'geometri-moda-gec' || eylem === 'hacim-moda-don' || eylem === 'iki-oda-moda-gec') {
     if (!nesne.geometri) nesne.geometri = { mod: 'hacim', L: 6, W: 3, H: 2.62 };
-    nesne.geometri.mod = 'olculer';
-    return true;
-  }
-  if (eylem === 'hacim-moda-don') {
-    if (nesne.geometri) nesne.geometri.mod = 'hacim';
+    const kip = eylem === 'geometri-moda-gec' ? 'olculer'
+      : eylem === 'iki-oda-moda-gec' ? 'iki-oda' : 'hacim';
+    D.darbeKipiDegistir(nesne.geometri, kip);
     return true;
   }
 

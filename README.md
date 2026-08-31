@@ -324,6 +324,42 @@ projeler birebir aynı sonucu vermeye devam eder**.
 > döşeme alanı bağıntıya hiç girmez. Kaydırma bu nedenle yalnızca sonucu gerçekten değiştirdiği
 > yerde — ayırıcı elemanda, ayırıcı yüz bir döşeme (`taban`) olduğunda da — uygulanmıştır.
 
+### Darbe sesi: üst ve alt mekân ölçüleri farklıysa
+
+Darbe sesi sekmesinde geometri üç kipte tanımlanabilir:
+
+| Kip | Ne girilir | Ne zaman |
+| --- | --- | --- |
+| **Doğrudan V** | Alt (alıcı) mekân hacmi | Hacim zaten biliniyorsa |
+| **Tek oda** | Alt (alıcı) mekânın L×W×H'si | İki kat aynı boyuttaysa |
+| **Üst ve alt ayrı** | Her iki mekânın L×W×H'si + döşeme düzleminde kaydırma | Katlar farklı boyutta ya da birbirine göre kaymışsa |
+
+**Hangi ölçü sonucu değiştirir?** Bağıntı `L'nT,w = L'n,w − 10·lg(0,032·V)` yalnızca **alıcı (alt)
+mekânın hacmini** kullanır. Ortak döşeme alanı, bu araçta uygulanan basitleştirilmiş
+TS EN 12354-2 tek sayılı modeline **girmez** — model alan değil, yalnızca kütle (Ln,w,eq), kaplama
+(ΔLw), yan yol düzeltmesi (K) ve alıcı hacmi üzerinden çalışır. Dolayısıyla üst mekânı büyütmek
+sonucu değiştirmez; alt mekânı büyütmek değiştirir.
+
+Öyleyse üç kipin ayrı ayrı bulunmasının nedeni şudur: **doğru hacmin karıştırılmaması.** Tek oda
+kipinde girilen ölçülerin alıcı mekâna ait olduğu açıkça yazılıdır; iki oda kipinde ise iki mekân
+ayrı ayrı görünür ve bağıntıya hangisinin girdiği ekranda gösterilir. Üst kat alttan büyükse ya da
+kaymışsa, yanlışlıkla üst mekânın hacmiyle hesap yapmak artık mümkün değildir.
+
+İki oda kipi ayrıca:
+
+- **ortak döşeme alanını** (iki mekânın örtüşen taban izdüşümü) hesaplar ve rapora yazar — sonucu
+  değiştirmez, projenin geometrik kabulünü belgeler;
+- katlar birbirine göre kaydırılmışsa örtüşen ve örtüşmeyen kısımları ayrı ayrı gösterir
+  (aynı aralık kesişimi mantığı, bkz. [Kısmi örtüşme](#kısmi-örtüşme--mekânların-birbirine-göre-kaydırılması));
+- **mekânlar hiç üst üste gelmiyorsa** (ortak döşeme 0 m²) hem arayüzde hem raporda kırmızı uyarı
+  verir: aralarında ortak bir döşeme yoksa darbe sesi hesabı anlamlı değildir;
+- döndürülebilir **3B şema** çizer.
+
+> Kayıtların iki oda alanları ancak kipe ilk geçişte oluşturulur ve o ana kadar tek oda kipinde
+> girilmiş ölçüler her iki odaya taşınır; iki odadan tek odaya dönüldüğünde de alıcı mekânın
+> ölçüleri yazılır. Böylece kip değiştirince ekrandaki sayı değişmez. Eski projeler (yalnızca
+> `mod`/`L`/`W`/`H` taşıyan kayıtlar) birebir aynı sonucu vermeye devam eder.
+
 ### "Katmanlı Model v3" JSON içe aktarma
 
 Proje sekmesinden veya "Proje aç" ile, uyumlu bir üçüncü parti araçtan (`room1`/`room2`/
@@ -625,7 +661,7 @@ test/masaustu.test.js          Masaüstü kabuğu ve paketleme yapılandırması
 npm test          # node --test test/*.test.js
 ```
 
-306 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+321 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
 projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
 modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
 hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış), izometrik şema üretimini, cephe iç yan
@@ -635,7 +671,8 @@ rapor altbilgisindeki lisans künyesini, yönetmelik tablolarının resmî ek do
 birebir örtüşmesini, EK-10 performans belgesini, künye alanlarının rapora akışını, ayırıcı elemanda kısmi örtüşme
 (kaydırma) hesabını ve Windows masaüstü kabuğunu (özel protokol yol çözümü ve dizin dışına çıkma
 koruması, güncelleme penceresi metinleri, paketleme ve yayıncı yapılandırması, uygulama menüsünün
-içeriği) kapsar. Ayrıca referans araçtan alınan dört örnek dosya, sonuçları birebir doğrulayan bir kehanet
+içeriği) ve darbe sesinde üst/alt mekân ölçülerinin ayrı verilebildiği kipi (hangi hacmin bağıntıya
+girdiği, kipler arası ölçü taşıma, eski kayıtların değişmezliği) kapsar. Ayrıca referans araçtan alınan dört örnek dosya, sonuçları birebir doğrulayan bir kehanet
 (oracle) takımı olarak koşturulur.
 
 ---

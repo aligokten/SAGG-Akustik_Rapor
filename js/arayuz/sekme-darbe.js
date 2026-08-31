@@ -11,6 +11,7 @@ import {
 } from '../veri/yonetmelik.js';
 import { mekanSecenekleri } from './sekme-ayirici.js';
 import { katmanEditoru } from './katman-editor.js';
+import { odaSVG } from './oda-cizimi.js';
 
 export function ciz(durum, sonuclar) {
   const kayitlar = durum.darbeler;
@@ -130,32 +131,142 @@ function komsulukBolumu(y, k, d, binaTuru) {
     </div>`;
 }
 
+function odaAlani(baslik, yol, oda, adYerTutucu) {
+  return `
+  <div class="alan" style="grid-column:1/-1">
+    <label>${kacis(baslik)}</label>
+    <input type="text" data-yol="${yol}.ad" value="${kacis(oda.ad || '')}" placeholder="${kacis(adYerTutucu)}">
+  </div>
+  <div class="alan"><label>Derinlik L (m)</label>
+    <input type="text" inputmode="decimal" data-yol="${yol}.L" data-tur="sayi" value="${oda.L}"></div>
+  <div class="alan"><label>Genişlik W (m)</label>
+    <input type="text" inputmode="decimal" data-yol="${yol}.W" data-tur="sayi" value="${oda.W}"></div>
+  <div class="alan"><label>Yükseklik H (m)</label>
+    <input type="text" inputmode="decimal" data-yol="${yol}.H" data-tur="sayi" value="${oda.H}"></div>`;
+}
+
+/**
+ * İki oda kipinde döşeme düzlemindeki kaydırma ve örtüşme dökümü.
+ *
+ * Kaydırma hizalı (ortalanmış) konumdan sapmadır; sıfırken ortak alan
+ * min(L₁,L₂)×min(W₁,W₂) olur.
+ */
+function kaydirmaBolumu(y, g, h) {
+  const geo = h.geo;
+  const kA = Number(g.kaydirmaA) || 0;
+  const kB = Number(g.kaydirmaB) || 0;
+
+  const dokum = !geo ? '' : (!geo.temasVar
+    ? `<div class="bilgi-kutu kirmizi">
+        <b>Mekânlar üst üste gelmiyor.</b> Kaydırma, iki mekânın örtüşmesini tamamen
+        ortadan kaldırdı (ortak döşeme alanı 0 m²). Aralarında ortak bir döşeme yoktur;
+        darbe sesi hesabı anlamlı bir sonuç veremez. Kaydırmayı azaltın.
+      </div>`
+    : `<div class="bilgi-kutu">
+        ${geo.tamOrtusme
+          ? `<b>Tam örtüşme.</b> Ortak döşeme alanı ${sayi(geo.S)} m².`
+          : `<b>Kısmi örtüşme.</b> Ortak döşeme alanı ${sayi(geo.ortakA)} × ${sayi(geo.ortakB)}
+             = <b>${sayi(geo.S)} m²</b>. Bu alanın dışında kalan kısım ortak döşeme değildir:
+             üst mekânda ${sayi(geo.oda1OrtakOlmayan)} m² (toplam ${sayi(geo.oda1Yuzey)} m²),
+             alt mekânda ${sayi(geo.oda2OrtakOlmayan)} m² (toplam ${sayi(geo.oda2Yuzey)} m²).`}
+      </div>`);
+
+  return `
+  <div class="izgara dar" style="margin-top:8px">
+    <div class="alan"><label>Kaydırma — derinlik (L) ekseninde (m)</label>
+      <input type="text" inputmode="decimal" data-yol="${y}.geometri.kaydirmaA" data-tur="sayi" value="${kA}">
+      <span class="ipucu">Alt mekânın üst mekâna göre kayması. 0 = ortalı.</span></div>
+    <div class="alan"><label>Kaydırma — genişlik (W) ekseninde (m)</label>
+      <input type="text" inputmode="decimal" data-yol="${y}.geometri.kaydirmaB" data-tur="sayi" value="${kB}">
+      <span class="ipucu">0 = ortalı.</span></div>
+  </div>
+  ${dokum}`;
+}
+
 function geometriBolumu(y, k, h) {
   const g = k.geometri || { mod: 'hacim' };
-  const boyutMi = g.mod === 'olculer';
+  const kip = g.mod === 'iki-oda' ? 'iki-oda' : (g.mod === 'olculer' ? 'olculer' : 'hacim');
+  const ust = g.ustOda || { ad: '', L: 6, W: 3, H: 2.62 };
+  const alt = g.altOda || { ad: '', L: 6, W: 3, H: 2.62 };
+
+  const dugme = (eylem, etiket) =>
+    `<button class="dugme acik kucuk" data-eylem="${eylem}" data-yol-tabani="${y}">${etiket}</button>`;
+
+  const secim = {
+    hacim: `${dugme('geometri-moda-gec', 'Tek oda ölçülerinden hesapla (L×W×H)')}
+            ${dugme('iki-oda-moda-gec', 'Üst ve alt mekân ölçüleri ayrı')}`,
+    olculer: `<span class="rozet bilgi">Alt mekân ölçülerinden hesaplanıyor</span>
+              ${dugme('iki-oda-moda-gec', 'Üst ve alt mekân ölçüleri ayrı')}
+              ${dugme('hacim-moda-don', 'Doğrudan V girişine dön')}`,
+    'iki-oda': `<span class="rozet bilgi">Üst ve alt mekân ayrı ayrı</span>
+                ${dugme('geometri-moda-gec', 'Tek odaya dön')}
+                ${dugme('hacim-moda-don', 'Doğrudan V girişine dön')}`,
+  }[kip];
+
+  const govde = {
+    hacim: `
+      <div class="izgara">
+        <div class="alan"><label>Alt (alıcı) mekân hacmi V (m³)</label>
+          <input type="text" inputmode="decimal" data-yol="${y}.V" data-tur="sayi" value="${k.V}"></div>
+      </div>`,
+    olculer: `
+      <div class="izgara dar">
+        <div class="alan"><label>Derinlik L (m)</label>
+          <input type="text" inputmode="decimal" data-yol="${y}.geometri.L" data-tur="sayi" value="${g.L}"></div>
+        <div class="alan"><label>Genişlik W (m)</label>
+          <input type="text" inputmode="decimal" data-yol="${y}.geometri.W" data-tur="sayi" value="${g.W}"></div>
+        <div class="alan"><label>Yükseklik H (m)</label>
+          <input type="text" inputmode="decimal" data-yol="${y}.geometri.H" data-tur="sayi" value="${g.H}"></div>
+        <div class="alan"><label>Hesaplanan V</label>
+          <input readonly value="${h.geo ? sayi(h.geo.V) + ' m³' : '—'}"></div>
+      </div>
+      <div class="bilgi-kutu">Girilen ölçüler <b>alt (alıcı) mekâna</b> aittir; bağıntıya giren
+        hacim odur. Üst mekân farklı boyuttaysa "üst ve alt mekân ölçüleri ayrı" kipini kullanın.</div>`,
+    'iki-oda': `
+      <div class="izgara">
+        ${odaAlani('Üst mekân (kaynak — darbenin uygulandığı kat)', `${y}.geometri.ustOda`, ust,
+          h.degerlendirme?.ustMekan?.ad || 'Üst mekân adı')}
+        ${odaAlani('Alt mekân (alıcı — sesin duyulduğu kat)', `${y}.geometri.altOda`, alt,
+          h.degerlendirme?.altMekan?.ad || 'Alt mekân adı')}
+      </div>
+      ${kaydirmaBolumu(y, g, h)}
+      <div class="izgara dar" style="margin-top:8px">
+        <div class="alan"><label>Alt (alıcı) mekân hacmi V</label>
+          <input readonly value="${h.geo ? sayi(h.geo.V) + ' m³' : '—'}"></div>
+        <div class="alan"><label>Üst mekân hacmi (bilgi)</label>
+          <input readonly value="${h.geo ? sayi(h.geo.V1) + ' m³' : '—'}"></div>
+        <div class="alan"><label>Ortak döşeme alanı</label>
+          <input readonly value="${h.geo ? sayi(h.geo.S) + ' m²' : '—'}"></div>
+      </div>
+      <div class="bilgi-kutu">
+        <b>Hangi ölçü sonucu değiştirir?</b> Bağıntı L′nT,w = L′n,w − 10·lg(0,032·V) yalnızca
+        <b>alt (alıcı) mekânın hacmini</b> kullanır; ortak döşeme alanı basitleştirilmiş
+        TS EN 12354-2 modeline girmez. İki oda kipinin değeri, üst ve alt mekân farklı
+        boyuttayken doğru hacmin karışmamasını sağlaması ve ortak döşeme alanını
+        belgelemesidir.
+      </div>
+      ${h.geo ? `
+      <div class="canli-model">
+        <div class="canli-model-baslik">
+          <span class="canli-model-nokta"></span> Canlı 3B model
+          <span class="soluk" style="font-weight:500;margin-left:auto;font-size:11.5px">Döndürmek için sürükleyin</span>
+        </div>
+        ${(() => {
+          const a1 = ust.ad || h.degerlendirme?.ustMekan?.ad || 'Üst mekân (kaynak)';
+          const a2 = alt.ad || h.degerlendirme?.altMekan?.ad || 'Alt mekân (alıcı)';
+          const cizim = { oda1: ust, oda2: alt, yon: 'taban',
+            kaydirmaA: g.kaydirmaA, kaydirmaB: g.kaydirmaB };
+          return `<div class="oda-svg-sarmalayici" data-oda1-adi="${kacis(a1)}" data-oda2-adi="${kacis(a2)}">
+            ${odaSVG(cizim, { oda1Adi: a1, oda2Adi: a2 })}
+          </div>`;
+        })()}
+      </div>` : ''}`,
+  }[kip];
 
   return `
   <h3 style="margin-top:18px">Geometri</h3>
-  <div class="satir-eylem" style="margin-bottom:10px">
-    ${boyutMi
-      ? `<span class="rozet bilgi">Oda boyutlarından hesaplanıyor</span>
-         <button class="dugme acik kucuk" data-eylem="hacim-moda-don" data-yol-tabani="${y}">Doğrudan V girişine dön</button>`
-      : `<button class="dugme acik kucuk" data-eylem="geometri-moda-gec" data-yol-tabani="${y}">Oda boyutlarından hesapla (L×W×H)</button>`}
-  </div>
-  ${!boyutMi ? `
-  <div class="izgara">
-    <div class="alan"><label>Alt mekân hacmi V (m³)</label>
-      <input type="text" inputmode="decimal" data-yol="${y}.V" data-tur="sayi" value="${k.V}"></div>
-  </div>` : `
-  <div class="izgara dar">
-    <div class="alan"><label>Derinlik L (m)</label>
-      <input type="text" inputmode="decimal" data-yol="${y}.geometri.L" data-tur="sayi" value="${g.L}"></div>
-    <div class="alan"><label>Genişlik W (m)</label>
-      <input type="text" inputmode="decimal" data-yol="${y}.geometri.W" data-tur="sayi" value="${g.W}"></div>
-    <div class="alan"><label>Yükseklik H (m)</label>
-      <input type="text" inputmode="decimal" data-yol="${y}.geometri.H" data-tur="sayi" value="${g.H}"></div>
-    <div class="alan"><label>Hesaplanan V</label><input readonly value="${h.geo ? sayi(h.geo.V) + ' m³' : '—'}"></div>
-  </div>`}`;
+  <div class="satir-eylem" style="margin-bottom:10px">${secim}</div>
+  ${govde}`;
 }
 
 /* ── Taşıyıcı döşeme (basit seçim ↔ katmanlı yapı) ───────────────────── */
