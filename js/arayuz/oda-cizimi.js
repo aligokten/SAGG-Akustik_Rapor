@@ -170,11 +170,16 @@ export function odaSVG(geometriHam, opts = {}) {
   const dA = Number(geometri.kaydirmaA) || 0;
   const dB = Number(geometri.kaydirmaB) || 0;
   const kesisim = (a1, u1, a2, u2) => [Math.max(a1, a2), Math.min(a1 + u1, a2 + u2)];
+  // Kaydırma, iki mekânın REFERANS KENARLARI arasındaki uzaklıktır (bkz.
+  // cekirdek/geometri.js): her odanın yerel koordinatı kendi referans
+  // kenarında sıfırdan başlar, kaydırma da Oda 2'nin başlangıcını doğrudan
+  // verir. Bu yüzden burada ortalama düzeltmesi YOKTUR — çizim ile hesap
+  // aynı kuralı kullanmalı, aksi hâlde şema yanlış yeri gösterir.
 
   if (tabanMi) {
     // Oda1 altta, Oda2 üstte (dikey istif). Düzlem içi eksenler: L (x), W (z).
-    const x2 = (oda1.L - oda2.L) / 2 + dA;
-    const z2 = (oda1.W - oda2.W) / 2 + dB;
+    const x2 = dA;
+    const z2 = dB;
     const k1 = (x, y, z) => proj(x, y, z);
     const k2 = (x, y, z) => proj(x + x2, oda1.H + y, z + z2);
     K1 = kutuKoseleriOzel(k1, oda1);
@@ -189,7 +194,7 @@ export function odaSVG(geometriHam, opts = {}) {
     yanYuzeyler1 = []; yanYuzeyler2 = [];
   } else if (dikeyDuvarMi) {
     // Z (genişlik) ekseninde yan yana. Düzlem içi eksenler: L (x), H (y).
-    const x2 = (oda1.L - oda2.L) / 2 + dA;
+    const x2 = dA;
     const y2 = dB;
     const k1 = (x, y, z) => proj(x, y, z);
     const k2 = (x, y, z) => proj(x + x2, y + y2, oda1.W + z);
@@ -206,7 +211,7 @@ export function odaSVG(geometriHam, opts = {}) {
     yanYuzeyler2 = [tabanYuz(K2), tavanYuz(K2)];
   } else {
     // X (derinlik) ekseninde yan yana. Düzlem içi eksenler: W (z), H (y).
-    const z2 = (oda1.W - oda2.W) / 2 + dA;
+    const z2 = dA;
     const y2 = dB;
     const k1 = (x, y, z) => proj(x, y, z);
     const k2 = (x, y, z) => proj(oda1.L + x, y + y2, z + z2);

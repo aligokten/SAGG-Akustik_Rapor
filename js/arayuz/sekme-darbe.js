@@ -179,10 +179,11 @@ function kaydirmaBolumu(y, g, h) {
   <div class="izgara dar" style="margin-top:8px">
     <div class="alan"><label>Kaydırma — derinlik (L) ekseninde (m)</label>
       <input type="text" inputmode="decimal" data-yol="${y}.geometri.kaydirmaA" data-tur="sayi" value="${kA}">
-      <span class="ipucu">Alt mekânın üst mekâna göre kayması. 0 = ortalı.</span></div>
+      <span class="ipucu">Alt mekânın <b>ön kenarı</b>nın, üst mekânın ön kenarına uzaklığı.
+        0 = kenarlar hizalı.</span></div>
     <div class="alan"><label>Kaydırma — genişlik (W) ekseninde (m)</label>
       <input type="text" inputmode="decimal" data-yol="${y}.geometri.kaydirmaB" data-tur="sayi" value="${kB}">
-      <span class="ipucu">0 = ortalı.</span></div>
+      <span class="ipucu">Alt mekânın <b>sol kenarı</b>nın uzaklığı. 0 = kenarlar hizalı.</span></div>
   </div>
   ${dokum}`;
 }

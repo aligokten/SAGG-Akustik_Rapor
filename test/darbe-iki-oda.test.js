@@ -57,9 +57,20 @@ test('Ortak döşeme, iki mekânın örtüşen taban izdüşümüdür', () => {
   assert.equal(sonuc.geo.tamOrtusme, true);
 });
 
-test('Kaydırma ortak döşemeyi küçültür ama hacmi değiştirmez', () => {
+test('Küçük oda büyüğün içinde kaldığı sürece kaydırma ortak alanı değiştirmez', () => {
+  // Kaydırma referans KENARDAN ölçülür. Üst oda 7 m, alt oda 5 m; alt oda
+  // 1,5 m içeri kaydırılınca hâlâ [1,5 – 6,5] aralığında, yani tümüyle
+  // üstün altında. Örtüşme 5 m olarak kalır — fiziksel olarak doğrudur.
   const hizali = darbeIle({ mod: 'iki-oda', ustOda: UST, altOda: ALT }).sonuc;
-  const kaymis = darbeIle({ mod: 'iki-oda', ustOda: UST, altOda: ALT, kaydirmaA: 1.5 }).sonuc;
+  const icerde = darbeIle({ mod: 'iki-oda', ustOda: UST, altOda: ALT, kaydirmaA: 1.5 }).sonuc;
+  assert.equal(icerde.geo.S, hizali.geo.S);
+});
+
+test('Kaydırma taşmaya başlayınca ortak döşeme küçülür ama hacim değişmez', () => {
+  const hizali = darbeIle({ mod: 'iki-oda', ustOda: UST, altOda: ALT }).sonuc;
+  // 3 m kaydırınca alt oda [3 – 8], üst oda [0 – 7] → örtüşme 4 m.
+  const kaymis = darbeIle({ mod: 'iki-oda', ustOda: UST, altOda: ALT, kaydirmaA: 3 }).sonuc;
+  assert.equal(kaymis.geo.ortakA, 4);
   assert.ok(kaymis.geo.S < hizali.geo.S);
   assert.equal(kaymis.geo.V, hizali.geo.V);
   // Basitleştirilmiş modelde alan bağıntıya girmediği için sonuç aynı kalır.

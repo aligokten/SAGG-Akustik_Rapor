@@ -7,8 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  geometriHesapla, ortakUzunluk, ortakUzunlukHizali, hizaOfseti, bEkseniDikeyMi,
-  KAYDIRMA_EKSENLERI,
+  geometriHesapla, ortakUzunluk, KAYDIRMA_EKSENLERI,
 } from '../js/cekirdek/geometri.js';
 import { odaSVG } from '../js/arayuz/oda-cizimi.js';
 import { bosProje, yeniAyirici } from '../js/durum.js';
@@ -33,18 +32,20 @@ test('Kaydırma geçersizse 0 kabul edilir', () => {
   assert.equal(ortakUzunluk(6, 4, undefined), 4);
 });
 
-test('Hizalı konum: yatayda ortalı, düşeyde taban hizası — ikisi de min', () => {
-  assert.equal(hizaOfseti(6, 4, false), 1);    // ortalı
-  assert.equal(hizaOfseti(6, 4, true), 0);     // taban hizası
-  assert.equal(ortakUzunlukHizali(6, 4, 0, false), 4);
-  assert.equal(ortakUzunlukHizali(6, 4, 0, true), 4);
-  assert.equal(ortakUzunlukHizali(4, 6, 0, false), 4);
-  assert.equal(ortakUzunlukHizali(4, 6, 0, true), 4);
+test('Kaydırma referans KENARDAN ölçülür, merkezden değil', () => {
+  // Oda 2, kaydırma kadar ilerideki noktadan başlar. Plandan okunan
+  // "duvardan şu kadar içeride" ölçüsü doğrudan yazılabilsin diye.
+  assert.equal(ortakUzunluk(6, 4, 0), 4);   // kenarlar hizalı → küçük oda içeride
+  assert.equal(ortakUzunluk(6, 4, 1), 4);   // hâlâ tümüyle içeride
+  assert.equal(ortakUzunluk(6, 4, 2), 4);   // tam sığıyor (2 + 4 = 6)
+  assert.equal(ortakUzunluk(6, 4, 3), 3);   // taşmaya başladı
+  assert.equal(ortakUzunluk(6, 4, 5), 1);
 });
 
-test('B ekseni yalnızca döşeme ayırıcıda yataydır', () => {
-  for (const y of ['on', 'arka', 'sol', 'sag']) assert.equal(bEkseniDikeyMi(y), true);
-  assert.equal(bEkseniDikeyMi('taban'), false);
+test('Kaydırma 0 iken kenarlar hizalıdır ve örtüşme min(a, b) olur', () => {
+  for (const [a, b] of [[6, 4], [4, 6], [5, 5], [3, 7]]) {
+    assert.equal(ortakUzunluk(a, b, 0), Math.min(a, b), `${a}/${b}`);
+  }
 });
 
 /* ── Geriye dönük uyumluluk ──────────────────────────────────────── */
@@ -70,6 +71,7 @@ test('Kaydırma alanı hiç olmayan eski kayıt da aynı sonucu verir', () => {
 /* ── Kısmi örtüşme ───────────────────────────────────────────────── */
 
 test('Yatay kaydırma ortak alanı küçültür', () => {
+  // Eşit boyutlu odalarda her kaydırma doğrudan örtüşmeyi kısaltır.
   const g = geometriHesapla({ oda1: ODA, oda2: ODA, yon: 'on', kaydirmaA: 1.5 });
   assert.equal(g.ortakA, 4 - 1.5);
   assert.equal(g.ortakB, 2.6);
@@ -88,7 +90,7 @@ test('Ortak olmayan yüzeyler her iki oda için ayrı raporlanır', () => {
   const buyuk = { L: 6, W: 6, H: 3 };
   const kucuk = { L: 6, W: 3, H: 3 };
   const g = geometriHesapla({ oda1: buyuk, oda2: kucuk, yon: 'on', kaydirmaA: 1 });
-  // W ekseninde: büyük [0,6], küçük hizalı [1.5,4.5] → +1 kayma → [2.5,5.5]
+  // W ekseninde: büyük [0,6], küçük sol kenardan 1 m içeride → [1,4]
   assert.equal(g.ortakA, 3);
   assert.equal(g.oda1Yuzey, 6 * 3);
   assert.equal(g.oda2Yuzey, 3 * 3);
@@ -152,9 +154,12 @@ test('3B şema kaydırmayı çizer, temas yoksa ayırıcı çokgeni basmaz', () 
   assert.notEqual(hizali, kaymis);
 });
 
-test('Her yön için kaydırma ekseni etiketi tanımlıdır', () => {
+test('Her yön için kaydırma ekseni ve referans kenarı tanımlıdır', () => {
   for (const yon of ['on', 'arka', 'sol', 'sag', 'taban']) {
     assert.ok(KAYDIRMA_EKSENLERI[yon]?.A, yon);
     assert.ok(KAYDIRMA_EKSENLERI[yon]?.B, yon);
+    // Kullanıcı ölçüyü hangi kenardan alacağını bilmeli.
+    assert.ok(KAYDIRMA_EKSENLERI[yon]?.Akenar, `${yon} Akenar`);
+    assert.ok(KAYDIRMA_EKSENLERI[yon]?.Bkenar, `${yon} Bkenar`);
   }
 });

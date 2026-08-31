@@ -306,13 +306,34 @@ seçilen yüze göre adlandırılır:
 | Sol / sağ duvar | Derinlik (L) | Yükseklik (H) |
 | Taban / tavan döşemesi | Derinlik (L) | Genişlik (W) |
 
-Kaydırma **hizalı konumdan sapma** olarak ölçülür: yatay eksenlerde (L, W) hizalı konum
-ortalanmış konum, düşey eksende (H) taban hizasıdır (odalar kendi döşemelerine oturur). Her iki
-durumda da kaydırma sıfırken örtüşme `min(A1, A2)` olur — yani **kaydırma alanı taşımayan eski
-projeler birebir aynı sonucu vermeye devam eder**.
+Kaydırma, iki mekânın **referans kenarları arasındaki uzaklıktır**. Her odanın yerel koordinatı
+kendi referans kenarında sıfırdan başlar:
+
+| Eksen | Referans kenar |
+| --- | --- |
+| Derinlik (L) | ön kenar |
+| Genişlik (W) | sol kenar |
+| Yükseklik (H) | taban |
+
+Değer, **Oda 2'nin referans kenarının Oda 1'inkine olan uzaklığıdır** (işaretli; negatif değer
+geriye kaymayı gösterir). Böylece plandan okunan *"duvardan şu kadar içeride"* ölçüsü doğrudan
+yazılabilir; ortalanmış konuma göre sapma hesaplamak gerekmez.
+
+Kaydırma sıfırken kenarlar hizalıdır ve örtüşme `min(A1, A2)` olur — küçük aralık büyüğünün içinde
+kalır. Bunun bir sonucu şudur: **küçük oda büyüğün sınırları içinde kaldığı sürece kaydırma ortak
+alanı değiştirmez**; örtüşme ancak oda karşı kenardan taşmaya başlayınca küçülür. Örneğin 7 m'lik
+bir mekânın altındaki 5 m'lik mekân 1,5 m kaydırılınca hâlâ tümüyle üstün altındadır (örtüşme 5 m);
+3 m kaydırılınca örtüşme 4 m'ye iner.
+
+> **Sürüm 1.3.1'de değişti.** Önceki sürümlerde kaydırma, *ortalanmış* konumdan sapma olarak
+> ölçülüyordu. Kaydırması **0 olan** kayıtlar bu değişiklikten etkilenmez (iki kural da
+> `min(A1, A2)` verir); eşit boyutlu odalarda da sonuç aynıdır. Yalnızca **farklı boyutlu odalarda
+> girilmiş sıfırdan farklı** kaydırma değerlerinin anlamı değişmiştir — bu kayıtlarda değeri
+> kenardan ölçüp yeniden girmek gerekir.
 
 - Ortak alan `S = ortakA × ortakB`, aralık kesişimiyle bulunur:
-  `ortak = max(0, min(a, d+b) − max(0, d))` (`js/cekirdek/geometri.js`, `ortakUzunluk`).
+  `ortak = max(0, min(a, d+b) − max(0, d))` (`js/cekirdek/geometri.js`, `ortakUzunluk`); burada
+  `d` doğrudan kenardan ölçülen kaydırmadır.
 - **Yan eleman birleşim uzunlukları (lf) de örtüşen boyutları izler** — kısalan bir ayırıcının
   yan yollarının birleşim uzunluğu da kısalır.
 - Arayüzde kaydırmanın sonucu canlı olarak yazılır: ortak alan, ve her iki odada bu yüzeyin
@@ -723,7 +744,7 @@ test/masaustu.test.js          Masaüstü kabuğu ve paketleme yapılandırması
 npm test          # node --test test/*.test.js
 ```
 
-332 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+333 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
 projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
 modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
 hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış), izometrik şema üretimini, cephe iç yan

@@ -356,10 +356,13 @@ function kaydirmaBolumu(y, g, h) {
   <div class="izgara dar" style="margin-top:8px">
     <div class="alan"><label>Kaydırma — ${kacis(eksen.A)} (m)</label>
       <input type="text" inputmode="decimal" data-yol="${y}.geometri.kaydirmaA" data-tur="sayi" value="${kA}">
-      <span class="ipucu">Alıcı mekânın kaynağa göre öteleme miktarı; 0 = hizalı</span></div>
+      <span class="ipucu">Alıcı mekânın <b>${kacis(eksen.Akenar)}</b>ının, kaynak mekânın
+        ${kacis(eksen.Akenar)}ına uzaklığı. 0 = kenarlar hizalı.</span></div>
     <div class="alan"><label>Kaydırma — ${kacis(eksen.B)} (m)</label>
       <input type="text" inputmode="decimal" data-yol="${y}.geometri.kaydirmaB" data-tur="sayi" value="${kB}">
-      <span class="ipucu">${kaymaVar ? 'Ortak alan aşağıda güncellendi.' : 'İki eksende de 0 ise odalar hizalıdır'}</span></div>
+      <span class="ipucu">${kaymaVar
+        ? 'Ortak alan aşağıda güncellendi.'
+        : `Alıcı mekânın <b>${kacis(eksen.Bkenar)}</b>ının uzaklığı. 0 = kenarlar hizalı.`}</span></div>
   </div>
   ${dokum}`;
 }
