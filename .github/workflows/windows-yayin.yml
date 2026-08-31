@@ -98,10 +98,28 @@ jobs:
             git push origin "$ETIKET"
           fi
 
+      # `npx electron-builder` YERİNE npm betiği: npx, komutu çözerken çalışma
+      # dizinini de tarar ve Windows'ta `.JS` varsayılan olarak PATHEXT
+      # içindedir. Yapılandırma dosyası `electron-builder.js` adını taşırken
+      # kabuk komut yerine bu dosyayı çalıştırıyor, araç hiç koşmuyordu:
+      # çıktı yok, hata yok, exit 0 — yani iş sessizce boş geçiyordu. Dosya
+      # artık `.mjs`, çağrı da doğrudan node_modules/.bin üzerinden yapılıyor.
       - name: Kurulum dosyasını derle ve Releases'e yükle
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --win --publish always
+        run: npm run yayinla
+
+      # Derlemenin sessizce boş geçmediğini kanıtlar. Yukarıdaki hata tam da
+      # böyle bir sessiz boş geçişti; bu adım onu bir daha gizlenemez kılar.
+      - name: Kurulum dosyasının gerçekten üretildiğini doğrula
+        shell: bash
+        run: |
+          echo "dist/ içeriği:"; ls -la dist || true
+          test -f "dist/SAGG-Akustik-Hesap-Kurulum-${{ needs.hazirlik.outputs.surum }}.exe" \
+            || { echo "HATA: kurulum .exe'si üretilmedi."; exit 1; }
+          test -f dist/latest.yml \
+            || { echo "HATA: latest.yml üretilmedi — otomatik güncelleme çalışmaz."; exit 1; }
 
       - name: Kurulum dosyasını iş akışı çıktısı olarak da sakla
         uses: actions/upload-artifact@v4

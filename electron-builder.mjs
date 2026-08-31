@@ -1,10 +1,17 @@
 /**
- * electron-builder.js — Masaüstü paketleme ve yayın yapılandırması.
+ * electron-builder.mjs — Masaüstü paketleme ve yayın yapılandırması.
  *
- * Neden YAML değil de JS? Yapılandırmanın doğruluğu `test/masaustu.test.js`
- * içinde sınanıyor. JS modülü olduğu için test dosyayı doğrudan `import`
- * edebiliyor: ne bir YAML çözümleyici bağımlılığı gerekiyor, ne de testlerin
- * `npm install` beklemesi. Açıklama satırları da korunuyor.
+ * Neden YAML değil de JS modülü? Yapılandırmanın doğruluğu
+ * `test/masaustu.test.js` içinde sınanıyor. JS modülü olduğu için test dosyayı
+ * doğrudan `import` edebiliyor: ne bir YAML çözümleyici bağımlılığı gerekiyor,
+ * ne de testlerin `npm install` beklemesi. Açıklama satırları da korunuyor.
+ *
+ * Neden `.mjs`? Uzantı `.js` olduğunda dosya adı `electron-builder` komutuyla
+ * çakışıyor: Windows'ta `.JS` varsayılan olarak PATHEXT içindedir, bu yüzden
+ * kabuk `electron-builder` komutunu çözerken önce çalışma dizinindeki bu
+ * dosyayı buluyor ve aracın kendisi hiç çalışmıyordu (çıktısız, hatasız,
+ * kurulum dosyası üretilmeden). `.mjs` PATHEXT'te yer almaz; electron-builder
+ * ise bu adı da kendiliğinden bulur.
  */
 
 export default {
@@ -45,6 +52,20 @@ export default {
     target: [{ target: 'nsis', arch: ['x64'] }],
     icon: 'assets/uygulama.ico',
     artifactName: 'SAGG-Akustik-Hesap-Kurulum-${version}.${ext}',
+
+    // DİKKAT — `publisherName` burada BİLEREK tanımlı değildir.
+    // Windows "Uygulamalar" listesindeki yayıncı adı zaten package.json
+    // içindeki author.name alanından ("SAGG+ App") gelir. `win.publisherName`
+    // ise kod imzalama sertifikasındaki adı bildirir: tanımlıysa
+    // electron-updater, indirdiği kurulum dosyasının imzasını bu ada karşı
+    // DOĞRULAR. Uygulama şu an imzasız olduğu için bu alanı doldurmak
+    // güncellemelerin kurulmayı reddetmesine yol açardı. Sertifika alındığında
+    // aşağıdaki üç satır açılır ve publisherName sertifikadaki adla birebir
+    // aynı yazılır:
+    //
+    //   publisherName: 'Sertifikadaki tam ad',
+    //   certificateFile: process.env.WIN_SERTIFIKA_DOSYASI,
+    //   certificatePassword: process.env.WIN_SERTIFIKA_PAROLASI,
   },
 
   nsis: {

@@ -1,6 +1,6 @@
 {
   "name": "sagg-akustik-hesap",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Binaların Gürültüye Karşı Korunması Hakkında Yönetmelik ve eklerine göre bina akustiği hesap aracı",
   "type": "module",
   "private": true,
@@ -8,8 +8,8 @@
     "test": "node --test test/*.test.js",
     "start": "python3 -m http.server 8080",
     "masaustu": "electron .",
-    "paketle": "electron-builder --win --publish never",
-    "yayinla": "electron-builder --win --publish always"
+    "paketle": "electron-builder --win --config electron-builder.mjs --publish never",
+    "yayinla": "electron-builder --win --config electron-builder.mjs --publish always"
   },
   "keywords": [
     "akustik",

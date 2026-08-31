@@ -10,7 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { guvenliYol, surumNotu, yuzde } from '../masaustu/yardimcilar.js';
-import yapi from '../electron-builder.js';
+import yapi from '../electron-builder.mjs';
 
 const KOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -118,4 +118,17 @@ test('Pakete giren dosya listesi uygulamanın tamamını kapsar', () => {
   for (const gerekli of ['index.html', 'js/**/*', 'css/**/*', 'fonts/**/*', 'assets/**/*', 'masaustu/**/*']) {
     assert.ok(yapi.files.some((d) => String(d).startsWith(gerekli)), gerekli);
   }
+});
+
+test('Kod imzalama yokken publisherName tanımlı olmamalı', () => {
+  // Tanımlıysa electron-updater indirdiği kurulum dosyasının imzasını bu ada
+  // karşı doğrular; imzasız pakette bu, güncellemelerin sessizce reddedilmesi
+  // demektir. Sertifika eklendiğinde bu test bilinçli olarak güncellenmelidir.
+  const imzali = Boolean(yapi.win.certificateFile || yapi.win.certificateSubjectName);
+  if (!imzali) assert.equal(yapi.win.publisherName, undefined);
+});
+
+test('Yayıncı adı package.json author alanından gelir', () => {
+  // NSIS, Windows "Uygulamalar" listesindeki Publisher değerini buradan yazar.
+  assert.equal(paket.author.name, 'SAGG+ App');
 });
