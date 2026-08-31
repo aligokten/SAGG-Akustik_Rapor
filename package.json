@@ -1,6 +1,6 @@
 {
   "name": "sagg-akustik-hesap",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Binaların Gürültüye Karşı Korunması Hakkında Yönetmelik ve eklerine göre bina akustiği hesap aracı",
   "type": "module",
   "private": true,

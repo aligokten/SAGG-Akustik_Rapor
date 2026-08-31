@@ -491,7 +491,17 @@ details > *:last-child{margin-bottom:12px}
     --golge-s:none; --golge:none; --golge-l:none;
   }
   .yan-cubuk,.ust-cubuk,.uyari-bandi,.yazdirma-gizle,.perde{display:none !important}
-  body{background:#fff; color:#000}
+  /*
+   * Sayfa boyu zemin DOLGUSU basılmaz. Bir zemin rengi tanımlıysa Chromium,
+   * PDF'e sayfanın tamamını kaplayan bir dolgu dikdörtgeni koyar; kâğıt zaten
+   * beyaz olduğu için bu dolgu görünürde hiçbir şey katmaz, ama PDF'i
+   * düzenleyen programlarda içeriğin üstünde/altında seçilebilir bir nesne
+   * olarak durur ve metnin üzerini kapatabilir. Bu yüzden sayfa düzeyindeki
+   * zeminler saydam bırakılır. Tablo başlığı, belge başlık bandı gibi
+   * ANLAMLI dolgular etkilenmez; onlar aşağıda ayrıca korunur.
+   */
+  html,body,.kabuk,.govde,.icerik,.rapor{background:transparent !important}
+  body{color:#000}
   .kabuk{display:block}
   .icerik{padding:0; max-width:none}
   .rapor{border:0; padding:0; box-shadow:none; max-width:none}
@@ -809,9 +819,50 @@ details > *:last-child{margin-bottom:12px}
 }
 
 @media print{
-  /* Belge tek sayfaya sığar ve bölünmez. */
-  .belge{ background:#fff !important }
+  /*
+   * AKUSTİK PERFORMANS BELGESİ — TEK A4 SAYFASI
+   *
+   * Belge kendi sayfasında başlar ve tek sayfada biter. Dikkat edilmesi
+   * gereken nokta: A4'ün basılabilir genişliği ≈ 717 px'tir (210 mm − 2×10 mm
+   * kenar, 96 dpi). Bu değer dar ekran eşiğinin (820 px) ALTINDA kaldığı için
+   * yazdırmada belgenin iki sütunlu yerleşimi kendiliğinden tek sütuna
+   * iniyordu; belge 1046 px'lik sayfaya sığmayıp 1822 px'e uzuyordu. Bu
+   * yüzden sütunlar burada açıkça geri getirilir.
+   */
+  .belge{ background:transparent !important; break-before:page; break-inside:avoid }
+  .belge-ust{ grid-template-columns:minmax(0,1.9fr) minmax(0,1fr) !important }
+  .belge-orta{ grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) !important }
+  .belge-imza{ grid-template-columns:minmax(0,1fr) minmax(0,1fr) 104px !important }
   .belge-baslik, .belge-orta, .belge-ust, .belge-tablo, .belge-imza{ break-inside:avoid }
+
+  /*
+   * Sığdırma. Ölçüler tek tek küçültülür; belge A4'e sığana kadar tarayıcıda
+   * ölçülerek ayarlanmıştır (hedef ≤ 1046 px). Değerler değiştirilirse
+   * yüksekliğin yeniden ölçülmesi gerekir.
+   */
+  .belge-baslik{ margin-bottom:8px }
+  .belge-baslik h1{ font-size:19px; padding:8px 14px; letter-spacing:.11em }
+  .belge-baslik-logo{ flex:0 0 52px; padding:5px }
+  .belge-ust, .belge-orta{ gap:8px; margin-bottom:8px }
+  .belge-kutu{ padding:8px 10px; border-radius:7px }
+  .belge-kutu-baslik{ font-size:11px; margin-bottom:5px }
+  .belge-satir{ font-size:10.5px; line-height:1.42 }
+  .belge-satir b, .belge-satir .e{ flex:0 0 116px }
+  .belge-alt-baslik{ font-size:11px; margin:6px 0 1px }
+  .belge-resim-alan{ min-height:92px }
+  .belge-ok{ height:19px; margin:2px 0; font-size:11px }
+  .belge-rozet{ flex:0 0 86px; padding:5px 4px }
+  .belge-rozet b{ font-size:22px }
+  .belge-tanim{ font-size:9.5px; line-height:1.35; margin-bottom:2px }
+  .belge-tablo{ font-size:10px }
+  .belge-tablo th, .belge-tablo td{ padding:2px 5px }
+  .belge-tablo th{ font-size:9.5px }
+  .belge-aciklama p{ font-size:9px; line-height:1.32 }
+  .belge-imza{ gap:10px; margin-top:9px; padding-top:8px }
+  .belge-imza-alan{ min-height:48px; font-size:13px }
+  /* Belge sayfasındaki lisans künyesi daha sıkı dizilir; içerik aynı kalır. */
+  .belge .rapor-altbilgi{ margin-top:8px; padding-top:6px }
+  .belge .rapor-lisans{ padding:6px 8px; font-size:8.5px; line-height:1.36 }
   .belge-baslik h1{ background:#f2dfa0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact }
   .belge-ok, .belge-tablo th, .belge-toplam td, .belge-sinif-dizi b.secili{
     -webkit-print-color-adjust:exact; print-color-adjust:exact;

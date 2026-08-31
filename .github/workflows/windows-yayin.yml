@@ -115,6 +115,11 @@ jobs:
       # doğru taslak, dosya adları TAM olarak eşleştirilerek seçilir.
       # (Alt dize araması burada yanlış taslağı seçer: kurulum dosyasının adı,
       # "...exe.blockmap" adının içinde alt dize olarak geçer.)
+      #
+      # `tr -d '\r'`: Windows koşucusunda gh/jq çıktısı satır sonlarını CRLF
+      # veriyor. Satır sonundaki CR, kimliğin peşine takılıp silme isteğini
+      # ".../releases/379585918\r" hâline getiriyor ve gh "invalid control
+      # character in URL" ile düşüyordu — ikiz taslak bu yüzden silinemiyordu.
       - name: Dosyaları taşıyan taslağı yayımla
         shell: bash
         env:
@@ -132,7 +137,8 @@ jobs:
           DOLU=$(echo "$TUMU" | jq -r --arg e "v$SURUM" --arg exe "$EXE" \
             '.[] | select(.draft and .tag_name == $e
                    and ([.assets[].name] | index($exe)) != null
-                   and ([.assets[].name] | index("latest.yml")) != null) | .id' | head -1)
+                   and ([.assets[].name] | index("latest.yml")) != null) | .id' \
+            | tr -d '\r' | head -1)
           if [ -z "$DOLU" ]; then
             echo "HATA: .exe ve latest.yml birlikte taşıyan taslak yok."; exit 1
           fi
@@ -145,7 +151,7 @@ jobs:
           # Aynı sürümün geri kalan taslakları (blockmap taşıyan ikizi)
           echo "$TUMU" | jq -r --arg e "v$SURUM" --argjson tut "$DOLU" \
             '.[] | select(.draft and .tag_name == $e and .id != $tut) | .id' \
-          | while read -r ID; do
+          | tr -d '\r' | while read -r ID; do
               [ -n "$ID" ] || continue
               gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$ID" \
                 && echo "Artık taslak silindi: $ID"
@@ -171,7 +177,7 @@ jobs:
                 and $r.author.login == "github-actions[bot]"
                 and (($yayimli | index($r.tag_name)) != null))
             | "\($r.id) \($r.tag_name)"' \
-          | while read -r ID ETIKET; do
+          | tr -d '\r' | while read -r ID ETIKET; do
               [ -n "$ID" ] || continue
               gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$ID" \
                 && echo "Eski taslak silindi: $ETIKET (id $ID)"
@@ -187,9 +193,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "dist/ içeriği:"; ls -la dist || true
-          DURUM=$(gh release view "v$SURUM" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)
+          DURUM=$(gh release view "v$SURUM" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft | tr -d '\r')
           test "$DURUM" = "false" || { echo "HATA: sürüm hâlâ taslak."; exit 1; }
-          VARLIKLAR=$(gh release view "v$SURUM" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
+          VARLIKLAR=$(gh release view "v$SURUM" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | tr -d '\r')
           echo "Sürümdeki dosyalar:"; echo "$VARLIKLAR"
           echo "$VARLIKLAR" | grep -qx "SAGG-Akustik-Hesap-Kurulum-$SURUM.exe" \
             || { echo "HATA: kurulum .exe'si Releases'e yüklenmemiş."; exit 1; }

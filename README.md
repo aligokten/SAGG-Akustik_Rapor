@@ -548,6 +548,25 @@ npm run paketle           # dist/ içine kurulum .exe'si üretir, yayınlamaz
 
 ### Raporu PDF'e aktarma
 
+İki ayrıntı bilinçlidir:
+
+**Sayfa boyu zemin dolgusu basılmaz.** Bir zemin rengi tanımlıysa Chromium, PDF'e sayfanın tamamını
+kaplayan bir dolgu dikdörtgeni koyar. Kâğıt zaten beyaz olduğu için bu dolgu görünürde hiçbir şey
+katmaz, ama PDF'i düzenleyen programlarda (Nitro, Acrobat) içeriğin üstünde duran, seçilebilir bir
+nesne olarak görünür ve metnin üzerini kapatabilir. Bu yüzden `html`, `body` ve rapor kaplarının
+zemini yazdırmada saydam bırakılır. **Anlamlı** dolgular — belge başlık bandı, tablo başlıkları,
+sınıf okları — etkilenmez; onlar `print-color-adjust: exact` ile korunur.
+
+**Akustik performans belgesi tek A4 sayfasına sığar.** Buradaki incelik şudur: A4'ün basılabilir
+genişliği ≈ 717 px'tir (210 mm − 2×10 mm kenar, 96 dpi) ve bu değer arayüzün dar ekran eşiğinin
+(820 px) **altında** kalır. Yani belge, yazdırmada kendiliğinden "cep telefonu" yerleşimine iniyor,
+iki sütunlu tasarımı tek sütuna dizilip 1822 px'e uzuyor ve ikinci sayfaya taşıyordu. Yazdırma
+biçemleri sütunlu yerleşimi açıkça geri getirir ve ölçüleri sıkıştırır; belge ölçülen 988 px ile
+1046 px'lik A4 alanına 58 px payla sığar ve `break-before: page` ile kendi sayfasında başlar.
+Bu değerler tarayıcıda ölçülerek bulunmuştur; `test/yazdirma.test.js` kuralların sessizce geri
+alınmasını önler.
+
+
 Rapor sekmesindeki **"Raporu PDF'e aktar"** düğmesi iki ortamda farklı çalışır, çünkü ortamların
 yetenekleri farklıdır:
 
@@ -671,7 +690,7 @@ test/masaustu.test.js          Masaüstü kabuğu ve paketleme yapılandırması
 npm test          # node --test test/*.test.js
 ```
 
-321 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+329 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
 projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
 modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
 hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış), izometrik şema üretimini, cephe iç yan
