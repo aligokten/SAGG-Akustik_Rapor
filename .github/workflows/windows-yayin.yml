@@ -83,21 +83,6 @@ jobs:
       - name: Bağımlılıkları kur
         run: npm ci
 
-      # Etiketi önce bu commit'e atıyoruz ki Releases kaydı gerçekten derlenen
-      # kaynağı göstersin (electron-builder aksi hâlde varsayılan dalı işaretler).
-      - name: Sürüm etiketini oluştur
-        shell: bash
-        run: |
-          ETIKET="v${{ needs.hazirlik.outputs.surum }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git ls-remote --exit-code --tags origin "refs/tags/$ETIKET" >/dev/null 2>&1; then
-            echo "$ETIKET etiketi zaten var, olduğu gibi bırakılıyor."
-          else
-            git tag -a "$ETIKET" -m "SAGG Akustik Hesap Aracı $ETIKET"
-            git push origin "$ETIKET"
-          fi
-
       # `npx electron-builder` YERİNE npm betiği: npx, komutu çözerken çalışma
       # dizinini de tarar ve Windows'ta `.JS` varsayılan olarak PATHEXT
       # içindedir. Yapılandırma dosyası `electron-builder.js` adını taşırken
@@ -110,16 +95,25 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run yayinla
 
-      # Derlemenin sessizce boş geçmediğini kanıtlar. Yukarıdaki hata tam da
-      # böyle bir sessiz boş geçişti; bu adım onu bir daha gizlenemez kılar.
-      - name: Kurulum dosyasının gerçekten üretildiğini doğrula
+      # Dosyaların diskte üretilmiş olması YETMEZ: ilk denemede .exe ve
+      # latest.yml diskte vardı ama Releases'e yüklenmemişti, iş yine de yeşil
+      # geçmişti. Bu yüzden asıl denetim GitHub'daki sürüm kaydına bakar.
+      # latest.yml eksikse otomatik güncelleme hiç çalışmaz — o hâlde iş
+      # kırmızı düşmelidir.
+      - name: Yayının Releases'e gerçekten ulaştığını doğrula
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SURUM: ${{ needs.hazirlik.outputs.surum }}
         run: |
           echo "dist/ içeriği:"; ls -la dist || true
-          test -f "dist/SAGG-Akustik-Hesap-Kurulum-${{ needs.hazirlik.outputs.surum }}.exe" \
-            || { echo "HATA: kurulum .exe'si üretilmedi."; exit 1; }
-          test -f dist/latest.yml \
-            || { echo "HATA: latest.yml üretilmedi — otomatik güncelleme çalışmaz."; exit 1; }
+          VARLIKLAR=$(gh release view "v$SURUM" --repo "$GITHUB_REPOSITORY" \
+            --json assets --jq '.assets[].name')
+          echo "Sürümdeki dosyalar:"; echo "$VARLIKLAR"
+          echo "$VARLIKLAR" | grep -qx "SAGG-Akustik-Hesap-Kurulum-$SURUM.exe" \
+            || { echo "HATA: kurulum .exe'si Releases'e yüklenmemiş."; exit 1; }
+          echo "$VARLIKLAR" | grep -qx "latest.yml" \
+            || { echo "HATA: latest.yml yüklenmemiş — otomatik güncelleme çalışmaz."; exit 1; }
 
       - name: Kurulum dosyasını iş akışı çıktısı olarak da sakla
         uses: actions/upload-artifact@v4

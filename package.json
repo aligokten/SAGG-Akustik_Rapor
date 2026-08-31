@@ -1,6 +1,6 @@
 {
   "name": "sagg-akustik-hesap",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Binaların Gürültüye Karşı Korunması Hakkında Yönetmelik ve eklerine göre bina akustiği hesap aracı",
   "type": "module",
   "private": true,
@@ -22,9 +22,10 @@
   "main": "masaustu/ana.js",
   "author": {
     "name": "SAGG+ App",
-    "email": "aligokten99@gmail.com"
+    "email": "info@saggplus.com",
+    "url": "https://www.saggplus.com"
   },
-  "homepage": "https://aligokten.github.io/SAGG-Akustik_Rapor/",
+  "homepage": "https://www.saggplus.com",
   "repository": {
     "type": "git",
     "url": "https://github.com/aligokten/SAGG-Akustik_Rapor.git"
@@ -35,5 +36,9 @@
   "devDependencies": {
     "electron": "^38.2.1",
     "electron-builder": "^26.0.12"
+  },
+  "bugs": {
+    "url": "https://github.com/aligokten/SAGG-Akustik_Rapor/issues",
+    "email": "info@saggplus.com"
   }
 }

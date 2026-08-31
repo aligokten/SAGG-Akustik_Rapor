@@ -28,6 +28,8 @@ const buDosya = path.dirname(fileURLToPath(import.meta.url));
 const KOK = path.join(buDosya, '..');
 
 const SEMA = 'sagg';
+/** Sürüm notlarının yayınlandığı adres (Yardım menüsü). */
+const SURUM_NOTLARI = 'https://github.com/aligokten/SAGG-Akustik_Rapor/releases';
 const ANA_SAYFA = `${SEMA}://yerel/index.html`;
 
 /** Tek örnek kilidi: ikinci kez açılırsa var olan pencere öne getirilir. */
@@ -147,10 +149,14 @@ function menuKur(pencere) {
       submenu: [
         { label: 'Güncellemeleri denetle…', click: () => guncellemeyiElleDenetle(pencere) },
         { type: 'separator' },
-        { label: 'Web sürümünü aç',
+        { label: 'Web sürümünü aç (tarayıcıda)',
           click: () => shell.openExternal('https://aligokten.github.io/SAGG-Akustik_Rapor/') },
-        { label: 'Kaynak kodu ve sürüm notları',
-          click: () => shell.openExternal('https://github.com/aligokten/SAGG-Akustik_Rapor/releases') },
+        { label: 'SAGG+ — www.saggplus.com',
+          click: () => shell.openExternal('https://www.saggplus.com') },
+        { label: 'Destek: info@saggplus.com',
+          click: () => shell.openExternal('mailto:info@saggplus.com'
+            + '?subject=' + encodeURIComponent(`SAGG Akustik Hesap Aracı ${app.getVersion()} — destek`)) },
+        { label: 'Sürüm notları', click: () => shell.openExternal(SURUM_NOTLARI) },
         { type: 'separator' },
         {
           label: 'Hakkında',
@@ -165,6 +171,8 @@ function menuKur(pencere) {
               'Program Lisans Sahibi: Sinem Ali Gökten Grup İnşaat Mimarlık',
               'Akustik Müh. San. Tic. Ltd. Şti.',
               'Program Geliştirici: SAGG+ App — Tüm hakları saklıdır.',
+              '',
+              'www.saggplus.com · info@saggplus.com',
               '',
               'Rapor içeriğinden ve hesaplamalardan proje müellifi sorumludur.',
             ].join('\n'),

@@ -422,6 +422,24 @@ kaydedilemezdi. Depo içeriği bu yüzden `sagg://yerel/...` adresinden, gerçek
 üzerinden servis edilir; kayıt davranışı web sürümüyle birebir aynı olur. Protokol işleyicisi yalnızca
 uygulama kökünün altındaki dosyaları verir (`masaustu/yardimcilar.js`, `guvenliYol`).
 
+#### Yayıncı bilgileri
+
+| Alan | Değer | Nereden gelir |
+| --- | --- | --- |
+| Yayıncı (Windows "Uygulamalar" listesi) | SAGG+ App | `package.json` → `author.name` |
+| Destek adresi | info@saggplus.com | `author.email` |
+| Web sitesi | https://www.saggplus.com | `homepage` |
+| Uygulama kimliği (appId) | `com.saggplus.akustik` | ters çevrilmiş alan adı |
+| Telif | Sinem Ali Gökten Grup İnşaat Mimarlık Akustik Müh. San. Tic. Ltd. Şti. | `electron-builder.mjs` → `copyright` |
+| Kurulum kapsamı | Yalnızca oturum açan kullanıcı | `nsis.perMachine: false` |
+
+> **`win.publisherName` bilerek boş bırakılmıştır.** Bu alan kod imzalama
+> sertifikasındaki adı bildirir ve dolu olduğunda electron-updater, indirdiği
+> kurulum dosyasının imzasını bu ada karşı **doğrular**. Paket imzasız olduğu
+> için alanı doldurmak, güncellemelerin sessizce reddedilmesine yol açardı.
+> Windows'ta görünen yayıncı adı zaten `author.name` alanından geliyor.
+> Sertifika alındığında `electron-builder.mjs` içindeki yorum satırları açılır.
+
 #### Otomatik güncelleme
 
 Program **her açılışta** (ve açıkken 6 saatte bir) GitHub Releases'i sessizce denetler:
@@ -580,7 +598,7 @@ test/masaustu.test.js          Masaüstü kabuğu ve paketleme yapılandırması
 npm test          # node --test test/*.test.js
 ```
 
-297 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+301 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
 projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
 modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
 hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış), izometrik şema üretimini, cephe iç yan

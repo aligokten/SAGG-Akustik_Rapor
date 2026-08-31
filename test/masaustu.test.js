@@ -132,3 +132,15 @@ test('Yayıncı adı package.json author alanından gelir', () => {
   // NSIS, Windows "Uygulamalar" listesindeki Publisher değerini buradan yazar.
   assert.equal(paket.author.name, 'SAGG+ App');
 });
+
+test('Yayıncı künyesi kurumsal alan adını ve destek adresini taşır', () => {
+  // NSIS bu değerleri Windows "Uygulamalar" kaydına (Publisher, URLInfoAbout)
+  // yazar; "Hakkında" ve "Yardım" menüsü de aynı adresleri gösterir.
+  assert.equal(paket.author.email, 'info@saggplus.com');
+  assert.equal(paket.homepage, 'https://www.saggplus.com');
+});
+
+test('appId ters çevrilmiş alan adıyla uyumludur', () => {
+  // saggplus.com → com.saggplus.*  (Windows AppUserModelID ile aynı olmalı)
+  assert.ok(yapi.appId.startsWith('com.saggplus.'), yapi.appId);
+});
