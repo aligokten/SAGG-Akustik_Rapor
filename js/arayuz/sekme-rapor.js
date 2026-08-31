@@ -11,7 +11,7 @@
  */
 
 import { kacis, sayi, uygunlukRozeti, sinifRozeti } from './ortak.js';
-import { SURUM, BINA_TURLERI, ASGARI_SINIFLAR } from '../veri/yonetmelik.js';
+import { SURUM, BINA_TURLERI, ASGARI_SINIFLAR, HASSASIYET_DERECELERI } from '../veri/yonetmelik.js';
 import { MODELLER } from '../cekirdek/kutle-kanunu.js';
 import { OKTAV_BANTLARI } from '../cekirdek/temel.js';
 import { odaSVG, cepheSVG } from './oda-cizimi.js';
@@ -39,6 +39,10 @@ export function ciz(durum, s) {
   ${s.ayiricilar.length === 0
     ? '<div class="bos-durum">Henüz ayırıcı eleman tanımlanmadı. Rapor, en az bir ayırıcı eleman gerektirir.</div>'
     : s.ayiricilar.map((a, i) => ayiriciRaporu(p, a, i, s.ayiricilar.length)).join('')}
+
+  ${s.darbeler.map((x) => darbeRaporu(p, x)).join('')}
+
+  ${s.cepheler.map((x, i) => cepheRaporu(p, x, i)).join('')}
 
   ${ekBolumler(p, s)}
 
@@ -305,15 +309,277 @@ function uzmanTavsiyesi(a) {
   </div>`;
 }
 
+/* ── Darbe sesi — kendi sayfasında ───────────────────────────────── */
+
+/** Tek bir döşeme (darbe sesi) kaydının rapor sayfası. */
+function darbeRaporu(p, x) {
+  const k = x.kayit, d = x.degerlendirme, so = x.sonuc, geo = x.geo;
+  const ikiOda = k.geometri?.mod === 'iki-oda';
+  const ust = k.geometri?.ustOda, alt = k.geometri?.altOda;
+
+  return `
+  <div class="rapor rapor-sayfa-sonu">
+    ${antet(p)}
+
+    <p class="rapor-kategori">DÖŞEMEDE DARBE SESİ YALITIMI · TS EN 12354-2</p>
+    <h1>${kacis(p.ad || 'Adsız proje')}</h1>
+    <p class="soluk">${kacis(k.ad)} — mahal geometrisi, taşıyıcı döşeme, kaplama ve hesaplanan
+      darbe sesi düzeyi.</p>
+
+    <div class="sonuc-serit${d && !d.uygun ? ' uygunsuz' : ''}">
+      <div class="hucre"><span class="etiket">Sonuç</span>
+        <span class="deger" style="font-size:16px;color:${d?.uygun ? 'var(--basari)' : 'var(--hata)'}">${d ? (d.uygun ? 'SAĞLIYOR' : 'SAĞLAMIYOR') : '—'}</span></div>
+      <div class="hucre one-cikan"><span class="etiket">L′<sub>nT,w</sub></span>
+        <span class="deger">${sayi(so.LnTw)} <small>dB</small></span></div>
+      <div class="hucre"><span class="etiket">${d?.hedefKaynagi === 'manuel' ? 'Manuel sınır' : 'Yönetmelik sınırı'}</span>
+        <span class="deger">${d ? `≤ ${sayi(d.gereken, 0)}` : '—'} <small>dB</small></span></div>
+      <div class="hucre"><span class="etiket">Sınıf</span>
+        <span class="deger">${d?.eldeEdilenSinif || '—'}</span></div>
+    </div>
+
+    <div class="rapor-kunye-tablo">
+      <div><b>Üst (kaynak) mekân</b><span>${kacis(d?.ustMekan?.ad || '—')}</span></div>
+      <div><b>Alt (alıcı) mekân</b><span>${kacis(d?.altMekan?.ad || '—')}</span></div>
+      <div><b>Gereksinim tablosu</b><span>${kacis(d?.tabloAdi || '—')}</span></div>
+    </div>
+
+    <h2>1. Mahal geometrisi</h2>
+    ${ikiOda && geo ? `
+    <div class="tablo-sar"><table>
+      <thead><tr><th></th><th>Üst mekân (kaynak)</th><th>Alt mekân (alıcı)</th></tr></thead>
+      <tbody>
+        <tr><td>Mekân</td><td>${kacis(ust.ad || d?.ustMekan?.ad || '—')}</td><td>${kacis(alt.ad || d?.altMekan?.ad || '—')}</td></tr>
+        <tr><td>L × W × H</td><td>${boyutSatiri(ust)}</td><td>${boyutSatiri(alt)}</td></tr>
+        <tr><td>Hacim</td><td>${sayi(geo.V1, 1)} m³</td><td><b>${sayi(geo.V, 1)} m³</b></td></tr>
+      </tbody>
+    </table></div>
+    <div class="rapor-kunye-tablo">
+      <div><b>Ortak döşeme alanı</b><span>${geo.temasVar ? `${sayi(geo.S)} m²` : 'yok — mekânlar örtüşmüyor'}</span></div>
+      <div><b>Kaydırma (L / W)</b><span>${sayi(k.geometri.kaydirmaA || 0)} / ${sayi(k.geometri.kaydirmaB || 0)} m</span></div>
+    </div>
+    ${!geo.temasVar ? `<div class="bilgi-kutu kirmizi">Üst ve alt mekân hiç örtüşmüyor; aralarında ortak
+      bir döşeme bulunmadığından bu hesap anlamlı değildir.</div>` : ''}
+    <div class="canli-model yazdirma-goster">
+      <div class="canli-model-baslik"><span class="canli-model-nokta"></span> Mahal şeması</div>
+      <div style="padding:6px">${odaSVG({ oda1: ust, oda2: alt, yon: 'taban',
+        kaydirmaA: k.geometri.kaydirmaA, kaydirmaB: k.geometri.kaydirmaB },
+        { oda1Adi: ust.ad || 'Üst mekân (kaynak)', oda2Adi: alt.ad || 'Alt mekân (alıcı)',
+          genislik: 720, yukseklik: 330 })}</div>
+    </div>` : `
+    <div class="rapor-kunye-tablo">
+      <div><b>Alıcı (alt) mekân hacmi V</b><span>${sayi(geo ? geo.V : k.V, 1)} m³</span></div>
+    </div>
+    <p class="soluk" style="font-size:12.5px">Bu döşeme için üst ve alt mekân ölçüleri ayrı ayrı
+      girilmemiştir; bağıntıya giren hacim alıcı (alt) mekânın hacmidir.</p>`}
+
+    <h2>2. Taşıyıcı döşeme ve kaplama</h2>
+    <div class="rapor-kunye-tablo">
+      <div><b>Taşıyıcı döşeme</b><span>${kacis(x.doseme?.ad || '—')}</span></div>
+      <div><b>Alan kütlesi m′</b><span>${sayi(x.doseme?.mAlan, 0)} kg/m²</span></div>
+      <div><b>Kaplama / yüzer şap</b><span>${kacis(x.sap?.ad || '—')}</span></div>
+      <div><b>Yan duvar ortalama m′</b><span>${sayi(k.mYanOrtalama, 0)} kg/m²</span></div>
+    </div>
+    ${x.doseme?.katmanlar?.length ? katmanTablosu(x.doseme) : ''}
+
+    <h2>3. Hesap adımları</h2>
+    <div class="tablo-sar"><table>
+      <thead><tr><th>Adım</th><th>Bağıntı</th><th class="sayi">Değer</th></tr></thead>
+      <tbody>
+        <tr><td>Çıplak döşeme</td><td>L<sub>n,w,eq</sub> = 164 − 35·lg(m′)</td>
+          <td class="sayi">${sayi(so.LnwEq)} dB</td></tr>
+        <tr><td>Kaplama iyileştirmesi</td><td>ΔL<sub>w</sub>${k.asmaTavanVar ? ' + asma tavan' : ''}</td>
+          <td class="sayi">−${sayi(so.dLwToplam)} dB</td></tr>
+        <tr><td>Yan yol düzeltmesi</td><td>K (TS EN 12354-2 Ek-E)</td>
+          <td class="sayi">+${sayi(so.K)} dB</td></tr>
+        <tr class="belge-toplam"><td><b>Normalize darbe sesi düzeyi</b></td>
+          <td>L′<sub>n,w</sub> = L<sub>n,w,eq</sub> − ΔL<sub>w</sub> + K</td>
+          <td class="sayi"><b>${sayi(so.LnwAksan)} dB</b></td></tr>
+        <tr><td>Hacim düzeltmesi</td><td>−10·lg(0,032·V), V = alıcı mekân</td>
+          <td class="sayi">${sayi(so.LnTw - so.LnwAksan - p.emniyetPayi)} dB</td></tr>
+        <tr><td>Emniyet payı</td><td>proje geneli</td>
+          <td class="sayi">+${sayi(p.emniyetPayi, 1)} dB</td></tr>
+        <tr class="belge-toplam"><td><b>Standartlaştırılmış düzey</b></td>
+          <td>L′<sub>nT,w</sub></td>
+          <td class="sayi"><b>${sayi(so.LnTw)} dB</b></td></tr>
+      </tbody>
+    </table></div>
+    <p class="soluk" style="font-size:12px">
+      Bağıntıya yalnızca <b>alıcı (alt) mekânın hacmi</b> girer; ortak döşeme alanı bu
+      basitleştirilmiş modelde sonucu değiştirmez, yukarıda projenin geometrik kabulünü
+      belgelemek için verilmiştir.
+    </p>
+
+    ${altbilgi(p)}
+  </div>`;
+}
+
+/* ── Cephe — ayırıcı elemanla aynı ayrıntıda, kendi sayfasında ──── */
+
+/**
+ * Tek bir cephe kaydının ayrıntılı rapor sayfası.
+ *
+ * Ayırıcı eleman raporuyla aynı kurguyu izler: sonuç şeridi, mahal
+ * geometrisi ve 3B şema, bileşen dökümü, yan yollar, hesap adımları ve
+ * yöntem notu. Böylece cephe hesabı da özet bir tablo satırı olmaktan çıkıp
+ * denetlenebilir bir belge hâline gelir.
+ */
+function cepheRaporu(p, x, indeks) {
+  const c = x.kayit, d = x.degerlendirme, so = x.sonuc;
+  const geo = x.geo;
+  const boyutMi = c.geometri?.mod === 'olculer';
+  const mekanAdi = d?.mekan?.ad || c.ad;
+
+  return `
+  <div class="rapor rapor-sayfa-sonu">
+    ${antet(p)}
+
+    <p class="rapor-kategori">CEPHEDE SES YALITIMI · TS EN 12354-3</p>
+    <h1>${kacis(p.ad || 'Adsız proje')}</h1>
+    <p class="soluk">${kacis(c.ad)} — mahal geometrisi, cephe bileşenleri, iç yan yollar ve
+      hesaplanan cephe ses yalıtımı.</p>
+
+    <div class="sonuc-serit${d && !d.uygun ? ' uygunsuz' : ''}">
+      <div class="hucre"><span class="etiket">Sonuç</span>
+        <span class="deger" style="font-size:16px;color:${d?.uygun ? 'var(--basari)' : 'var(--hata)'}">${d ? (d.uygun ? 'SAĞLIYOR' : 'SAĞLAMIYOR') : '—'}</span></div>
+      <div class="hucre one-cikan"><span class="etiket">D<sub>nT,A,tr</sub></span>
+        <span class="deger">${sayi(so.DnTAtr)} <small>dB</small></span></div>
+      <div class="hucre"><span class="etiket">${d?.hedefKaynagi === 'manuel' ? 'Manuel hedef' : 'Yönetmelik hedefi'}</span>
+        <span class="deger">${d ? `≥ ${sayi(d.gereken, 0)}` : '—'} <small>dB</small></span></div>
+      <div class="hucre"><span class="etiket">D<sub>2m,nT,w</sub></span>
+        <span class="deger">${sayi(so.D2mnTw)} <small>dB</small></span></div>
+    </div>
+
+    <div class="rapor-kunye-tablo">
+      <div><b>Mahal</b><span>${kacis(mekanAdi)}</span></div>
+      <div><b>Hassasiyet derecesi</b><span>${kacis(HASSASIYET_DERECELERI[d?.mekan?.hassasiyet] || '—')}</span></div>
+      <div><b>Cephe konumu</b><span>${c.konum === 'kose' ? 'Köşe — iki dış duvar (D1 + D2)' : 'Orta — tek dış duvar (D1)'}</span></div>
+      <div><b>Çevresel gürültü L<sub>gag</sub></b><span>${sayi(c.disGurultu, 0)} dB</span></div>
+      <div><b>Cephe biçimi (ΔL<sub>fs</sub>)</b><span>${sayi(so.dLfs, 1)} dB</span></div>
+      <div><b>Sınıf</b><span>${d?.eldeEdilenSinif || '—'}</span></div>
+    </div>
+
+    <h2>1. Mahal geometrisi</h2>
+    ${boyutMi && geo ? `
+    <div class="rapor-kunye-tablo">
+      <div><b>Oda ölçüleri (L × W × H)</b><span>${boyutSatiri(c.geometri)}</span></div>
+      <div><b>Mahal hacmi V</b><span>${sayi(geo.V, 1)} m³</span></div>
+      <div><b>Toplam cephe alanı S</b><span>${sayi(so.S)} m²</span></div>
+      ${geo.duvarlar.map((w) => `<div><b>Dış duvar D${w.no} brüt alanı</b><span>${sayi(w.alan)} m²</span></div>`).join('')}
+    </div>` : `
+    <div class="rapor-kunye-tablo">
+      <div><b>Toplam cephe alanı S</b><span>${sayi(so.S)} m²</span></div>
+      <div><b>Mahal hacmi V</b><span>${sayi(c.V, 0)} m³</span></div>
+    </div>
+    <p class="soluk" style="font-size:12.5px">Bu cephe için oda boyutlarından hesaplama kullanılmamıştır;
+      alan ve hacim elle girilmiştir. Bu durumda iç yan yollar (Df) hesaba katılmaz.</p>`}
+
+    ${boyutMi ? `
+    <div class="canli-model yazdirma-goster">
+      <div class="canli-model-baslik"><span class="canli-model-nokta"></span> Mahal şeması</div>
+      <div style="padding:6px">${cepheSVG(c, { mekanAdi, genislik: 720, yukseklik: 330 })}</div>
+    </div>` : ''}
+
+    <h2>2. Cephe bileşenleri</h2>
+    <div class="tablo-sar"><table>
+      <thead><tr><th>Bileşen</th><th>Tür</th><th class="sayi">Duvar</th>
+        <th class="sayi">Alan S</th><th class="sayi">R<sub>w</sub></th><th class="sayi">Enerji payı</th></tr></thead>
+      <tbody>${x.yuzeysel.map((y) => {
+        const pay = so.paylar?.find((k) => k.ad === y.ad);
+        return `<tr${y.etkin ? '' : ' class="soluk"'}>
+          <td>${kacis(y.ad)}</td>
+          <td>${y.tur === 'duvar' ? 'Opak duvar' : 'Doğrama'}</td>
+          <td class="sayi">D${y.duvarNo}</td>
+          <td class="sayi">${sayi(y.S)} m²</td>
+          <td class="sayi">${sayi(y.Rw)} dB</td>
+          <td class="sayi">${pay ? `%${sayi(pay.payYuzde, 1)}` : (y.etkin ? '—' : 'hesaba girmiyor')}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>
+
+    ${x.kucuk.length ? `
+    <h3 style="margin-top:14px">Küçük elemanlar</h3>
+    <div class="tablo-sar"><table>
+      <thead><tr><th>Eleman</th><th class="sayi">Adet</th><th class="sayi">D<sub>n,e,w</sub></th></tr></thead>
+      <tbody>${x.kucuk.map((k) => `<tr><td>${kacis(k.ad)}</td>
+        <td class="sayi">${sayi(k.adet, 0)}</td><td class="sayi">${sayi(k.Dnew, 0)} dB</td></tr>`).join('')}</tbody>
+    </table></div>` : ''}
+
+    <h2>3. Ses iletim yolları</h2>
+    <div class="tablo-sar"><table>
+      <thead><tr><th>Yol</th><th class="sayi">Yalıtım R</th><th class="sayi">Enerji payı</th></tr></thead>
+      <tbody>${(so.yolPaylari || []).map((y) => `<tr>
+        <td>${kacis(y.ad)}</td><td class="sayi">${sayi(y.R)} dB</td>
+        <td class="sayi">%${sayi(y.payYuzde, 1)}</td></tr>`).join('')}</tbody>
+    </table></div>
+    ${so.yanYollar?.length ? `
+    <p class="soluk" style="font-size:12px">Yan yollarda R = (R<sub>w,dış</sub> + R<sub>w,yan</sub>)/2
+      + K<sub>ij</sub> + 10·lg(S / (l<sub>0</sub>·l<sub>f</sub>)) bağıntısı kullanılır.</p>` : `
+    <p class="soluk" style="font-size:12px">Bu cephede iç yan yol (Df) hesaplanmamıştır; sonuç yalnızca
+      doğrudan bileşik cephe yalıtımına dayanır.</p>`}
+
+    <h2>4. Hesap adımları</h2>
+    <div class="tablo-sar"><table>
+      <thead><tr><th>Adım</th><th>Bağıntı</th><th class="sayi">Değer</th></tr></thead>
+      <tbody>
+        <tr><td>Bileşik cephe yalıtımı</td>
+          <td>R′<sub>w,bileşik</sub> = −10·lg( Σ S<sub>i</sub>·10<sup>−R<sub>i</sub>/10</sup> / S )</td>
+          <td class="sayi">${sayi(so.RwBilesik)} dB</td></tr>
+        <tr><td>Yan yollarla görünür yalıtım</td>
+          <td>Doğrudan yol ile Df yollarının enerjik toplamı</td>
+          <td class="sayi">${sayi(so.RwGorunur)} dB</td></tr>
+        <tr><td>Cephe biçimi düzeltmesi</td><td>ΔL<sub>fs</sub></td>
+          <td class="sayi">${sayi(so.dLfs, 1)} dB</td></tr>
+        <tr><td>Hacim terimi</td><td>10·lg( V / (6·T₀·S) )</td>
+          <td class="sayi">${sayi(so.hacimTerimi)} dB</td></tr>
+        <tr><td>Emniyet payı</td><td>proje geneli</td>
+          <td class="sayi">−${sayi(p.emniyetPayi, 1)} dB</td></tr>
+        <tr class="belge-toplam"><td><b>Cephe ses yalıtımı</b></td>
+          <td>D<sub>2m,nT,w</sub> = R′<sub>w,görünür</sub> + ΔL<sub>fs</sub> + 10·lg(V/(6·T₀·S)) − emniyet</td>
+          <td class="sayi"><b>${sayi(so.D2mnTw)} dB</b></td></tr>
+        <tr><td>Spektrum uyarlama terimi</td><td>C<sub>tr</sub></td>
+          <td class="sayi">${sayi(so.ctr, 0)} dB</td></tr>
+        <tr class="belge-toplam"><td><b>Yönetmelik göstergesi</b></td>
+          <td>D<sub>nT,A,tr</sub> = D<sub>2m,nT,w</sub> + C<sub>tr</sub></td>
+          <td class="sayi"><b>${sayi(so.DnTAtr)} dB</b></td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>5. Gereksinim ve yöntem notu</h2>
+    <p style="font-size:12.5px">
+      Uygunluk kararı <b>EK-3 Tablo 3.1</b> ile <b>D<sub>nT,A,tr</sub></b> üzerinden verilir.
+      Gereken değer sabit bir matristen değil, çevresel gürültü düzeyi
+      L<sub>gag</sub> = ${sayi(c.disGurultu, 0)} dB'den mekânın hassasiyet derecesine ve hedef sınıfa
+      bağlı bir indirim çıkarılarak bulunur:
+      <b>${d ? `${sayi(c.disGurultu, 0)} − ${sayi(c.disGurultu - d.gereken, 0)} = ${sayi(d.gereken, 0)} dB` : '—'}</b>.
+      ${d?.hedefKaynagi === 'manuel' ? 'Bu kayıtta yönetmelik hedefinin yerine manuel bir hedef girilmiştir.' : ''}
+    </p>
+    <p class="soluk" style="font-size:12px">
+      Hesap TS EN 12354-3'ün basitleştirilmiş tek sayılı modeline dayanır ve ön boyutlandırma
+      amaçlıdır; uygunluk beyanı için yerinde ölçüm esastır.
+    </p>
+
+    ${altbilgi(p)}
+  </div>`;
+}
+
 /* ── Döşeme / cephe / hacim — daha yalın ek bölüm ────────────────── */
 
+/**
+ * Toplu özet sayfası.
+ *
+ * Darbe ve cephe kayıtlarının her biri artık kendi ayrıntılı sayfasında yer
+ * alıyor; burada yalnızca hepsini bir arada gösteren özet tablolar ve
+ * reverberasyon bölümü kalır. Özet tablolar korundu çünkü çok bileşenli
+ * projelerde tek bakışta karşılaştırma yapmayı sağlıyorlar.
+ */
 function ekBolumler(p, s) {
   if (!s.darbeler.length && !s.cepheler.length && !s.hacimler.length) return '';
   return `
   <div class="rapor rapor-sayfa-sonu">
     ${antet(p)}
-    <h1 style="font-size:18px">Ek hesap özetleri</h1>
-    <p class="soluk">Döşeme, cephe ve reverberasyon kayıtları — "Katmanlı Model v3" biçiminin kapsamı dışındaki ek bileşenler.</p>
+    <h1 style="font-size:18px">Hesap özetleri</h1>
+    <p class="soluk">Döşeme, cephe ve reverberasyon kayıtlarının toplu dökümü. Her döşeme ve
+      cephe hesabının ayrıntılı sayfası bu bölümden önce yer alır.</p>
     ${bolumDarbe(s)}
     ${bolumCephe(s)}
     ${bolumReverberasyon(s)}
@@ -420,11 +686,7 @@ function bolumCephe(s) {
     L<sub>gag</sub>'dan hassasiyet ve sınıfa bağlı bir indirim çıkarılarak bulunur.
   </p>
 
-  ${s.cepheler.filter((x) => x.kayit.geometri?.mod === 'olculer').map((x) => `
-    <div class="canli-model yazdirma-goster" style="margin-top:14px">
-      <div class="canli-model-baslik"><span class="canli-model-nokta"></span> ${kacis(x.kayit.ad)} — mahal şeması</div>
-      <div style="padding:6px">${cepheSVG(x.kayit, { mekanAdi: x.kayit.ad, genislik: 720, yukseklik: 320 })}</div>
-    </div>`).join('')}`;
+`;
 }
 
 function bolumReverberasyon(s) {

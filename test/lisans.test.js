@@ -40,10 +40,12 @@ test('Lisans bilgileri her rapor sayfasının altbilgisinde yer alır', () => {
   const durum = ornekProje();
   const html = ciz(durum, projeyiHesapla(durum));
 
-  // Ayırıcı sayfaları + "Ek hesap özetleri" + EK-10 performans belgesi.
-  const sayfaSayisi = durum.ayiricilar.length + 2;
+  // Sayfa sayısı sabitlenmez: her hesap kendi sayfasına alındıkça değişiyor.
+  // Sınanan şey asıl kural — HER rapor sayfasında künye bulunur.
+  const sayfaSayisi = (html.match(/<div class="rapor[ "]/g) || []).length;
   const say = (metin) => html.split(metin).length - 1;
 
+  assert.ok(sayfaSayisi >= durum.ayiricilar.length + 2, `sayfa sayısı: ${sayfaSayisi}`);
   assert.equal(say('Program lisans sahibi'), sayfaSayisi);
   assert.equal(say('Program geliştirici'), sayfaSayisi);
   assert.equal(say(LISANS.gelistirici), sayfaSayisi);

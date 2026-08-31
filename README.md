@@ -274,6 +274,8 @@ ayırıcının bulunduğu yüz seçilir: **ön / arka / sol / sağ duvar** ya da
   SVG, dış bağımlılık yok) otomatik çizilir: ayırıcı yüzey vurgulu, iki oda kendi boyutlarıyla ayrı
   ayrı çizilir. Ayırıcı sekmesindeki "Canlı 3B model" kutusu fare/dokunmatikle **sürüklenerek
   döndürülebilir**; aynı şema (o anki açıyla) yazdırılabilir rapora da statik olarak eklenir.
+- Şemadaki her kutunun üç kenarına **ölçüler** yazılır (ör. `L 6,1 m`, `W 3,0 m`, `H 2,6 m`);
+  etiketler izleyiciye dönük kenarların ortasına konur ve kutunun dışına itilir.
 - Kaynak mekânda **ses kaynağını temsil eden bir simge** (hoparlör + yayılan dalgalar) yer alır.
 - Her iki mekâna **ad** girilebilir. Bu adlar şemada ve raporda kullanılır; boş bırakılırsa mekân
   kullanım adı (ör. "Yatak odası") yedek olarak devreye girer. Ayırıcı elemanın kendi adı (ör. "ID1")
@@ -420,6 +422,18 @@ sınıflandırılır; darbe (L′nT,w) kayıtları bu tabloya dahil değildir (y
 kapsanır). Dosya, dış bağımlılık kullanmadan tarayıcıda üretilir (`js/arayuz/xlsx-yazici.js` — sıkıştırmasız
 bir ZIP/OOXML yazıcı) ve doğrudan indirilir.
 
+## Liste düzeni
+
+Uzun projelerde hesap listesi hızla büyür. İki davranış bunu yönetilebilir tutar:
+
+- **Kart katlama.** Her ayırıcı/cephe/döşeme kartı "Küçült" ile yalnızca başlığı görünecek biçimde
+  katlanabilir; başlıkta sonuç değeri ve uygunluk rozeti kalır, böylece katlı kart yine tanınır.
+  Liste başlığındaki **"Tümünü küçült / Tümünü aç"** ile hepsi birden katlanır — örnek projede
+  ayırıcı sekmesinin yüksekliği 5405 px'ten 900 px'e iner ve sayfa başındaki "ekle" düğmesine
+  ulaşmak için listeyi kaydırmak gerekmez. Durum saklanır; kayıt **indeksi değil kimliği**
+  kullanıldığı için liste sıralanınca katlama yanlış karta kaymaz.
+- **Kopyalar listenin sonuna eklenir**, kaynağın hemen ardına değil; sıralama kullanıcıda kalır.
+
 ## Kullanım
 
 Kurulum gerekmez — [canlı sürümü](https://aligokten.github.io/SAGG-Akustik_Rapor/) doğrudan
@@ -545,6 +559,19 @@ npm run paketle           # dist/ içine kurulum .exe'si üretir, yayınlamaz
 > "Bilinmeyen yayımcı" uyarısı gösterebilir; **Daha fazla bilgi → Yine de çalıştır** ile geçilir.
 > Uyarıyı tümüyle kaldırmak için ücretli bir kod imzalama sertifikası gerekir; sertifika alındığında
 > `electron-builder.mjs` içine `win.certificateFile`/`certificatePassword` eklenmesi yeterlidir.
+
+### Rapor sayfa düzeni
+
+Her hesap **kendi sayfasında** başlar (`break-before: page`): her ayırıcı eleman, her döşeme
+(darbe sesi) ve her cephe için ayrı bir sayfa üretilir; sayfa kendi mahal şemasını, geometri
+dökümünü, bileşen tablolarını ve hesap adımlarını taşır. Sonda toplu özet tabloları ve EK-10
+performans belgesi yer alır.
+
+Cephe hesapları artık ayırıcı elemanla **aynı ayrıntıda** raporlanır: sonuç şeridi, mahal
+geometrisi ve 3B şema, cephe bileşenlerinin alan/R<sub>w</sub>/enerji payı dökümü, küçük elemanlar,
+iç yan yollar (Df) ve adım adım hesap tablosu — bileşik R′<sub>w</sub>'den D<sub>nT,A,tr</sub>'ye
+kadar her ara değer görünür. Döşeme hesapları da benzer biçimde kendi sayfasında,
+L<sub>n,w,eq</sub> → ΔL<sub>w</sub> → K → L′<sub>nT,w</sub> zinciriyle dökülür.
 
 ### Raporu PDF'e aktarma
 
