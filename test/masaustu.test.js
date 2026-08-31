@@ -102,8 +102,10 @@ test('Yayın hedefi bu deponun GitHub Releases akışıdır', () => {
   assert.equal(yapi.publish.provider, 'github');
   assert.equal(yapi.publish.owner, 'aligokten');
   assert.equal(yapi.publish.repo, 'SAGG-Akustik_Rapor');
-  // Taslak (draft) sürümleri electron-updater göremez; tam sürüm olmalı.
-  assert.equal(yapi.publish.releaseType, 'release');
+  // Önce taslak: GitHub yayımlanmış sürüm için var olan bir etiket şart
+  // koşar. Taslağı, tüm dosyalar yüklendikten sonra iş akışı yayımlar.
+  // Bu değer 'release' yapılırsa yayın 422 ile düşer (bkz. electron-builder.mjs).
+  assert.equal(yapi.publish.releaseType, 'draft');
 });
 
 test('Windows hedefi NSIS kurulum sihirbazıdır ve simge dosyası vardır', () => {

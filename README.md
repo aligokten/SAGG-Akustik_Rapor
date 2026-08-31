@@ -457,7 +457,14 @@ Geliştirme kopyasında (paketlenmemiş) güncelleme hiç aranmaz.
 
 Sürüm karşılaştırmasını, imza/bütünlük denetimini ve fark (differential) indirmeyi `electron-updater`
 yapar; beslemesi `electron-builder`'ın kurulum .exe'sinin yanına koyduğu `latest.yml` dosyasıdır.
-Taslak (draft) sürümler bu akışta görünmez — bu yüzden yayın türü `release` olarak sabitlenmiştir.
+
+Yayın **iki adımlıdır ve bu bilinçlidir**: electron-builder önce bir *taslak* sürüm oluşturup üç
+dosyayı da (`.exe`, `.blockmap`, `latest.yml`) oraya yükler; iş akışı taslağı ancak yükleme
+bittikten sonra yayımlar. Nedeni GitHub'ın kuralıdır — *"Published releases must have a valid tag"*:
+yayımlanmış bir sürüm var olmayan bir etikete işaret edemez, bu yüzden doğrudan yayımlanmış sürüm
+oluşturma denemesi 422 ile düşer ve yükleme yarıda kalır. Taslak ise var olmayan bir etikete işaret
+edebilir; yayımlandığı anda etiketi GitHub oluşturur. Yan faydası: `electron-updater` yalnızca
+yayımlanmış sürümleri gördüğü için **yarım kalmış bir yayın kullanıcılara hiç görünmez**.
 
 #### Yeni sürüm yayınlama
 

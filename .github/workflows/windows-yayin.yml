@@ -2,17 +2,25 @@
 #
 # Neden bir Windows koşucusu? NSIS kurulum sihirbazı ve imzalanabilir bir .exe
 # ancak Windows üzerinde güvenilir biçimde üretilir. GitHub'ın ücretsiz
-# `windows-latest` koşucusu bunu her push'ta yapar.
+# `windows-latest` koşucusu bunu her sürümde yapar.
 #
 # Yayın ölçütü: `package.json` içindeki SÜRÜM NUMARASI. Sürüm artırılmadan
-# yapılan push'lar yalnızca test edilir, yeni sürüm yayınlanmaz. Sürüm
-# artırıldığında iş akışı kendiliğinden:
-#   1. `v<sürüm>` etiketini bu commit'e atar,
-#   2. kurulum .exe'sini derler,
-#   3. .exe ile birlikte otomatik güncelleme beslemesi olan `latest.yml`
-#      dosyasını Releases'e yükler.
-# Uygulama içindeki electron-updater bu `latest.yml` dosyasını okuyarak
-# kullanıcıyı güncellemeye yönlendirir.
+# yapılan push'lar yalnızca test edilir, yeni sürüm yayınlanmaz.
+#
+# ─────────────────────────────────────────────────────────────────────────
+#  YAYIN AKIŞI: ÖNCE TASLAK, SONRA YAYIMLA
+# ─────────────────────────────────────────────────────────────────────────
+#  electron-builder önce bir TASLAK (draft) sürüm oluşturur, üç dosyayı da
+#  oraya yükler, ardından iş akışı taslağı yayımlar. Bunun nedeni GitHub'ın
+#  şu kuralıdır: "Published releases must have a valid tag" — yayımlanmış bir
+#  sürüm var olmayan bir etikete işaret edemez. `releaseType: release` ile
+#  doğrudan yayımlanmış sürüm oluşturmaya çalışmak bu yüzden 422 ile düşüyor
+#  ve yükleme yarıda kalıyordu. Taslak sürüm ise henüz var olmayan bir etikete
+#  işaret edebilir; taslak yayımlandığı anda GitHub etiketi kendisi oluşturur.
+#
+#  Etiketi elle oluşturmak da çözüm değildi: o zaman electron-builder'ın iki
+#  yükleyicisi aynı anda "sürüm yok" görüp yarışa giriyor, kaybeden yükleme
+#  sessizce düşüyordu.
 name: Windows kurulum dosyası yayını
 
 on:
@@ -48,14 +56,17 @@ jobs:
         run: |
           SURUM=$(node -p "require('./package.json').version")
           echo "surum=$SURUM" >> "$GITHUB_OUTPUT"
+          # Yalnızca YAYIMLANMIŞ bir sürüm "bu sürüm çıkmış" sayılır. Önceki
+          # bir koşudan kalan taslak, yayını engellememelidir.
+          TASLAK_MI=$(gh release view "v$SURUM" --repo "$GITHUB_REPOSITORY" \
+            --json isDraft --jq .isDraft 2>/dev/null || echo "yok")
           if [ "$ZORLA" = "true" ]; then
-            echo "Zorlama istendi → yayınlanacak."
-            echo "yayinla=true" >> "$GITHUB_OUTPUT"
-          elif gh release view "v$SURUM" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "v$SURUM zaten yayınlanmış → yalnızca test edilecek."
+            echo "Zorlama istendi → yayınlanacak."; echo "yayinla=true" >> "$GITHUB_OUTPUT"
+          elif [ "$TASLAK_MI" = "false" ]; then
+            echo "v$SURUM zaten yayımlanmış → yalnızca test edilecek."
             echo "yayinla=false" >> "$GITHUB_OUTPUT"
           else
-            echo "v$SURUM henüz yayınlanmamış → yayınlanacak."
+            echo "v$SURUM yayımlanmamış (durum: $TASLAK_MI) → yayınlanacak."
             echo "yayinla=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -73,6 +84,8 @@ jobs:
     needs: [hazirlik, testler]
     if: needs.hazirlik.outputs.yayinla == 'true'
     runs-on: windows-latest
+    env:
+      SURUM: ${{ needs.hazirlik.outputs.surum }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -87,33 +100,43 @@ jobs:
       # dizinini de tarar ve Windows'ta `.JS` varsayılan olarak PATHEXT
       # içindedir. Yapılandırma dosyası `electron-builder.js` adını taşırken
       # kabuk komut yerine bu dosyayı çalıştırıyor, araç hiç koşmuyordu:
-      # çıktı yok, hata yok, exit 0 — yani iş sessizce boş geçiyordu. Dosya
-      # artık `.mjs`, çağrı da doğrudan node_modules/.bin üzerinden yapılıyor.
-      - name: Kurulum dosyasını derle ve Releases'e yükle
+      # çıktı yok, hata yok, exit 0 — iş sessizce boş geçiyordu.
+      - name: Kurulum dosyasını derle ve taslak sürüme yükle
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run yayinla
 
-      # Dosyaların diskte üretilmiş olması YETMEZ: ilk denemede .exe ve
-      # latest.yml diskte vardı ama Releases'e yüklenmemişti, iş yine de yeşil
-      # geçmişti. Bu yüzden asıl denetim GitHub'daki sürüm kaydına bakar.
-      # latest.yml eksikse otomatik güncelleme hiç çalışmaz — o hâlde iş
-      # kırmızı düşmelidir.
+      # Taslağı yayımla. Etiket (v<sürüm>) tam bu anda, GitHub tarafından
+      # oluşturulur ve derlemenin yapıldığı commit'e bağlanır.
+      - name: Taslak sürümü yayımla
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit "v$SURUM" --repo "$GITHUB_REPOSITORY" \
+            --draft=false --latest \
+            --title "SAGG Akustik Hesap Aracı $SURUM"
+
+      # Dosyaların diskte üretilmiş olması YETMEZ: daha önce .exe ve latest.yml
+      # diskte vardı ama Releases'e ulaşmamıştı, iş yine de yeşil geçmişti.
+      # Bu yüzden asıl denetim GitHub'daki YAYIMLANMIŞ sürüm kaydına bakar.
+      # latest.yml eksikse otomatik güncelleme hiç çalışmaz.
       - name: Yayının Releases'e gerçekten ulaştığını doğrula
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SURUM: ${{ needs.hazirlik.outputs.surum }}
         run: |
           echo "dist/ içeriği:"; ls -la dist || true
-          VARLIKLAR=$(gh release view "v$SURUM" --repo "$GITHUB_REPOSITORY" \
-            --json assets --jq '.assets[].name')
+          DURUM=$(gh release view "v$SURUM" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)
+          test "$DURUM" = "false" || { echo "HATA: sürüm hâlâ taslak."; exit 1; }
+          VARLIKLAR=$(gh release view "v$SURUM" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
           echo "Sürümdeki dosyalar:"; echo "$VARLIKLAR"
           echo "$VARLIKLAR" | grep -qx "SAGG-Akustik-Hesap-Kurulum-$SURUM.exe" \
             || { echo "HATA: kurulum .exe'si Releases'e yüklenmemiş."; exit 1; }
           echo "$VARLIKLAR" | grep -qx "latest.yml" \
             || { echo "HATA: latest.yml yüklenmemiş — otomatik güncelleme çalışmaz."; exit 1; }
+          echo "Yayın eksiksiz."
 
       - name: Kurulum dosyasını iş akışı çıktısı olarak da sakla
         uses: actions/upload-artifact@v4

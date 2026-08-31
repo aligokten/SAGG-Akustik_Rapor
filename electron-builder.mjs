@@ -45,7 +45,16 @@ export default {
     provider: 'github',
     owner: 'aligokten',
     repo: 'SAGG-Akustik_Rapor',
-    releaseType: 'release',   // taslak (draft) sürümleri electron-updater göremez
+    // ÖNCE TASLAK. GitHub, yayımlanmış bir sürümün var olan bir etikete
+    // işaret etmesini şart koşar ("Published releases must have a valid tag");
+    // `release` seçildiğinde etiket henüz yokken sürüm oluşturma 422 ile
+    // düşüyor ve yükleme yarıda kalıyordu. Taslak sürüm var olmayan bir
+    // etikete işaret edebilir. Taslağı, tüm dosyalar yüklendikten sonra
+    // .github/workflows/windows-yayin.yml yayımlar — etiketi de o an GitHub
+    // oluşturur. electron-updater yalnızca yayımlanmış sürümü gördüğü için
+    // besleme ancak her şey tamamlandığında ortaya çıkar; yarım bir sürüm
+    // kullanıcılara hiç görünmez.
+    releaseType: 'draft',
   },
 
   win: {
