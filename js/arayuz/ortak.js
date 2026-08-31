@@ -195,3 +195,73 @@ export function sayiOku(deger, varsayilan = 0) {
   const n = parseFloat(s);
   return Number.isFinite(n) ? n : varsayilan;
 }
+
+/* ── Hesap kartlarını katlama (küçültme) ─────────────────────────────── */
+
+const KATLI_DEPO = 'sagg-katli-kartlar';
+
+/**
+ * Katlanmış kart kimlikleri.
+ *
+ * Kayıt İNDEKSİ değil kimliği kullanılır: liste sıralanınca, araya kayıt
+ * eklenince veya bir kayıt silinince katlama yanlış karta kaymasın.
+ */
+let katliKartlar = null;
+
+function katliyiYukle() {
+  if (katliKartlar) return katliKartlar;
+  katliKartlar = new Set();
+  try {
+    const ham = localStorage.getItem(KATLI_DEPO);
+    if (ham) for (const id of JSON.parse(ham)) katliKartlar.add(id);
+  } catch { /* yoksay */ }
+  return katliKartlar;
+}
+
+function katliyiKaydet() {
+  try { localStorage.setItem(KATLI_DEPO, JSON.stringify([...katliyiYukle()])); } catch { /* yoksay */ }
+}
+
+/** Kart katlanmış mı? */
+export function katliMi(id) {
+  return katliyiYukle().has(id);
+}
+
+/** Bir kartın katlanma durumunu değiştirir. */
+export function katlamayiDegistir(id) {
+  const k = katliyiYukle();
+  if (k.has(id)) k.delete(id); else k.add(id);
+  katliyiKaydet();
+}
+
+/** Verilen kimliklerin tamamını katlar ya da tamamını açar. */
+export function tumunuKatla(idler, katla) {
+  const k = katliyiYukle();
+  for (const id of idler) { if (katla) k.add(id); else k.delete(id); }
+  katliyiKaydet();
+}
+
+/**
+ * Kart başlığına konan katlama düğmesi.
+ * @param {string} id Kaydın kimliği
+ */
+export function katlamaDugmesi(id) {
+  const katli = katliMi(id);
+  return `<button class="dugme acik kucuk kart-katla" data-eylem="kart-katla" data-kart-id="${kacis(id)}"
+    aria-expanded="${!katli}" title="${katli ? 'Kartı aç' : 'Kartı küçült — yalnızca başlık görünür'}">
+    ${katli ? '▸ Aç' : '▾ Küçült'}</button>`;
+}
+
+/**
+ * Liste başlığına konan "tümünü küçült / tümünü aç" düğmesi.
+ *
+ * @param {string[]} idler    Listedeki tüm kayıt kimlikleri
+ * @param {string}   listeAdi Durumdaki dizi adı (ör. 'cepheler')
+ */
+export function tumunuKatlaDugmesi(idler, listeAdi) {
+  if (!idler.length) return '';
+  const acikVar = idler.some((id) => !katliMi(id));
+  return `<button class="dugme acik kucuk" data-eylem="tumunu-katla"
+    data-liste="${kacis(listeAdi)}" data-katla="${acikVar}">
+    ${acikVar ? 'Tümünü küçült' : 'Tümünü aç'}</button>`;
+}

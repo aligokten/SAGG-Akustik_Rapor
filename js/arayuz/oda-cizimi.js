@@ -68,9 +68,53 @@ function ortakBicem() {
     .oda-svg .ayirici { fill: var(--vurgu, #0f766e); fill-opacity: .55; stroke: var(--vurgu-2, #0b5d57); stroke-width: 1.75; }
     .oda-svg .oda-metin { font: 700 12.5px sans-serif; fill: var(--metin, #141d2b); }
     .oda-svg .aciklama { font: 600 10.5px sans-serif; fill: var(--vurgu-2, #0b5d57); }
+    /* Ölçü etiketleri kenar çizgilerinin üstüne düştüğü için ince bir dış
+       hat (paint-order: stroke) ile okunur kalır. */
+    .oda-svg .olcu { font: 700 10px sans-serif; fill: var(--metin-2, #26242a);
+      paint-order: stroke; stroke: var(--yuzey, #fff); stroke-width: 3px;
+      stroke-linejoin: round; }
+    .oda-svg .olcu-cizgi { stroke: var(--soluk, #6b7c95); stroke-width: .9; opacity: .5;
+      stroke-dasharray: 3 2; }
     .oda-svg .ses-kaynagi .sk-govde { fill: #e0483c; stroke: #a5271d; stroke-width: 1; stroke-linejoin: round; }
     .oda-svg .ses-kaynagi .sk-yay { fill: none; stroke: #e0483c; stroke-width: 1.6; stroke-linecap: round; opacity: .9; }
     .oda-svg .ses-kaynagi .sk-hale { fill: #e0483c; fill-opacity: .12; }`;
+}
+
+/** Şemada gösterilen ölçüyü Türkçe biçimde yazar (bir ondalık). */
+function olcuMetni(deger) {
+  return `${Number(deger).toFixed(1).replace('.', ',')} m`;
+}
+
+/**
+ * Bir kutunun üç kenarına L / W / H ölçülerini yazar.
+ *
+ * Etiketler, izleyiciye dönük ön-sağ-alt köşede (AaZ) buluşan üç kenarın
+ * orta noktasına konur ve kutunun merkezinden dışa doğru itilir; böylece
+ * kenar çizgilerinin ve öteki odanın üzerine binmezler.
+ *
+ * @param {Object} K Kutunun köşeleri (projeksiyon uygulanmış, ölçeksiz)
+ * @param {Object} oda { L, W, H }
+ * @param {Function} donustur Ölçekleyip SVG koordinatına çeviren işlev
+ * @param {Array} merkez Kutunun merkezi (ölçeksiz) — itme yönü için
+ * @returns {string} SVG parçası
+ */
+function olcuEtiketleri(K, oda, donustur, merkez) {
+  const [mx, my] = donustur(merkez);
+  const parcalar = [
+    { a: K.aaZ, b: K.AaZ, metin: `L ${olcuMetni(oda.L)}` },   // derinlik
+    { a: K.Aaa, b: K.AaZ, metin: `W ${olcuMetni(oda.W)}` },   // genişlik
+    { a: K.AaZ, b: K.AAZ, metin: `H ${olcuMetni(oda.H)}` },   // yükseklik
+  ];
+  return parcalar.map(({ a, b, metin }) => {
+    const [ax, ay] = donustur(a), [bx, by] = donustur(b);
+    const ox = (ax + bx) / 2, oy = (ay + by) / 2;
+    // Merkezden dışa doğru sabit uzunlukta it.
+    const dx = ox - mx, dy = oy - my;
+    const boy = Math.hypot(dx, dy) || 1;
+    const ex = ox + (dx / boy) * 17, ey = oy + (dy / boy) * 17;
+    return `<line x1="${ox.toFixed(1)}" y1="${oy.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" class="olcu-cizgi"/>`
+      + `<text x="${ex.toFixed(1)}" y="${(ey + 3.5).toFixed(1)}" class="olcu" text-anchor="middle">${kacis(metin)}</text>`;
+  }).join('\n  ');
 }
 
 /** Bir kutunun (L,W,H, orijin ofseti) 8 köşesini hesaplar. */
@@ -206,7 +250,9 @@ export function odaSVG(geometriHam, opts = {}) {
   const minX = Math.min(...xs), maxX = Math.max(...xs);
   const minY = Math.min(...ys), maxY = Math.max(...ys);
 
-  const kenarBosluk = 56;
+  // Ölçü etiketleri kutunun dışına taştığı için kenar payı geniş tutulur;
+  // aksi hâlde "H 2,6 m" gibi etiketler viewBox dışına çıkıp kırpılır.
+  const kenarBosluk = 74;
   const olcekX = (genislik - 2 * kenarBosluk) / Math.max(0.01, maxX - minX);
   const olcekY = (yukseklik - 2 * kenarBosluk) / Math.max(0.01, maxY - minY);
   const olcek = Math.min(olcekX, olcekY);
@@ -238,6 +284,9 @@ export function odaSVG(geometriHam, opts = {}) {
   ${ayiracKoseleri.length
     ? `<polygon class="ayirici" points="${d(ayiracKoseleri)}"><title>Ayırıcı eleman</title></polygon>`
     : ''}
+
+  ${olcuEtiketleri(K1, oda1, donustur, oda1Merkez)}
+  ${olcuEtiketleri(K2, oda2, donustur, oda2Merkez)}
 
   ${sesKaynagiSimgesi(skx, sky + 20, 1, `Ses kaynağı — ${oda1Adi}`)}
 
@@ -376,7 +425,8 @@ export function cepheSVG(cephe, opts = {}) {
   const minX = Math.min(...xs), maxX = Math.max(...xs);
   const minY = Math.min(...ys), maxY = Math.max(...ys);
 
-  const kenarBosluk = 52;
+  // Ölçü etiketleri kutunun dışına taşar; kenar payı ona göre geniş tutulur.
+  const kenarBosluk = 72;
   const olcek = Math.min(
     (genislik - 2 * kenarBosluk) / Math.max(0.01, maxX - minX),
     (yukseklik - 2 * kenarBosluk) / Math.max(0.01, maxY - minY),
@@ -392,6 +442,7 @@ export function cepheSVG(cephe, opts = {}) {
 
   const [mx, my] = donustur(proj(L / 2, H * 0.78, W / 2));
   const [skx, sky] = donustur(kaynakNokta);
+  const olculer = olcuEtiketleri(K, { L, W, H }, donustur, proj(L / 2, H / 2, W / 2));
 
   return `
 <svg viewBox="0 0 ${genislik} ${yukseklik}" xmlns="http://www.w3.org/2000/svg" class="oda-svg" role="img"
@@ -417,6 +468,7 @@ export function cepheSVG(cephe, opts = {}) {
       return `<line class="kaynak-yonu" x1="${skx.toFixed(1)}" y1="${sky.toFixed(1)}" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}"/>`; })()}
   ${sesKaynagiSimgesi(skx, sky, 1.1, 'Çevresel gürültü kaynağı (Lgag) — dış ortam')}
 
+  ${olculer}
   <text x="${mx.toFixed(1)}" y="${(my - 6).toFixed(1)}" class="oda-metin" text-anchor="middle">${kacis(mekanAdi)}</text>
   <text x="14" y="${yukseklik - 12}" class="aciklama">■ Dış duvar${kose ? ' (D1 + D2)' : ' (D1)'}</text>
   <text x="150" y="${yukseklik - 12}" class="aciklama" style="fill:#1d6c95">■ Pencere / kapı</text>

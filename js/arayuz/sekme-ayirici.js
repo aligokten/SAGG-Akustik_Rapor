@@ -3,7 +3,7 @@
  * yalıtımı: TS EN 12354-1 yan yollu hesap ve EK-3 Tablo 3.2 değerlendirmesi.
  */
 
-import { kacis, sayi, secenekler, uygunlukRozeti, sinifRozeti } from './ortak.js';
+import { kacis, sayi, secenekler, uygunlukRozeti, sinifRozeti, katliMi, katlamaDugmesi, tumunuKatlaDugmesi } from './ortak.js';
 import {
   EK2_TABLO_2_1, GURULTULULUK_DERECELERI, HASSASIYET_DERECELERI,
   EK3_TABLO_3_4, komsulukSatirlari, BINA_TURLERI,
@@ -23,6 +23,7 @@ export function ciz(durum, sonuclar) {
   <section class="kart">
     <div class="kart-baslik">
       <h3>Tanımlı ayırıcı elemanlar <span class="rozet notr yalin">${kayitlar.length}</span></h3>
+      ${tumunuKatlaDugmesi(kayitlar.map((r) => r.id), 'ayiricilar')}
       <button class="dugme" data-eylem="ekle-ayirici">+ Ayırıcı eleman ekle</button>
     </div>
     <div class="bilgi-kutu">
@@ -42,12 +43,15 @@ function kart(a, i, h, binaTuru) {
   const y = `ayiricilar.${i}`;
   const d = h.degerlendirme;
   return `
-  <section class="kart">
+  <section class="kart${katliMi(a.id) ? ' katli' : ''}">
     <div class="kart-baslik">
       <div style="flex:1">
         <input data-yol="${y}.ad" value="${kacis(a.ad)}" class="baslik-girdi">
       </div>
       <div class="satir-eylem">
+        ${katliMi(a.id) ? `<span class="kart-ozet">
+          <b>${h.sonuc ? sayi(h.sonuc.DnTw) : '—'}</b> dB ${uygunlukRozeti(h.degerlendirme)}</span>` : ''}
+        ${katlamaDugmesi(a.id)}
         <button class="dugme acik kucuk" data-eylem="kopyala-ayirici" data-idx="${i}">Kopyala</button>
         <button class="dugme acik kucuk" data-eylem="sil-ayirici" data-idx="${i}">Sil</button>
       </div>

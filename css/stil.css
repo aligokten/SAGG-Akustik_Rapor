@@ -454,6 +454,18 @@ details > *:last-child{margin-bottom:12px}
 /* Hareketi azaltılmış sistemlerde animasyon yok. */
 @media (prefers-reduced-motion:reduce){ .yan-cubuk{transition:none} }
 
+/* ── Katlanmış hesap kartı ──────────────────────────────────────── */
+/* Yalnızca başlık satırı görünür; kart yüksekliği düşünce sayfa başındaki
+   "ekle" düğmesine ulaşmak için uzun listeyi kaydırmak gerekmez. */
+.kart.katli > *:not(.kart-baslik){ display:none !important }
+.kart.katli{ padding-bottom:0 }
+.kart.katli .kart-baslik{ margin-bottom:0 }
+.kart-katla{ white-space:nowrap }
+/* Katlıyken başlıkta sonucu gösteren küçük özet. */
+.kart-ozet{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--soluk) }
+.kart-ozet b{ color:var(--metin); font-weight:700 }
+@media print{ .kart.katli > *{ display:revert !important } }
+
 /* ── Duyarlı düzen ──────────────────────────────────────────────── */
 @media (max-width:1000px){
   .yan-cubuk{

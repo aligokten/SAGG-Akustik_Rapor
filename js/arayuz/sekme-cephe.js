@@ -3,7 +3,7 @@
  * (TS EN 12354-3) ve EK-3 Tablo 3.1 değerlendirmesi.
  */
 
-import { kacis, sayi, secenekler, uygunlukRozeti, sinifRozeti } from './ortak.js';
+import { kacis, sayi, secenekler, uygunlukRozeti, sinifRozeti, katliMi, katlamaDugmesi, tumunuKatlaDugmesi } from './ortak.js';
 import { DUVARLAR, DOSEMELER, DOGRAMALAR, SIVALAR, KUCUK_ELEMANLAR } from '../veri/malzemeler.js';
 import { BICIM_DUZELTMELERI, gerekliCepheYalitimi, CEPHE_YAN_ROLLERI } from '../cekirdek/en12354-3.js';
 import { HASSASIYET_DERECELERI } from '../veri/yonetmelik.js';
@@ -19,6 +19,7 @@ export function ciz(durum, sonuclar) {
   <section class="kart">
     <div class="kart-baslik">
       <h3>Tanımlı cepheler <span class="rozet notr yalin">${kayitlar.length}</span></h3>
+      ${tumunuKatlaDugmesi(kayitlar.map((r) => r.id), 'cepheler')}
       <button class="dugme" data-eylem="ekle-cephe">+ Cephe ekle</button>
     </div>
     <div class="bilgi-kutu">
@@ -135,10 +136,13 @@ function kart(c, i, h) {
   const gerekliFizik = gerekliCepheYalitimi(c.disGurultu, 30);
 
   return `
-  <section class="kart">
+  <section class="kart${katliMi(c.id) ? ' katli' : ''}">
     <div class="kart-baslik">
       <div style="flex:1"><input data-yol="${y}.ad" value="${kacis(c.ad)}" class="baslik-girdi"></div>
       <div class="satir-eylem">
+        ${katliMi(c.id) ? `<span class="kart-ozet">
+          <b>${s ? sayi(s.D2mnTw) : '—'}</b> dB ${uygunlukRozeti(d)}</span>` : ''}
+        ${katlamaDugmesi(c.id)}
         <button class="dugme acik kucuk" data-eylem="kopyala-cephe" data-idx="${i}">Kopyala</button>
         <button class="dugme acik kucuk" data-eylem="sil-cephe" data-idx="${i}">Sil</button>
       </div>

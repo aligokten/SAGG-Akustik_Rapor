@@ -3,7 +3,7 @@
  * olay bağlama ve dosya işlemleri.
  */
 
-import { $, $$, sayiOku, yeniId, aramaMetni } from './arayuz/ortak.js';
+import { $, $$, sayiOku, yeniId, aramaMetni, katlamayiDegistir, tumunuKatla } from './arayuz/ortak.js';
 import { simge } from './arayuz/simgeler.js';
 import * as YK from './cekirdek/katmanli-eleman.js';
 import { DUVARLAR, DOSEMELER, SIVALAR, bul as malzemeBul } from './veri/malzemeler.js';
@@ -190,10 +190,13 @@ function yonetmeligiUygula(paket) {
 const EYLEMLER = {
   'ekle-ayirici': () => durum.ayiricilar.push(D.yeniAyirici()),
   'sil-ayirici': (i) => durum.ayiricilar.splice(i, 1),
+  // Kopyalar listenin SONUNA eklenir, kaynağın hemen ardına değil: sıralamayı
+  // kullanıcı belirlesin. Araya girmek, uzun listelerde kartların yerini
+  // kaydırıp kullanıcının o an baktığı yeri kaybettiriyordu.
   'kopyala-ayirici': (i) => {
     const k = yapiKopyala(durum.ayiricilar[i]);
     k.ad += ' (kopya)';
-    durum.ayiricilar.splice(i + 1, 0, k);
+    durum.ayiricilar.push(k);
   },
   'ekle-yan': (i) => durum.ayiricilar[i].yanElemanlar.push({
     id: yeniId('y'), ad: 'Yeni yan eleman', elemanId: 'ddt-190', sivaId: 'alci-15',
@@ -208,14 +211,14 @@ const EYLEMLER = {
   'sil-darbe': (i) => durum.darbeler.splice(i, 1),
   'kopyala-darbe': (i) => {
     const k = yapiKopyala(durum.darbeler[i]); k.ad += ' (kopya)';
-    durum.darbeler.splice(i + 1, 0, k);
+    durum.darbeler.push(k);
   },
 
   'ekle-cephe': () => durum.cepheler.push(D.yeniCephe()),
   'sil-cephe': (i) => durum.cepheler.splice(i, 1),
   'kopyala-cephe': (i) => {
     const k = yapiKopyala(durum.cepheler[i]); k.ad += ' (kopya)';
-    durum.cepheler.splice(i + 1, 0, k);
+    durum.cepheler.push(k);
   },
   'ekle-cephe-eleman': (i) => durum.cepheler[i].elemanlar.push({
     id: yeniId('e'), ad: 'Yeni eleman', tur: 'duvar', duvarNo: 1, elemanId: 'tugla-d190',
@@ -232,7 +235,7 @@ const EYLEMLER = {
   'sil-hacim': (i) => durum.hacimler.splice(i, 1),
   'kopyala-hacim': (i) => {
     const k = yapiKopyala(durum.hacimler[i]); k.ad += ' (kopya)';
-    durum.hacimler.splice(i + 1, 0, k);
+    durum.hacimler.push(k);
   },
   'ekle-yuzey': (i) => durum.hacimler[i].yuzeyler.push({ id: yeniId('s'), sogurucuId: 'siva', alan: 10 }),
   'sil-yuzey': (i, j) => durum.hacimler[i].yuzeyler.splice(j, 1),
@@ -821,6 +824,18 @@ function olaylariBagla() {
       if (eylem === 'panel-filtre') { sekmePanel.suzgeciAyarla(dugme.dataset.deger); ciz(); return; }
       if (eylem.startsWith('git-')) { sekmeyeGit(eylem.slice(4)); return; }
       if (eylem === 'ornek-yukle') { durum = D.ornekProje(); ciz(); return; }
+      if (eylem === 'kart-katla') {
+        katlamayiDegistir(dugme.dataset.kartId);
+        ciz();
+        return;
+      }
+      if (eylem === 'tumunu-katla') {
+        // data-katla="true" → hepsini küçült, "false" → hepsini aç.
+        const liste = durum[dugme.dataset.liste] || [];
+        tumunuKatla(liste.map((k) => k.id), dugme.dataset.katla === 'true');
+        ciz();
+        return;
+      }
       if (eylem === 'pdfe-aktar') { raporuPdfeAktar(); return; }
       if (eylem === 'excel-indir') {
         sekmeRapor.excelRaporunuIndir(durum.proje, projeyiHesapla(durum));

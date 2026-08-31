@@ -3,7 +3,7 @@
  * EK-3 Tablo 3.3 değerlendirmesi.
  */
 
-import { kacis, sayi, secenekler, uygunlukRozeti, sinifRozeti } from './ortak.js';
+import { kacis, sayi, secenekler, uygunlukRozeti, sinifRozeti, katliMi, katlamaDugmesi, tumunuKatlaDugmesi } from './ortak.js';
 import { DOSEMELER, SAP_KAPLAMALAR } from '../veri/malzemeler.js';
 import {
   GURULTULULUK_DERECELERI, HASSASIYET_DERECELERI,
@@ -19,6 +19,7 @@ export function ciz(durum, sonuclar) {
   <section class="kart">
     <div class="kart-baslik">
       <h3>Tanımlı döşemeler <span class="rozet notr yalin">${kayitlar.length}</span></h3>
+      ${tumunuKatlaDugmesi(kayitlar.map((r) => r.id), 'darbeler')}
       <button class="dugme" data-eylem="ekle-darbe">+ Döşeme ekle</button>
     </div>
     <div class="bilgi-kutu">
@@ -39,10 +40,13 @@ function kart(k, i, h, binaTuru) {
   const d = h.degerlendirme;
   const s = h.sonuc;
   return `
-  <section class="kart">
+  <section class="kart${katliMi(k.id) ? ' katli' : ''}">
     <div class="kart-baslik">
       <div style="flex:1"><input data-yol="${y}.ad" value="${kacis(k.ad)}" class="baslik-girdi"></div>
       <div class="satir-eylem">
+        ${katliMi(k.id) ? `<span class="kart-ozet">
+          <b>${h.sonuc ? sayi(h.sonuc.LnTw) : '—'}</b> dB ${uygunlukRozeti(h.degerlendirme)}</span>` : ''}
+        ${katlamaDugmesi(k.id)}
         <button class="dugme acik kucuk" data-eylem="kopyala-darbe" data-idx="${i}">Kopyala</button>
         <button class="dugme acik kucuk" data-eylem="sil-darbe" data-idx="${i}">Sil</button>
       </div>
