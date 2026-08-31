@@ -471,7 +471,7 @@ npm run paketle           # dist/ içine kurulum .exe'si üretir, yayınlamaz
 > Kurulum dosyası **kod imzalama sertifikasıyla imzalı değildir.** Windows SmartScreen ilk kurulumda
 > "Bilinmeyen yayımcı" uyarısı gösterebilir; **Daha fazla bilgi → Yine de çalıştır** ile geçilir.
 > Uyarıyı tümüyle kaldırmak için ücretli bir kod imzalama sertifikası gerekir; sertifika alındığında
-> `electron-builder.yml` içine `win.certificateFile`/`certificatePassword` eklenmesi yeterlidir.
+> `electron-builder.js` içine `win.certificateFile`/`certificatePassword` eklenmesi yeterlidir.
 
 ### Akış
 
@@ -533,7 +533,7 @@ assets/                        Marka işareti (logo.png) ve favicon türevleri
 .github/workflows/pages.yml    Testleri çalıştırıp GitHub Pages'e yayınlar
 .github/workflows/windows-yayin.yml
                                Windows kurulum .exe'sini derleyip Releases'e yayınlar
-electron-builder.yml           Masaüstü paketleme ve yayın yapılandırması
+electron-builder.js           Masaüstü paketleme ve yayın yapılandırması
 masaustu/
   ana.js                       Electron ana süreci: pencere, menü, sagg:// protokolü
   guncelleyici.js              GitHub Releases üzerinden otomatik güncelleme akışı

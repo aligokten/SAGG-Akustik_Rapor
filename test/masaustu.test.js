@@ -8,9 +8,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { load } from 'js-yaml';
 
 import { guvenliYol, surumNotu, yuzde } from '../masaustu/yardimcilar.js';
+import yapi from '../electron-builder.js';
 
 const KOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -84,7 +84,6 @@ test('İndirme yüzdesi 0–100 aralığına sıkıştırılır', () => {
 /* ── Paketleme yapılandırması ────────────────────────────────────── */
 
 const paket = JSON.parse(fs.readFileSync(path.join(KOK, 'package.json'), 'utf8'));
-const yapi = load(fs.readFileSync(path.join(KOK, 'electron-builder.yml'), 'utf8'));
 
 test('package.json ana giriş noktası gerçekten vardır', () => {
   assert.equal(paket.main, 'masaustu/ana.js');
