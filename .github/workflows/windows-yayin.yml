@@ -109,14 +109,60 @@ jobs:
 
       # Taslağı yayımla. Etiket (v<sürüm>) tam bu anda, GitHub tarafından
       # oluşturulur ve derlemenin yapıldığı commit'e bağlanır.
-      - name: Taslak sürümü yayımla
+      #
+      # DİKKAT: electron-builder aynı etiket için BİRDEN ÇOK taslak
+      # oluşturuyor (her yükleyici kendi taslağını açıyor); dosyalar
+      # bunlardan yalnızca birine gidiyor. Bu yüzden etikete göre körlemesine
+      # yayımlamak yanlış — boş — taslağı yayımlayabilir. Kurulum dosyasını
+      # gerçekten taşıyan taslak seçilip o yayımlanıyor, boş kalanlar
+      # siliniyor.
+      - name: Dosyaları taşıyan taslağı yayımla
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release edit "v$SURUM" --repo "$GITHUB_REPOSITORY" \
-            --draft=false --latest \
-            --title "SAGG Akustik Hesap Aracı $SURUM"
+          EXE="SAGG-Akustik-Hesap-Kurulum-$SURUM.exe"
+          TASLAKLAR=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            --jq ".[] | select(.draft and .tag_name == \"v$SURUM\")
+                  | \"\(.id) \(([.assets[].name] | join(\",\")))\"")
+          echo "v$SURUM için bulunan taslaklar (id ve dosyaları):"
+          echo "$TASLAKLAR"
+
+          DOLU=$(echo "$TASLAKLAR" | grep -F "$EXE" | head -1 | cut -d' ' -f1 || true)
+          if [ -z "$DOLU" ]; then
+            echo "HATA: kurulum dosyasını taşıyan taslak bulunamadı."; exit 1
+          fi
+
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$DOLU" \
+            -F draft=false -F make_latest=true \
+            -f name="SAGG Akustik Hesap Aracı $SURUM" > /dev/null
+          echo "Yayımlandı (release id $DOLU)."
+
+          # Aynı sürümün artık gereksiz kalan taslakları
+          echo "$TASLAKLAR" | awk -v tut="$DOLU" 'NF && $1 != tut {print $1}' | while read -r ID; do
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$ID" && echo "Artık taslak silindi: $ID"
+          done
+
+      # Önceki koşulardan kalmış boş taslakları temizler. Ölçüt dar tutuldu:
+      # yalnızca taslak, hiç dosyası olmayan, sürüm etiketi biçiminde ve
+      # github-actions[bot] tarafından açılmış kayıtlar. Bir kişinin elle
+      # başlattığı taslak bu ölçütlere uymaz.
+      - name: Eski boş taslakları temizle
+        shell: bash
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            --jq '.[] | select(.draft
+                    and (.assets | length) == 0
+                    and (.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))
+                    and .author.login == "github-actions[bot]") | "\(.id) \(.tag_name)"' \
+          | while read -r ID ETIKET; do
+              [ -n "$ID" ] || continue
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$ID" \
+                && echo "Boş taslak silindi: $ETIKET (id $ID)"
+            done
 
       # Dosyaların diskte üretilmiş olması YETMEZ: daha önce .exe ve latest.yml
       # diskte vardı ama Releases'e ulaşmamıştı, iş yine de yeşil geçmişti.

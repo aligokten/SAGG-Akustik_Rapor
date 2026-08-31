@@ -516,9 +516,18 @@ git commit -am "Sürüm 1.2.0" && git push
 Push'tan sonra `.github/workflows/windows-yayin.yml` kendiliğinden:
 
 1. testleri koşar (düşerse yayın yapılmaz),
-2. `v<sürüm>` etiketini o commit'e atar,
-3. `windows-latest` koşucusunda kurulum .exe'sini derler,
-4. .exe ile `latest.yml`'i Releases'e yükler.
+2. `windows-latest` koşucusunda kurulum .exe'sini derler ve bir **taslak**
+   sürüme yükler,
+3. dosyaları gerçekten taşıyan taslağı yayımlar — etiketi bu anda GitHub,
+   derlemenin yapıldığı commit'e bağlayarak oluşturur,
+4. yayının Releases'e ulaştığını (`.exe` + `latest.yml`, taslak değil) doğrular;
+   eksikse iş kırmızı düşer.
+
+> electron-builder aynı etiket için **birden çok taslak** açıyor (her yükleyici
+> kendi taslağını) ve dosyalar bunlardan yalnızca birine gidiyor. Bu yüzden iş
+> akışı, etikete göre körlemesine yayımlamak yerine **kurulum dosyasını taşıyan
+> taslağı** seçip onu yayımlar; boş kalanları siler. Etikete göre seçim, boş bir
+> taslağı yayımlama riski taşıyordu.
 
 Sürüm artırılmadan yapılan push'lar yalnızca test edilir; aynı sürüm iki kez yayınlanmaz. Bir yayını
 yeniden derlemek gerekirse Actions sekmesinden iş akışı **"zorla"** seçeneğiyle elle çalıştırılabilir.
