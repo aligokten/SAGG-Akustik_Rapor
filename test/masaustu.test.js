@@ -9,7 +9,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { guvenliYol, surumNotu, yuzde } from '../masaustu/yardimcilar.js';
+import {
+  guvenliYol, surumNotu, yuzde, menuSablonu, menuEtiketleri, BAGLANTILAR,
+} from '../masaustu/yardimcilar.js';
 import yapi from '../electron-builder.mjs';
 
 const KOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -145,4 +147,43 @@ test('Yayıncı künyesi kurumsal alan adını ve destek adresini taşır', () =
 test('appId ters çevrilmiş alan adıyla uyumludur', () => {
   // saggplus.com → com.saggplus.*  (Windows AppUserModelID ile aynı olmalı)
   assert.ok(yapi.appId.startsWith('com.saggplus.'), yapi.appId);
+});
+
+/* ── Uygulama menüsü ─────────────────────────────────────────────── */
+
+const ETIKETLER = menuEtiketleri(menuSablonu({}, '9.9.9'));
+
+test('Menüde geliştirici araçları yoktur', () => {
+  // Son kullanıcıya yönelik bir programda geliştirici konsolu istenmiyor.
+  assert.ok(!ETIKETLER.includes('role:toggleDevTools'), ETIKETLER.join(' | '));
+  assert.ok(!ETIKETLER.some((e) => /geliştirici araçları/i.test(e)));
+});
+
+test('Menüde sürüm notları girdisi yoktur', () => {
+  assert.ok(!ETIKETLER.some((e) => /sürüm notları/i.test(e)), ETIKETLER.join(' | '));
+});
+
+test('Dosya menüsünde yazdırma değil, PDF olarak kaydetme vardır', () => {
+  assert.ok(ETIKETLER.some((e) => /PDF olarak kaydet/i.test(e)), ETIKETLER.join(' | '));
+  // "Yazdır" seçeneği bilinçli olarak kaldırıldı: masaüstünde PDF doğrudan
+  // yazılıyor, araya yazıcı seçme adımı girmiyor.
+  assert.ok(!ETIKETLER.some((e) => /^yazdır/i.test(e)));
+});
+
+test('Menü, PDF ve güncelleme eylemlerini bağlar', () => {
+  const cagrilan = [];
+  const sablon = menuSablonu({
+    pdf: () => cagrilan.push('pdf'),
+    guncelleme: () => cagrilan.push('guncelleme'),
+  }, '9.9.9');
+  const bul = (ad) => sablon.flatMap((u) => u.submenu || []).find((a) => a.label === ad);
+  bul('Raporu PDF olarak kaydet…').click();
+  bul('Güncellemeleri denetle…').click();
+  assert.deepEqual(cagrilan, ['pdf', 'guncelleme']);
+});
+
+test('Yardım menüsü kurumsal adresleri gösterir', () => {
+  assert.ok(ETIKETLER.includes('SAGG+ — www.saggplus.com'));
+  assert.ok(ETIKETLER.includes('Destek: info@saggplus.com'));
+  assert.equal(BAGLANTILAR.site, 'https://www.saggplus.com');
 });

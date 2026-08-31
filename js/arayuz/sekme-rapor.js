@@ -31,9 +31,9 @@ export function ciz(durum, s) {
 
   return `
   <div class="yazdirma-gizle" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <button class="dugme" data-eylem="yazdir">Raporu yazdır / PDF'e aktar</button>
+    <button class="dugme" data-eylem="pdfe-aktar">Raporu PDF'e aktar</button>
     <button class="dugme acik" data-eylem="excel-indir">Sınır değer tablosunu Excel'e aktar</button>
-    <span class="soluk" style="align-self:center;font-size:12.5px">Tarayıcının yazdırma penceresinden "PDF olarak kaydet" seçilebilir.</span>
+    <span class="soluk" style="align-self:center;font-size:12.5px">Windows uygulamasında PDF doğrudan kaydedilir; tarayıcıda hedef olarak "PDF olarak kaydet" seçilir.</span>
   </div>
 
   ${s.ayiricilar.length === 0

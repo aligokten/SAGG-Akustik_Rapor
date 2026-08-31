@@ -592,7 +592,80 @@ function temayiBaslat() {
   temayiUygula(tema);
 }
 
-/* ── Kenar çubuğu (dar ekran) ───────────────────────────────────────── */
+/* ── Raporu PDF olarak dışa aktarma ─────────────────────────────────── */
+
+/** Proje adından dosya adı türetir (kaydetme penceresine önerilir). */
+function raporDosyaAdi() {
+  const ad = (durum.proje.ad || 'akustik-rapor')
+    .replace(/[^\wğüşıöçĞÜŞİÖÇ -]/g, '').trim() || 'akustik-rapor';
+  const kod = (durum.proje.kod || '').replace(/[^\wğüşıöçĞÜŞİÖÇ-]/g, '').trim();
+  return kod ? `${ad} - ${kod}` : ad;
+}
+
+/**
+ * Raporu PDF olarak kaydeder.
+ *
+ * Masaüstü (Electron) sürümünde bu gerçek bir dışa aktarmadır: yazdırma
+ * penceresi hiç açılmaz, yalnızca dosyanın nereye kaydedileceği sorulur ve
+ * PDF doğrudan yazılır.
+ *
+ * Tarayıcıda ise bir web sayfasının kendi başına PDF dosyası yazması mümkün
+ * değildir; tek yol tarayıcının kendi PDF motorudur ve ona ancak yazdırma
+ * penceresi üzerinden ulaşılır (hedef: "PDF olarak kaydet"). Harici bir PDF
+ * kitaplığı eklemek hem projenin bağımsızlığını bozar hem de tarayıcının
+ * kendi çıktısından daha kötü sonuç verir: sayfa sonları, tablo bölünmeleri
+ * ve yazı tipleri `@media print` kurallarıyla zaten doğru dökülüyor.
+ */
+async function raporuPdfeAktar() {
+  const kopru = window.saggMasaustu;
+  if (kopru?.pdfeAktar) {
+    try {
+      await kopru.pdfeAktar(raporDosyaAdi());
+      // Kaydedilen dosya ana süreçte Dosya Gezgini'nde gösterilir; ayrıca
+      // bir bildirim penceresi açmaya gerek yok.
+      return;
+    } catch {
+      // Köprü beklenmedik biçimde düşerse tarayıcı yoluna geri dönülür.
+    }
+  }
+  window.print();
+}
+
+/* ── Kenar çubuğu ───────────────────────────────────────────────────── */
+
+/** Dar ekranda kenar çubuğu çekmeceye dönüşür; katlama yalnızca geniş ekranda. */
+const DAR_EKRAN = '(max-width:1000px)';
+const YAN_DEPO = 'sagg-yan-cubuk';
+
+function darEkranMi() {
+  return window.matchMedia(DAR_EKRAN).matches;
+}
+
+/** Geniş ekranda kenar çubuğunu katlar/açar ve tercihi saklar. */
+function yanCubuguKatla(kapali) {
+  document.body.classList.toggle('yan-kapali', kapali);
+  $('#btn-menu')?.setAttribute('aria-expanded', String(!kapali));
+  try { localStorage.setItem(YAN_DEPO, kapali ? 'kapali' : 'acik'); } catch { /* yoksay */ }
+}
+
+/** Sayfa açılışında saklanan katlama tercihini uygular. */
+function yanCubuguKur() {
+  let kapali = false;
+  try { kapali = localStorage.getItem(YAN_DEPO) === 'kapali'; } catch { /* yoksay */ }
+  document.body.classList.toggle('yan-kapali', kapali);
+  $('#btn-menu')?.setAttribute('aria-expanded', String(!kapali));
+}
+
+/** Menü düğmesi: dar ekranda çekmece, geniş ekranda katlama. */
+function yanCubuguDegistir() {
+  if (darEkranMi()) {
+    $('#yan-cubuk').classList.contains('acik') ? kenarCubuguKapat() : kenarCubuguAc();
+  } else {
+    yanCubuguKatla(!document.body.classList.contains('yan-kapali'));
+  }
+}
+
+/* ── Kenar çubuğu (dar ekran çekmecesi) ───────────────────────────────────────── */
 
 function kenarCubuguAc() {
   $('#yan-cubuk').classList.add('acik');
@@ -613,6 +686,8 @@ function kenarCubuguKapat() {
 
 function olaylariBagla() {
   $('#btn-menu').innerHTML = simge('menu');
+  $('#btn-menu').title = 'Yan paneli aç / kapat';
+  yanCubuguKur();
 
   // Sekme değiştirme (menü her çizimde yenilendiği için delege edilir)
   $('#yan-menu').addEventListener('click', (e) => {
@@ -746,7 +821,7 @@ function olaylariBagla() {
       if (eylem === 'panel-filtre') { sekmePanel.suzgeciAyarla(dugme.dataset.deger); ciz(); return; }
       if (eylem.startsWith('git-')) { sekmeyeGit(eylem.slice(4)); return; }
       if (eylem === 'ornek-yukle') { durum = D.ornekProje(); ciz(); return; }
-      if (eylem === 'yazdir') { window.print(); return; }
+      if (eylem === 'pdfe-aktar') { raporuPdfeAktar(); return; }
       if (eylem === 'excel-indir') {
         sekmeRapor.excelRaporunuIndir(durum.proje, projeyiHesapla(durum));
         return;
@@ -770,7 +845,7 @@ function olaylariBagla() {
     temayiUygula(document.documentElement.dataset.tema === 'koyu' ? 'acik' : 'koyu');
   });
   $('#btn-menu').addEventListener('click', () => {
-    $('#yan-cubuk').classList.contains('acik') ? kenarCubuguKapat() : kenarCubuguAc();
+    yanCubuguDegistir();
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') kenarCubuguKapat(); });
 

@@ -17,19 +17,18 @@
  * birebir aynı olur.
  */
 
-import { app, BrowserWindow, Menu, dialog, shell, protocol, net } from 'electron';
+import { app, BrowserWindow, Menu, dialog, shell, protocol, net, ipcMain } from 'electron';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { guncellemeyiBaslat, guncellemeyiElleDenetle } from './guncelleyici.js';
-import { guvenliYol } from './yardimcilar.js';
+import { guvenliYol, menuSablonu, BAGLANTILAR } from './yardimcilar.js';
 
 const buDosya = path.dirname(fileURLToPath(import.meta.url));
 /** Web uygulamasının kökü (index.html'in bulunduğu dizin). */
 const KOK = path.join(buDosya, '..');
 
 const SEMA = 'sagg';
-/** Sürüm notlarının yayınlandığı adres (Yardım menüsü). */
-const SURUM_NOTLARI = 'https://github.com/aligokten/SAGG-Akustik_Rapor/releases';
 const ANA_SAYFA = `${SEMA}://yerel/index.html`;
 
 /** Tek örnek kilidi: ikinci kez açılırsa var olan pencere öne getirilir. */
@@ -56,6 +55,8 @@ function kur() {
 
   app.whenReady().then(() => {
     protokolBagla();
+    ipcMain.handle('sagg:pdfe-aktar', (olay, dosyaAdi) =>
+      pdfeAktar(BrowserWindow.fromWebContents(olay.sender), dosyaAdi));
     const pencere = pencereAc();
     menuKur(pencere);
     guncellemeyiBaslat(pencere);
@@ -112,75 +113,80 @@ function pencereAc() {
   return pencere;
 }
 
+/**
+ * Raporu doğrudan PDF dosyasına yazar.
+ *
+ * Yazdırma penceresi açılmaz: masaüstü sürümünde kullanıcı bir yazıcı seçip
+ * "PDF olarak kaydet" hedefini bulmak zorunda değildir; yalnızca dosyanın
+ * nereye kaydedileceğini söyler. Sayfa, ekrandaki hâliyle değil `@media print`
+ * kurallarıyla dökülür — yani kenar çubuğu ve düğmeler çıktıya girmez, sayfa
+ * sonları rapordaki tanımlara uyar.
+ *
+ * @param {BrowserWindow} pencere
+ * @param {string} [dosyaAdi] Arayüzün önerdiği dosya adı (proje adından türer)
+ * @returns {Promise<{durum:'kaydedildi'|'iptal'|'hata', yol?:string, mesaj?:string}>}
+ */
+async function pdfeAktar(pencere, dosyaAdi) {
+  if (!pencere || pencere.isDestroyed()) return { durum: 'hata', mesaj: 'Pencere yok' };
+
+  const onerilen = (dosyaAdi || 'akustik-rapor').replace(/[\\/:*?"<>|]/g, '-');
+  const secim = await dialog.showSaveDialog(pencere, {
+    title: 'Raporu PDF olarak kaydet',
+    defaultPath: path.join(app.getPath('documents'), `${onerilen}.pdf`),
+    filters: [{ name: 'PDF belgesi', extensions: ['pdf'] }],
+    buttonLabel: 'Kaydet',
+  });
+  if (secim.canceled || !secim.filePath) return { durum: 'iptal' };
+
+  try {
+    const veri = await pencere.webContents.printToPDF({
+      pageSize: 'A4',
+      printBackground: true,
+      margins: { top: 0.4, bottom: 0.4, left: 0.4, right: 0.4 },   // inç
+    });
+    await fs.writeFile(secim.filePath, veri);
+    shell.showItemInFolder(secim.filePath);
+    return { durum: 'kaydedildi', yol: secim.filePath };
+  } catch (hata) {
+    dialog.showMessageBox(pencere, {
+      type: 'error',
+      title: 'PDF oluşturulamadı',
+      message: 'Rapor PDF dosyasına yazılamadı.',
+      detail: String(hata?.message || hata),
+      buttons: ['Tamam'],
+    });
+    return { durum: 'hata', mesaj: String(hata?.message || hata) };
+  }
+}
+
 function menuKur(pencere) {
-  const menu = Menu.buildFromTemplate([
-    {
-      label: 'Dosya',
-      submenu: [
-        { label: 'Yazdır / PDF olarak kaydet', accelerator: 'CmdOrCtrl+P',
-          click: () => pencere.webContents.print({}, () => {}) },
-        { type: 'separator' },
-        { label: 'Çıkış', role: 'quit' },
-      ],
-    },
-    {
-      label: 'Düzen',
-      submenu: [
-        { label: 'Geri al', role: 'undo' }, { label: 'Yinele', role: 'redo' },
-        { type: 'separator' },
-        { label: 'Kes', role: 'cut' }, { label: 'Kopyala', role: 'copy' },
-        { label: 'Yapıştır', role: 'paste' }, { label: 'Tümünü seç', role: 'selectAll' },
-      ],
-    },
-    {
-      label: 'Görünüm',
-      submenu: [
-        { label: 'Yeniden yükle', role: 'reload' },
-        { label: 'Yakınlaştır', role: 'zoomIn' },
-        { label: 'Uzaklaştır', role: 'zoomOut' },
-        { label: 'Normal boyut', role: 'resetZoom' },
-        { type: 'separator' },
-        { label: 'Tam ekran', role: 'togglefullscreen' },
-        { label: 'Geliştirici araçları', role: 'toggleDevTools' },
-      ],
-    },
-    {
-      label: 'Yardım',
-      submenu: [
-        { label: 'Güncellemeleri denetle…', click: () => guncellemeyiElleDenetle(pencere) },
-        { type: 'separator' },
-        { label: 'Web sürümünü aç (tarayıcıda)',
-          click: () => shell.openExternal('https://aligokten.github.io/SAGG-Akustik_Rapor/') },
-        { label: 'SAGG+ — www.saggplus.com',
-          click: () => shell.openExternal('https://www.saggplus.com') },
-        { label: 'Destek: info@saggplus.com',
-          click: () => shell.openExternal('mailto:info@saggplus.com'
-            + '?subject=' + encodeURIComponent(`SAGG Akustik Hesap Aracı ${app.getVersion()} — destek`)) },
-        { label: 'Sürüm notları', click: () => shell.openExternal(SURUM_NOTLARI) },
-        { type: 'separator' },
-        {
-          label: 'Hakkında',
-          click: () => dialog.showMessageBox(pencere, {
-            type: 'info',
-            title: 'SAGG Akustik Hesap Aracı hakkında',
-            message: `SAGG Akustik Hesap Aracı ${app.getVersion()}`,
-            detail: [
-              'Binaların Gürültüye Karşı Korunması Hakkında Yönetmelik',
-              '(RG 31/05/2017 – 30082) ve eklerine göre bina akustiği hesabı.',
-              '',
-              'Program Lisans Sahibi: Sinem Ali Gökten Grup İnşaat Mimarlık',
-              'Akustik Müh. San. Tic. Ltd. Şti.',
-              'Program Geliştirici: SAGG+ App — Tüm hakları saklıdır.',
-              '',
-              'www.saggplus.com · info@saggplus.com',
-              '',
-              'Rapor içeriğinden ve hesaplamalardan proje müellifi sorumludur.',
-            ].join('\n'),
-            buttons: ['Tamam'],
-          }),
-        },
-      ],
-    },
-  ]);
-  Menu.setApplicationMenu(menu);
+  // Menünün içeriği masaustu/yardimcilar.js içinde saf veri olarak durur;
+  // burada yalnızca davranışlar bağlanır. Böylece hangi girdilerin bulunduğu
+  // (ve bulunmadığı) testlerle sabitlenebiliyor.
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuSablonu({
+    pdf: () => pdfeAktar(pencere),
+    guncelleme: () => guncellemeyiElleDenetle(pencere),
+    web: () => shell.openExternal(BAGLANTILAR.web),
+    site: () => shell.openExternal(BAGLANTILAR.site),
+    destek: () => shell.openExternal(`mailto:${BAGLANTILAR.destek}?subject=`
+      + encodeURIComponent(`SAGG Akustik Hesap Aracı ${app.getVersion()} — destek`)),
+    hakkinda: () => dialog.showMessageBox(pencere, {
+      type: 'info',
+      title: 'SAGG Akustik Hesap Aracı hakkında',
+      message: `SAGG Akustik Hesap Aracı ${app.getVersion()}`,
+      detail: [
+        'Binaların Gürültüye Karşı Korunması Hakkında Yönetmelik',
+        '(RG 31/05/2017 – 30082) ve eklerine göre bina akustiği hesabı.',
+        '',
+        'Program Lisans Sahibi: Sinem Ali Gökten Grup İnşaat Mimarlık',
+        'Akustik Müh. San. Tic. Ltd. Şti.',
+        'Program Geliştirici: SAGG+ App — Tüm hakları saklıdır.',
+        '',
+        `${BAGLANTILAR.site.replace('https://', '')} · ${BAGLANTILAR.destek}`,
+        '',
+        'Rapor içeriğinden ve hesaplamalardan proje müellifi sorumludur.',
+      ].join('\n'),
+      buttons: ['Tamam'],
+    }),
+  }, app.getVersion())));
 }

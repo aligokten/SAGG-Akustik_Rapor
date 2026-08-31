@@ -25,7 +25,9 @@ Menüdeki sayaçlar hangi bölümde kaç bileşen olduğunu ve kaçının sını
 
 Arayüz koyu tema için kurgulanmıştır (varsayılan); üst çubuktaki güneş/ay düğmesiyle açık temaya
 geçilebilir ve tercih saklanır. Yazdırmada renkler her hâlükârda açık temaya döndürülür, böylece
-rapor koyu temadan da doğru basılır. Dar ekranlarda menü çekmeceye dönüşür ve kartlar tek sütuna iner.
+rapor koyu temadan da doğru basılır. **Yan panel katlanabilir**: üst çubuktaki menü düğmesi geniş
+ekranda kenar çubuğunu tamamen katlar (tercih saklanır, sonraki açılışta korunur), dar ekranda ise
+çekmece olarak açıp kapatır; dar ekranda kartlar tek sütuna iner.
 
 ---
 
@@ -413,7 +415,7 @@ başlat menüsü kısayolu oluşturur. Program çevrimdışı çalışır; hiçb
 
 Masaüstü sürümü web sürümünün **birebir aynı kodudur** — `js/`, `css/`, `index.html` olduğu gibi
 paketlenir, hesap çekirdeğinde tek satır fark yoktur. Üzerine yalnızca ince bir Electron kabuğu
-(`masaustu/`) eklenir: pencere, Türkçe menü, yazdırma ve otomatik güncelleme.
+(`masaustu/`) eklenir: pencere, Türkçe menü, PDF'e aktarma ve otomatik güncelleme.
 
 **Neden `file://` değil, `sagg://` özel protokolü?** Uygulama projeleri, malzeme favorilerini ve
 temayı `localStorage`'da tutar. Chromium `file://` kaynağına opak bir origin verdiği için orada
@@ -498,6 +500,24 @@ npm run paketle           # dist/ içine kurulum .exe'si üretir, yayınlamaz
 > Uyarıyı tümüyle kaldırmak için ücretli bir kod imzalama sertifikası gerekir; sertifika alındığında
 > `electron-builder.mjs` içine `win.certificateFile`/`certificatePassword` eklenmesi yeterlidir.
 
+### Raporu PDF'e aktarma
+
+Rapor sekmesindeki **"Raporu PDF'e aktar"** düğmesi iki ortamda farklı çalışır, çünkü ortamların
+yetenekleri farklıdır:
+
+- **Windows uygulamasında** bu gerçek bir dışa aktarmadır. Yazdırma penceresi hiç açılmaz; yalnızca
+  dosyanın nereye kaydedileceği sorulur, PDF doğrudan yazılır ve kaydedilen dosya Dosya
+  Gezgini'nde gösterilir. Dosya adı proje adından (varsa rapor kodundan) türetilir.
+- **Tarayıcıda** ise düğme yazdırma penceresini açar; hedef olarak *"PDF olarak kaydet"* seçilir.
+  Bunun nedeni basittir: bir web sayfası kendi başına PDF dosyası yazamaz, tarayıcının PDF motoruna
+  ancak bu pencereden ulaşılır. Harici bir PDF kitaplığı eklemek hem projenin dış bağımlılığı
+  olmaması ilkesini bozar hem de daha kötü çıktı verir — sayfa sonları, tablo bölünmeleri ve yazı
+  tipleri `@media print` kurallarıyla zaten doğru dökülüyor.
+
+Her iki durumda da çıktı aynı `@media print` biçemlerini kullanır: kenar çubuğu, üst çubuk ve düğme
+şeridi çıktıya girmez, renkler açık temaya döndürülür, sayfa sonları rapordaki tanımlara uyar.
+A4, 10 mm kenar boşluğu.
+
 ### Akış
 
 0. **Panel** — genel görünüm: belirleyici performans sınıfı, uygunluk oranı, dikkat gerektiren
@@ -516,7 +536,7 @@ npm run paketle           # dist/ içine kurulum .exe'si üretir, yayınlamaz
    ölçüsüyle girilir ve geometri modunda opak duvar alanı, brüt alandan o duvardaki doğramalar
    düşülerek kendiliğinden bulunur.
 5. **Reverberasyon** — hacim, yüzeyler ve nesneler.
-6. **Rapor** — tüm sonuçların yazdırılabilir özeti (tarayıcıdan PDF'e aktarılabilir).
+6. **Rapor** — tüm sonuçların özeti; **PDF'e aktarılabilir** (bkz. aşağıdaki not).
 
 Ölçü ve değer kutuları metin girdisidir (`inputmode="decimal"`): Türkçe ondalık **virgülü**
 doğrudan kabul edilir ("2,62"), yazarken araya giren yeniden çizimlerde imleç ve odak korunur.
@@ -605,7 +625,7 @@ test/masaustu.test.js          Masaüstü kabuğu ve paketleme yapılandırması
 npm test          # node --test test/*.test.js
 ```
 
-301 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+306 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
 projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
 modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
 hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış), izometrik şema üretimini, cephe iç yan
@@ -614,7 +634,8 @@ Excel sınır değer tablosu çıktısını (DD/İD/DOS kodlaması, sayfa yerle�
 rapor altbilgisindeki lisans künyesini, yönetmelik tablolarının resmî ek dosyasıyla
 birebir örtüşmesini, EK-10 performans belgesini, künye alanlarının rapora akışını, ayırıcı elemanda kısmi örtüşme
 (kaydırma) hesabını ve Windows masaüstü kabuğunu (özel protokol yol çözümü ve dizin dışına çıkma
-koruması, güncelleme penceresi metinleri, paketleme yapılandırması) kapsar. Ayrıca referans araçtan alınan dört örnek dosya, sonuçları birebir doğrulayan bir kehanet
+koruması, güncelleme penceresi metinleri, paketleme ve yayıncı yapılandırması, uygulama menüsünün
+içeriği) kapsar. Ayrıca referans araçtan alınan dört örnek dosya, sonuçları birebir doğrulayan bir kehanet
 (oracle) takımı olarak koşturulur.
 
 ---

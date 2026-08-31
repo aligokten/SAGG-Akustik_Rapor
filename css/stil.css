@@ -439,15 +439,28 @@ details > *:last-child{margin-bottom:12px}
 
 .rapor-sayfa-sonu{margin-top:34px; padding-top:34px; border-top:4px double var(--cizgi-koyu)}
 
+/* ── Kenar çubuğunu katlama ─────────────────────────────────────── */
+/* Menü düğmesi her genişlikte görünür: dar ekranda çekmeceyi açar, geniş
+   ekranda kenar çubuğunu katlar. Katlama tercihi saklanır. */
+.menu-dugme{display:inline-flex}
+.yan-cubuk{transition:width .18s ease, flex-basis .18s ease}
+@media (min-width:1001px){
+  body.yan-kapali .yan-cubuk{
+    width:0; flex-basis:0; overflow:hidden; border-right:0;
+  }
+  /* Katlıyken içerik yatay olarak sıkışmasın diye içeriden de kırpılır. */
+  body.yan-kapali .yan-cubuk > *{visibility:hidden}
+}
+/* Hareketi azaltılmış sistemlerde animasyon yok. */
+@media (prefers-reduced-motion:reduce){ .yan-cubuk{transition:none} }
+
 /* ── Duyarlı düzen ──────────────────────────────────────────────── */
-.menu-dugme{display:none}
 @media (max-width:1000px){
   .yan-cubuk{
     position:fixed; z-index:60; left:0; top:0; transform:translateX(-100%);
     transition:transform .22s ease; box-shadow:var(--golge-l);
   }
   .yan-cubuk.acik{transform:none}
-  .menu-dugme{display:inline-flex}
   .perde{position:fixed; inset:0; background:rgba(6,12,22,.5); z-index:50}
   .icerik,.ust-cubuk{padding-left:16px; padding-right:16px}
   .rapor{padding:22px 18px}
