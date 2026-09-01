@@ -105,3 +105,46 @@ test('xlsxOlustur, 31 karakteri aşan sayfa adlarında bile geçerli bir paket �
   const buf = new Uint8Array(await blob.arrayBuffer());
   assert.equal(buf[0], 0x50);
 });
+
+/* ── Darbe sesi (döşeme) satırları ───────────────────────────────── */
+
+test('Sınır değer tablosu darbe sesi kayıtlarını içerir', () => {
+  // Döşemelerin darbe sesi hesabı tabloya hiç girmiyordu: yalnızca ayırıcı
+  // eleman kayıtlarından DOS satırı üretiliyordu.
+  const durum = ornekProje();
+  const k = excelKayitlariniTopla(projeyiHesapla(durum));
+  assert.equal(k.drb.length, durum.darbeler.length);
+  assert.ok(k.drb.every((r) => /^DRB\d+$/.test(r.kod)));
+});
+
+test('Darbe sesinde sınır ÜST sınır olarak yazılır (≤)', () => {
+  // Hava doğuşlu ve cephede sınır alt sınırdır (≥). Darbe sesinde ise sağlanan
+  // değer sınırdan KÜÇÜK olmalıdır; aynı işaretle yazılsaydı yanlış okunurdu.
+  const k = excelKayitlariniTopla(projeyiHesapla(ornekProje()));
+  const sayfa = sayfa2Uret(k);
+  const drb = sayfa.satirlar.filter((r) => /^DRB\d+$/.test(String(r[1]?.deger || '')));
+  assert.ok(drb.length > 0, 'DRB satırı yok');
+  for (const satir of drb) assert.match(String(satir[4].deger), /^≤\d/);
+
+  const hava = sayfa.satirlar.filter((r) => /^(İD|DD)\d+$/.test(String(r[1]?.deger || '')));
+  for (const satir of hava) assert.match(String(satir[4].deger), /^≥\d/);
+});
+
+test('Katman sayfasında darbe sesi kategorisi ve birimi doğrudur', () => {
+  const k = excelKayitlariniTopla(projeyiHesapla(ornekProje()));
+  const sayfa = sayfa1Uret(k);
+  const kategori = sayfa.satirlar.find((r) => String(r[0]?.deger || '').includes('DARBE'));
+  assert.ok(kategori, 'DARBE SESİ kategorisi yok');
+  // Darbe sesi göstergesi dB'dir, cephedeki gibi dBA değil.
+  const drbSatir = sayfa.satirlar.find((r) => /^DRB\d+$/.test(String(r[2]?.deger || '')));
+  assert.equal(drbSatir[4].deger, 'dB');
+});
+
+test('Darbe kaydı yokken tablolar eskisi gibi üretilir', () => {
+  const durum = ornekProje();
+  durum.darbeler = [];
+  const k = excelKayitlariniTopla(projeyiHesapla(durum));
+  assert.equal(k.drb.length, 0);
+  const sayfa = sayfa2Uret(k);
+  assert.ok(!sayfa.satirlar.some((r) => String(r[0]?.deger || '').includes('Darbe')));
+});

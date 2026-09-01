@@ -429,6 +429,10 @@ Ters eşleşme yan yolları ±3,15 dB kaydırıp DnT,w'yi 1,6 dB düşürür.
 
 ### Sınır değer tablosunu Excel'e aktarma
 
+> Tabloda **darbe sesi (döşeme)** kayıtları da yer alır (`DRB` kodu). Sınır burada **üst** sınırdır:
+> satır `≤` işaretiyle yazılır, çünkü sağlanan L′<sub>nT,w</sub> değerinin sınırdan küçük olması
+> gerekir — hava doğuşlu ve cephe satırlarındaki `≥` ile karıştırılmamalıdır.
+
 Rapor sekmesindeki **"Sınır değer tablosunu Excel'e aktar"** düğmesi, projedeki tüm ayırıcı/cephe
 kayıtlarını dış duvar (**DD**), iç duvar (**İD**) ve döşeme (**DOS**) olarak kodlayıp iki sayfalı bir
 `.xlsx` dosyası indirir — bu, sahada elle tutulan özet tablolarla aynı düzendedir:
@@ -604,12 +608,24 @@ PDF birebir aynı kâğıda basılır. Renk şeması yazdırmada `light`a sabitl
 koyu temada çalışıyor ve sayfa zemini (aşağıdaki nedenle) saydam bırakılıyor: zemini olmayan kâğıdı
 tarayıcı `color-scheme`e göre boyar ve koyu şemada **#121212**, yani simsiyah bir PDF üretirdi.
 
-**Sayfa boyu zemin dolgusu basılmaz.** Bir zemin rengi tanımlıysa Chromium, PDF'e sayfanın tamamını
-kaplayan bir dolgu dikdörtgeni koyar. Kâğıt zaten beyaz olduğu için bu dolgu görünürde hiçbir şey
-katmaz, ama PDF'i düzenleyen programlarda (Nitro, Acrobat) içeriğin üstünde duran, seçilebilir bir
-nesne olarak görünür ve metnin üzerini kapatabilir. Bu yüzden `html`, `body` ve rapor kaplarının
-zemini yazdırmada saydam bırakılır. **Anlamlı** dolgular — belge başlık bandı, tablo başlıkları,
-sınıf okları — etkilenmez; onlar `print-color-adjust: exact` ile korunur.
+**Kâğıt açıkça beyaza boyanır.** Bu, sayfayı kaplayan bir dolgu dikdörtgeni üretir; bir ara bu
+dolgu kaldırılmıştı, çünkü PDF düzenleyicilerde (Nitro, Acrobat) seçilebilir bir nesne olarak
+görünüyordu. Ne var ki **dolgusuz kâğıdın rengini tarayıcı belirliyor**: uygulama koyu temada
+çalıştığı için sayfa siyah basılabiliyordu. "Her koşulda beyaz" şartı o nesnenin yokluğundan
+önemlidir, bu yüzden dolgu geri alındı. Yalnızca `html` boyanır; `body` ve rapor kapları saydam
+kalır, yani sayfa başına **tek** dolgu düşer. **Anlamlı** dolgular — belge başlık bandı, tablo
+başlıkları, sınıf okları — `print-color-adjust: exact` ile ayrıca korunur.
+
+İkinci bir güvence olarak renk şeması **belge düzeyinde** açığa sabitlenmiştir
+(`:root{color-scheme:light}`), koyu şema yalnızca `@media screen` içinde açılır. Bunu yalnızca
+`@media print` içine yazmak yetmiyordu: özellik hesaplanan değerde `light` görünse bile sayfa
+tuvalinin rengi belge düzeyinde çözüldüğünden koyu kalabiliyordu.
+
+**Tablolar sayfaya sığar.** Ekranda geniş tablolar `.tablo-sar` içinde yatay kaydırılır; kâğıtta
+kaydırma diye bir şey olmadığı için taşan sütunlar görünmez olur — veri sessizce kaybolurdu.
+Yazdırmada kaydırma kapatılır, hücrelerin satır atlamasına izin verilir ve ölçüt sütunundaki asgari
+genişlik kaldırılır; sütunlar birden çok satıra yayılarak daralır. Örnek projede rapordaki 12
+tablonun tamamı 717 px'lik A4 basılabilir genişliğine sığar.
 
 **Akustik performans belgesi tek A4 sayfasına sığar.** Buradaki incelik şudur: A4'ün basılabilir
 genişliği ≈ 717 px'tir (210 mm − 2×10 mm kenar, 96 dpi) ve bu değer arayüzün dar ekran eşiğinin
@@ -744,7 +760,7 @@ test/masaustu.test.js          Masaüstü kabuğu ve paketleme yapılandırması
 npm test          # node --test test/*.test.js
 ```
 
-333 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+341 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
 projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
 modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
 hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış), izometrik şema üretimini, cephe iç yan

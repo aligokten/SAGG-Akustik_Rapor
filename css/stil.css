@@ -47,6 +47,14 @@
   --yazi:"Inter","Helvetica Neue",Helvetica,"Segoe UI",Roboto,Arial,sans-serif;
 }
 
+/* Renk şeması: varsayılan AÇIK, koyu yalnızca EKRANDA.
+   Yazdırmada @media screen eşleşmediği için şema açık kalır; kâğıdı tarayıcı
+   koyu boyayamaz. Bunu @media print içine yazmak yetmiyordu: özellik hesaplanan
+   değerde "light" görünse bile sayfa tuvalinin rengi belge düzeyinde
+   çözüldüğünden koyu kalabiliyordu. */
+:root{ color-scheme:light }
+@media screen{ :root[data-tema="koyu"]{ color-scheme:dark } }
+
 :root[data-tema="koyu"]{
   --zemin:#0e0e10;
   --yuzey:#18181b;
@@ -536,7 +544,16 @@ details > *:last-child{margin-bottom:12px}
    * zeminler saydam bırakılır. Tablo başlığı, belge başlık bandı gibi
    * ANLAMLI dolgular etkilenmez; onlar aşağıda ayrıca korunur.
    */
-  html,body,.kabuk,.govde,.icerik,.rapor{background:transparent !important}
+  /*
+   * Kâğıt açıkça beyaza boyanır. Bu, sayfayı kaplayan bir dolgu dikdörtgeni
+   * üretir — daha önce PDF düzenleyicilerde seçilebilir bir nesne olarak
+   * göründüğü için kaldırılmıştı. Ne var ki dolgusuz kâğıdın rengini tarayıcı
+   * belirliyor ve koyu temada siyah bir sayfa üretebiliyor. "Her koşulda beyaz"
+   * şartı, o nesnenin varlığından daha önemlidir; bu yüzden dolgu geri alındı.
+   * İçerideki kaplar saydam kalır, yani sayfa başına yalnızca TEK dolgu olur.
+   */
+  html{background:#fff !important}
+  body,.kabuk,.govde,.icerik,.rapor{background:transparent !important}
   body{color:#000}
   .kabuk{display:block}
   .icerik{padding:0; max-width:none}
@@ -547,6 +564,22 @@ details > *:last-child{margin-bottom:12px}
   .rozet{border:1px solid #999 !important}
   a{text-decoration:none; color:#000}
   .rapor-sayfa-sonu{break-before:page; margin-top:0; padding-top:0; border-top:0}
+
+  /*
+   * TABLOLAR SAYFAYA SIĞAR.
+   *
+   * Ekranda geniş tablolar `.tablo-sar` içinde yatay kaydırılır. Kâğıtta
+   * kaydırma diye bir şey yoktur: taşan sütunlar görünmez olur, yani veri
+   * sessizce kaybolur. Yazdırmada kaydırma kapatılır ve hücrelerin satır
+   * atlamasına izin verilir — sütunlar birden çok satıra yayılarak daralır.
+   */
+  .tablo-sar{ overflow:visible !important; }
+  .rapor table{ width:100%; max-width:100%; }
+  .rapor th, .rapor td{ white-space:normal !important; overflow-wrap:anywhere; }
+  /* Dikey yazılan belge başlığı sarılmamalı; kendi ekseninde zaten dardır. */
+  .rapor .belge-dikey{ white-space:nowrap !important; }
+  /* Ölçüt sütunundaki asgari genişlik, tabloyu kâğıttan taşıran etkendi. */
+  .belge-olcut{ min-width:0 !important; }
   .yazdirma-goster{break-inside:avoid}
   h2{break-after:avoid}
   /* Lisans bloğu sayfaya bölünmesin; ekrandaki dolgu zemin baskıda gereksiz. */
@@ -890,15 +923,15 @@ details > *:last-child{margin-bottom:12px}
   .belge-rozet{ flex:0 0 86px; padding:5px 4px }
   .belge-rozet b{ font-size:22px }
   .belge-tanim{ font-size:9.5px; line-height:1.35; margin-bottom:2px }
-  .belge-tablo{ font-size:10px }
-  .belge-tablo th, .belge-tablo td{ padding:2px 5px }
-  .belge-tablo th{ font-size:9.5px }
+  .belge-tablo{ font-size:9.5px }
+  .belge-tablo th, .belge-tablo td{ padding:2px 4px; line-height:1.25 }
+  .belge-tablo th{ font-size:9px }
   .belge-aciklama p{ font-size:9px; line-height:1.32 }
   .belge-imza{ gap:10px; margin-top:9px; padding-top:8px }
   .belge-imza-alan{ min-height:48px; font-size:13px }
   /* Belge sayfasındaki lisans künyesi daha sıkı dizilir; içerik aynı kalır. */
   .belge .rapor-altbilgi{ margin-top:8px; padding-top:6px }
-  .belge .rapor-lisans{ padding:6px 8px; font-size:8.5px; line-height:1.36 }
+  .belge .rapor-lisans{ padding:5px 8px; font-size:8px; line-height:1.32 }
   .belge-baslik h1{ background:#f2dfa0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact }
   .belge-ok, .belge-tablo th, .belge-toplam td, .belge-sinif-dizi b.secili{
     -webkit-print-color-adjust:exact; print-color-adjust:exact;

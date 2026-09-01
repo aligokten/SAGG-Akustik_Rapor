@@ -741,17 +741,31 @@ export function excelKayitlariniTopla(s) {
     gereken: x.degerlendirme?.gereken,
   }));
 
-  return { dd, id, dos };
+  // Darbe sesi (döşeme) kayıtları. Ayrı bir kategoridir çünkü göstergesi
+  // farklıdır (L′nT,w) ve sınır ÜST sınırdır: sağlanan değer sınırdan KÜÇÜK
+  // olmalıdır. Aynı tabloya "≥" ile yazılsaydı sonuç yanlış okunurdu.
+  const drb = s.darbeler.map((x, i) => ({
+    kod: `DRB${i + 1}`,
+    kaynak: x.degerlendirme?.ustMekan?.ad || '—',
+    alici: x.degerlendirme?.altMekan?.ad || '—',
+    deger: x.sonuc?.LnTw,
+    gereken: x.degerlendirme?.gereken,
+    ustSinir: true,          // karşılaştırma yönü: ≤
+    birim: 'dB',
+  }));
+
+  return { dd, id, dos, drb };
 }
 
 function bosMu(v) { return { deger: '', stil: v }; }
 
 /** Sayfa 1: "Katman Kesitleri ve Rw Değerleri" — kategoriye göre gruplu liste. */
-export function sayfa1Uret({ dd, id, dos }) {
+export function sayfa1Uret({ dd, id, dos, drb = [] }) {
   const kategoriler = [
     { baslik: 'DIŞ DUVAR DD', esyaTuru: 'DUVAR', kayitlar: dd },
     { baslik: 'İÇ DUVAR İD', esyaTuru: 'DUVAR', kayitlar: id },
     { baslik: 'DÖŞEMELER DOS', esyaTuru: 'DÖŞEME', kayitlar: dos },
+    { baslik: 'DARBE SESİ DRB', esyaTuru: 'DÖŞEME', kayitlar: drb, birim: 'dB' },
   ];
 
   const satirlar = [[
@@ -774,7 +788,7 @@ export function sayfa1Uret({ dd, id, dos }) {
         { deger: kat.esyaTuru, stil: STIL.VERI },
         { deger: k.kod, stil: STIL.VERI },
         Number.isFinite(k.deger) ? { deger: Number(k.deger.toFixed(1)), sayi: true, stil: STIL.VERI } : bosMu(STIL.VERI),
-        { deger: 'dBA', stil: STIL.VERI },
+        { deger: kat.birim || 'dBA', stil: STIL.VERI },
         { deger: 'Yazılım', stil: STIL.VERI },
       ]);
       r += 1;
@@ -791,11 +805,12 @@ export function sayfa1Uret({ dd, id, dos }) {
 }
 
 /** Sayfa 2: "Projedeki Sınır Değerler ve Sağlanan Değerler". */
-export function sayfa2Uret({ dd, id, dos }) {
+export function sayfa2Uret({ dd, id, dos, drb = [] }) {
   const kategoriler = [
     { ana: 'Dış Yapı Elemanları', kod: 'DD', tur: 'Duvar', kayitlar: dd },
     { ana: 'İç Yapı Elemanları', kod: 'İD', tur: 'Duvar', kayitlar: id },
     { ana: 'Döşemeler', kod: 'DOS', tur: 'Döşeme', kayitlar: dos },
+    { ana: 'Döşemeler — Darbe Sesi', kod: 'DRB', tur: 'Döşeme', kayitlar: drb },
   ];
 
   const satirlar = [[
@@ -838,7 +853,10 @@ export function sayfa2Uret({ dd, id, dos }) {
         { deger: k.kod, stil: STIL.VERI },
         { deger: k.kaynak, stil: STIL.VERI },
         { deger: k.alici, stil: STIL.VERI },
-        { deger: Number.isFinite(k.gereken) ? `≥${sayi(k.gereken, 0)}` : '—', stil: STIL.VERI_SAG },
+        // Darbe sesinde sınır ÜST sınırdır (L′nT,w ≤ sınır); hava doğuşlu
+        // ve cephede ise alt sınırdır. İşaret buna göre yazılır.
+        { deger: Number.isFinite(k.gereken)
+          ? `${k.ustSinir ? '≤' : '≥'}${sayi(k.gereken, 0)}` : '—', stil: STIL.VERI_SAG },
         { deger: 'dB', stil: STIL.VERI },
         Number.isFinite(k.deger) ? { deger: Number(k.deger.toFixed(1)), sayi: true, stil: STIL.VERI } : bosMu(STIL.VERI),
         { deger: 'dB', stil: STIL.VERI },

@@ -40,15 +40,25 @@ test('Yazdırmada @media print blokları bulunur', () => {
 
 /* ── Sayfa boyu zemin dolgusu ────────────────────────────────────── */
 
-test('Sayfa düzeyindeki zeminler yazdırmada saydamdır', () => {
-  // Zemin rengi tanımlıysa Chromium PDF'e sayfayı kaplayan bir dolgu
-  // dikdörtgeni koyar; PDF düzenleyicilerde içeriğin üstünde duran bir nesne
-  // olarak görünür. Kâğıt zaten beyaz olduğu için dolguya gerek yoktur.
-  assert.match(YAZDIRMA, /html,body,\.kabuk,\.govde,\.icerik,\.rapor\{background:transparent !important\}/);
+test('Kâğıt yazdırmada açıkça beyaza boyanır', () => {
+  // Dolgusuz kâğıdın rengini tarayıcı belirliyor ve koyu temada siyah bir
+  // sayfa üretebiliyor. "Her koşulda beyaz" şartı, dolgu nesnesinin
+  // yokluğundan önemlidir; bu yüzden html açıkça beyazdır.
+  assert.match(YAZDIRMA, /html\{background:#fff !important\}/);
 });
 
-test('Gövdeye yazdırmada beyaz zemin atanmaz', () => {
-  assert.ok(!/\bbody\{background:#fff/.test(YAZDIRMA), 'body{background:#fff} geri gelmiş');
+test('İç kaplar saydam kalır — sayfa başına tek dolgu', () => {
+  // Her kap ayrıca boyanırsa PDF'e üst üste binen birden çok dolgu nesnesi
+  // girer; yalnızca kâğıdın kendisi boyanır.
+  assert.match(YAZDIRMA, /body,\.kabuk,\.govde,\.icerik,\.rapor\{background:transparent !important\}/);
+});
+
+test('Renk şeması belge düzeyinde açık, koyu yalnızca ekranda', () => {
+  // @media print içindeki color-scheme yeterli olmuyordu: özellik hesaplanan
+  // değerde "light" görünse bile sayfa tuvalinin rengi belge düzeyinde
+  // çözüldüğü için koyu kalabiliyordu.
+  assert.match(CSS, /:root\{ color-scheme:light \}/);
+  assert.match(CSS, /@media screen\{ :root\[data-tema="koyu"\]\{ color-scheme:dark \} \}/);
 });
 
 test('Anlamlı dolgular korunur', () => {
@@ -82,7 +92,7 @@ test('Dar ekran kuralı hâlâ ekran için duruyor', () => {
 test('Sığdırma ölçüleri yerinde', () => {
   // Tarayıcıda ölçülerek bulunan değerler; biri kaldırılırsa belge taşar.
   for (const kural of ['.belge-baslik h1{ font-size:19px', '.belge-satir{ font-size:10.5px',
-                       '.belge-tablo{ font-size:10px', '.belge-resim-alan{ min-height:92px']) {
+                       '.belge-tablo{ font-size:9.5px', '.belge-resim-alan{ min-height:92px']) {
     assert.ok(YAZDIRMA.includes(kural), kural);
   }
 });
@@ -107,4 +117,24 @@ test('Masaüstü PDF dışa aktarımı CSS sayfa boyutunu kullanır', () => {
   // tarayıcı çıktısıyla masaüstü çıktısı ayrışır.
   assert.match(ana, /preferCSSPageSize:\s*true/);
   assert.match(ana, /pageSize:\s*'A4'/);
+});
+
+/* ── Tablolar sayfaya sığar ──────────────────────────────────────── */
+
+test('Yazdırmada tablo kaydırma kapatılır', () => {
+  // Ekranda geniş tablolar yatay kaydırılır; kâğıtta kaydırma yoktur, taşan
+  // sütunlar görünmez olur — yani veri sessizce kaybolur.
+  assert.match(YAZDIRMA, /\.tablo-sar\{ overflow:visible !important; \}/);
+});
+
+test('Yazdırmada hücreler satır atlayabilir', () => {
+  // Sütunların birden çok satıra yayılması, tabloyu kâğıt genişliğine
+  // sığdırmanın yoludur.
+  assert.match(YAZDIRMA, /\.rapor th, \.rapor td\{ white-space:normal !important/);
+  assert.match(YAZDIRMA, /\.belge-olcut\{ min-width:0 !important; \}/);
+});
+
+test('Dikey belge başlığı sarılmaz', () => {
+  // Kendi ekseninde zaten dar; sarılırsa okunmaz hâle gelir.
+  assert.match(YAZDIRMA, /\.rapor \.belge-dikey\{ white-space:nowrap !important; \}/);
 });
