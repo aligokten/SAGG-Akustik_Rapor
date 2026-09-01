@@ -429,7 +429,9 @@ Ters eşleşme yan yolları ±3,15 dB kaydırıp DnT,w'yi 1,6 dB düşürür.
 
 ### Sınır değer tablosunu Excel'e aktarma
 
-> Tabloda **darbe sesi (döşeme)** kayıtları da yer alır (`DRB` kodu). Sınır burada **üst** sınırdır:
+> Tabloda **darbe sesi (döşeme)** kayıtları da yer alır. Kod olarak kaydın **kendi adı** kullanılır
+> (ör. `DOS1`), böylece Excel ile rapor birebir eşleşir; ad boşsa ayırıcı döşemelerin ardından gelen
+> `DOS` numarası verilir. Sınır burada **üst** sınırdır:
 > satır `≤` işaretiyle yazılır, çünkü sağlanan L′<sub>nT,w</sub> değerinin sınırdan küçük olması
 > gerekir — hava doğuşlu ve cephe satırlarındaki `≥` ile karıştırılmamalıdır.
 
@@ -596,7 +598,10 @@ Cephe hesapları artık ayırıcı elemanla **aynı ayrıntıda** raporlanır: s
 geometrisi ve 3B şema, cephe bileşenlerinin alan/R<sub>w</sub>/enerji payı dökümü, küçük elemanlar,
 iç yan yollar (Df) ve adım adım hesap tablosu — bileşik R′<sub>w</sub>'den D<sub>nT,A,tr</sub>'ye
 kadar her ara değer görünür. Döşeme hesapları da benzer biçimde kendi sayfasında,
-L<sub>n,w,eq</sub> → ΔL<sub>w</sub> → K → L′<sub>nT,w</sub> zinciriyle dökülür.
+L<sub>n,w,eq</sub> → ΔL<sub>w</sub> → K → L′<sub>nT,w</sub> zinciriyle dökülür ve — ayırıcı eleman
+ile cephede olduğu gibi — **canlı 3B mahal şeması** taşır. Şema iki oda kipinde üst ve alt mekânı
+kaydırmasıyla birlikte, tek oda kipinde alıcı mekânı gösterir; yalnızca doğrudan hacim girilen
+kipte ölçü bulunmadığı için şema çizilemez.
 
 ### Raporu PDF'e aktarma
 
@@ -760,7 +765,7 @@ test/masaustu.test.js          Masaüstü kabuğu ve paketleme yapılandırması
 npm test          # node --test test/*.test.js
 ```
 
-341 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
+343 test; birim dönüşümlerini, Kij bağıntılarını, yan yol modelini, sınıf belirlemeyi, örnek
 projenin uçtan uca hesabını, kütüphane bütünlüğünü, eski projelerin kimlik göçünü, rezonans frekansı
 modelini, katmanlı eleman hesabını (tek/iki kabuk ayrımı, kavite bonusu), oda geometrisi
 hesaplarını (KS-Schallschutzrechner örneğiyle doğrulanmış), izometrik şema üretimini, cephe iç yan

@@ -311,6 +311,44 @@ function uzmanTavsiyesi(a) {
 
 /* ── Darbe sesi — kendi sayfasında ───────────────────────────────── */
 
+/**
+ * Darbe sesi kaydının canlı 3B mahal şeması.
+ *
+ * Ayırıcı eleman ve cephe sayfalarında olduğu gibi burada da şema bulunur.
+ * Üç geometri kipinin ikisinde çizilebilir:
+ *   'iki-oda' → üst ve alt mekân, aralarındaki kaydırmayla birlikte
+ *   'olculer' → yalnızca alıcı (alt) mekân bilindiğinden üst mekân aynı
+ *               boyutta varsayılıp döşeme düzlemi gösterilir
+ * 'hacim' kipinde ölçü olmadığı için şema üretilemez.
+ */
+function darbeSemasi(k) {
+  const g = k.geometri;
+  if (!g) return '';
+
+  let cizim, oda1Adi, oda2Adi;
+  if (g.mod === 'iki-oda' && g.ustOda && g.altOda) {
+    cizim = { oda1: g.ustOda, oda2: g.altOda, yon: 'taban',
+      kaydirmaA: g.kaydirmaA, kaydirmaB: g.kaydirmaB };
+    oda1Adi = g.ustOda.ad || 'Üst mekân (kaynak)';
+    oda2Adi = g.altOda.ad || 'Alt mekân (alıcı)';
+  } else if (g.mod === 'olculer' && Number(g.L) > 0) {
+    const oda = { L: g.L, W: g.W, H: g.H };
+    cizim = { oda1: oda, oda2: oda, yon: 'taban' };
+    oda1Adi = 'Üst mekân (kaynak)';
+    oda2Adi = 'Alt mekân (alıcı)';
+  } else {
+    return '';
+  }
+
+  return `
+    <div class="canli-model yazdirma-goster">
+      <div class="canli-model-baslik"><span class="canli-model-nokta"></span> Canlı 3B model</div>
+      <div style="padding:6px">${odaSVG(cizim, {
+        oda1Adi, oda2Adi, genislik: 720, yukseklik: 330,
+      })}</div>
+    </div>`;
+}
+
 /** Tek bir döşeme (darbe sesi) kaydının rapor sayfası. */
 function darbeRaporu(p, x) {
   const k = x.kayit, d = x.degerlendirme, so = x.sonuc, geo = x.geo;
@@ -359,18 +397,15 @@ function darbeRaporu(p, x) {
     </div>
     ${!geo.temasVar ? `<div class="bilgi-kutu kirmizi">Üst ve alt mekân hiç örtüşmüyor; aralarında ortak
       bir döşeme bulunmadığından bu hesap anlamlı değildir.</div>` : ''}
-    <div class="canli-model yazdirma-goster">
-      <div class="canli-model-baslik"><span class="canli-model-nokta"></span> Mahal şeması</div>
-      <div style="padding:6px">${odaSVG({ oda1: ust, oda2: alt, yon: 'taban',
-        kaydirmaA: k.geometri.kaydirmaA, kaydirmaB: k.geometri.kaydirmaB },
-        { oda1Adi: ust.ad || 'Üst mekân (kaynak)', oda2Adi: alt.ad || 'Alt mekân (alıcı)',
-          genislik: 720, yukseklik: 330 })}</div>
-    </div>` : `
+    ${darbeSemasi(k)}` : `
     <div class="rapor-kunye-tablo">
       <div><b>Alıcı (alt) mekân hacmi V</b><span>${sayi(geo ? geo.V : k.V, 1)} m³</span></div>
+      ${k.geometri?.mod === 'olculer'
+        ? `<div><b>Alıcı mekân ölçüleri</b><span>${boyutSatiri(k.geometri)}</span></div>` : ''}
     </div>
     <p class="soluk" style="font-size:12.5px">Bu döşeme için üst ve alt mekân ölçüleri ayrı ayrı
-      girilmemiştir; bağıntıya giren hacim alıcı (alt) mekânın hacmidir.</p>`}
+      girilmemiştir; bağıntıya giren hacim alıcı (alt) mekânın hacmidir.</p>
+    ${darbeSemasi(k)}`}
 
     <h2>2. Taşıyıcı döşeme ve kaplama</h2>
     <div class="rapor-kunye-tablo">
@@ -744,8 +779,13 @@ export function excelKayitlariniTopla(s) {
   // Darbe sesi (döşeme) kayıtları. Ayrı bir kategoridir çünkü göstergesi
   // farklıdır (L′nT,w) ve sınır ÜST sınırdır: sağlanan değer sınırdan KÜÇÜK
   // olmalıdır. Aynı tabloya "≥" ile yazılsaydı sonuç yanlış okunurdu.
+  //
+  // Kod olarak kaydın KENDİ ADI kullanılır: kullanıcı döşemelerini raporda
+  // göründüğü gibi (ör. "DOS1") adlandırıyor ve Excel'in başka bir kod
+  // uydurması iki belgeyi eşleştirmeyi zorlaştırıyordu. Ad boşsa, ayırıcı
+  // döşemelerin ardından gelecek biçimde DOS numaralandırması sürdürülür.
   const drb = s.darbeler.map((x, i) => ({
-    kod: `DRB${i + 1}`,
+    kod: (x.kayit.ad || '').trim() || `DOS${dosemeAyiricilar.length + i + 1}`,
     kaynak: x.degerlendirme?.ustMekan?.ad || '—',
     alici: x.degerlendirme?.altMekan?.ad || '—',
     deger: x.sonuc?.LnTw,
@@ -765,7 +805,7 @@ export function sayfa1Uret({ dd, id, dos, drb = [] }) {
     { baslik: 'DIŞ DUVAR DD', esyaTuru: 'DUVAR', kayitlar: dd },
     { baslik: 'İÇ DUVAR İD', esyaTuru: 'DUVAR', kayitlar: id },
     { baslik: 'DÖŞEMELER DOS', esyaTuru: 'DÖŞEME', kayitlar: dos },
-    { baslik: 'DARBE SESİ DRB', esyaTuru: 'DÖŞEME', kayitlar: drb, birim: 'dB' },
+    { baslik: 'DÖŞEMELER — DARBE SESİ', esyaTuru: 'DÖŞEME', kayitlar: drb, birim: 'dB' },
   ];
 
   const satirlar = [[
@@ -810,7 +850,7 @@ export function sayfa2Uret({ dd, id, dos, drb = [] }) {
     { ana: 'Dış Yapı Elemanları', kod: 'DD', tur: 'Duvar', kayitlar: dd },
     { ana: 'İç Yapı Elemanları', kod: 'İD', tur: 'Duvar', kayitlar: id },
     { ana: 'Döşemeler', kod: 'DOS', tur: 'Döşeme', kayitlar: dos },
-    { ana: 'Döşemeler — Darbe Sesi', kod: 'DRB', tur: 'Döşeme', kayitlar: drb },
+    { ana: 'Döşemeler — Darbe Sesi', kod: 'DOS', tur: 'Döşeme', kayitlar: drb },
   ];
 
   const satirlar = [[

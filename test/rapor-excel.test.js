@@ -114,7 +114,21 @@ test('Sınır değer tablosu darbe sesi kayıtlarını içerir', () => {
   const durum = ornekProje();
   const k = excelKayitlariniTopla(projeyiHesapla(durum));
   assert.equal(k.drb.length, durum.darbeler.length);
-  assert.ok(k.drb.every((r) => /^DRB\d+$/.test(r.kod)));
+});
+
+test('Darbe satırının kodu raporda görünen addır', () => {
+  // Excel'in kendi kodunu uydurması, iki belgeyi eşleştirmeyi zorlaştırıyordu.
+  const durum = ornekProje();
+  durum.darbeler[0].ad = 'DOS7';
+  const k = excelKayitlariniTopla(projeyiHesapla(durum));
+  assert.equal(k.drb[0].kod, 'DOS7');
+});
+
+test('Adı boş darbe kaydında DOS numaralandırması sürer', () => {
+  const durum = ornekProje();
+  durum.darbeler[0].ad = '   ';
+  const k = excelKayitlariniTopla(projeyiHesapla(durum));
+  assert.match(k.drb[0].kod, /^DOS\d+$/);
 });
 
 test('Darbe sesinde sınır ÜST sınır olarak yazılır (≤)', () => {
@@ -122,8 +136,9 @@ test('Darbe sesinde sınır ÜST sınır olarak yazılır (≤)', () => {
   // değer sınırdan KÜÇÜK olmalıdır; aynı işaretle yazılsaydı yanlış okunurdu.
   const k = excelKayitlariniTopla(projeyiHesapla(ornekProje()));
   const sayfa = sayfa2Uret(k);
-  const drb = sayfa.satirlar.filter((r) => /^DRB\d+$/.test(String(r[1]?.deger || '')));
-  assert.ok(drb.length > 0, 'DRB satırı yok');
+  const drbKodlari = new Set(k.drb.map((r) => r.kod));
+  const drb = sayfa.satirlar.filter((r) => drbKodlari.has(String(r[1]?.deger || '')));
+  assert.ok(drb.length > 0, 'darbe satırı yok');
   for (const satir of drb) assert.match(String(satir[4].deger), /^≤\d/);
 
   const hava = sayfa.satirlar.filter((r) => /^(İD|DD)\d+$/.test(String(r[1]?.deger || '')));
@@ -136,7 +151,9 @@ test('Katman sayfasında darbe sesi kategorisi ve birimi doğrudur', () => {
   const kategori = sayfa.satirlar.find((r) => String(r[0]?.deger || '').includes('DARBE'));
   assert.ok(kategori, 'DARBE SESİ kategorisi yok');
   // Darbe sesi göstergesi dB'dir, cephedeki gibi dBA değil.
-  const drbSatir = sayfa.satirlar.find((r) => /^DRB\d+$/.test(String(r[2]?.deger || '')));
+  const kodlar = new Set(k.drb.map((r) => r.kod));
+  const drbSatir = sayfa.satirlar.find((r) => kodlar.has(String(r[2]?.deger || '')));
+  assert.ok(drbSatir, 'darbe satırı yok');
   assert.equal(drbSatir[4].deger, 'dB');
 });
 
