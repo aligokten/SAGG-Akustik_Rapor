@@ -18,10 +18,29 @@ import { ciz as onBolumCiz } from '../js/arayuz/sekme-onbolum.js';
 
 /* ── Lgag ────────────────────────────────────────────────────────── */
 
-test('Lgag, üç düzey de eşitken cezalarla dengelenir', () => {
-  // 60/55/50, akşam +5 ve gece +10 cezasıyla üçü de 60 dBA'ya gelir;
-  // ağırlıklı ortalama da 60 olmalıdır.
-  assert.equal(Math.round(lgagHesapla({ gunduz: 60, aksam: 55, gece: 50 })), 60);
+test('Lgag, yönetmelikteki bağıntıyı verir (akşam/gece cezası YOK)', () => {
+  // Referans akustik raporun kendi sayıları: 60/55/50 dBA girdisinde
+  // Lgag = 58 dBA. Cezalı (Avrupa Lden) bağıntısı burada 60,0 verir ve
+  // yanlıştır; yönetmelik düz enerji ortalaması kullanır.
+  const x = lgagHesapla({ gunduz: 60, aksam: 55, gece: 50 });
+  assert.ok(Math.abs(x - 57.68) < 0.01, `beklenen ≈57,68 — bulunan ${x}`);
+  assert.equal(Math.round(x), 58);
+});
+
+test('Lgag, akşam ve geceye ceza EKLEMEZ', () => {
+  // Ceza uygulansaydı sonuç düz ortalamadan yüksek çıkardı. Bu test,
+  // Lden bağıntısının sessizce geri gelmesini engeller.
+  const duz = lgagHesapla({ gunduz: 60, aksam: 60, gece: 60 });
+  assert.ok(Math.abs(duz - 60) < 1e-9, 'üç dilim eşitken Lgag o değere eşit olmalı');
+});
+
+test('Lgag, ağırlıkları zaman dilimi uzunluğundan alır', () => {
+  // Yalnızca gece 10 dB yükselince artış, gecenin 8/24 payıyla sınırlıdır.
+  const temel = lgagHesapla({ gunduz: 60, aksam: 60, gece: 60 });
+  const geceli = lgagHesapla({ gunduz: 60, aksam: 60, gece: 70 });
+  const beklenen = 10 * Math.log10((12 * 10 ** 6 + 4 * 10 ** 6 + 8 * 10 ** 7) / 24);
+  assert.ok(Math.abs(geceli - beklenen) < 1e-9);
+  assert.ok(geceli > temel);
 });
 
 test('Lgag, gece düzeyi yükselince artar', () => {

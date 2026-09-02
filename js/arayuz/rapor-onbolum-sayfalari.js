@@ -134,8 +134,10 @@ function bolumCevresel(ob) {
     </tbody>
   </table></div>
   <p class="soluk" style="font-size:12px">
-    L<sub>gag</sub> = 10·lg[(12·10<sup>L<sub>g</sub>/10</sup> + 4·10<sup>(L<sub>a</sub>+5)/10</sup>
-    + 8·10<sup>(L<sub>ge</sub>+10)/10</sup>) / 24]
+    L<sub>gag</sub> = 10·lg[(12·10<sup>L<sub>gündüz</sub>/10</sup>
+    + 4·10<sup>L<sub>akşam</sub>/10</sup>
+    + 8·10<sup>L<sub>gece</sub>/10</sup>) / 24] &nbsp;·&nbsp;
+    Ağırlıklar zaman dilimlerinin uzunluğudur: gündüz 07–19, akşam 19–23, gece 23–07.
   </p>
   ${ob.cevresel?.aciklama ? `<p>${kacis(ob.cevresel.aciklama)}</p>` : ''}`;
 }

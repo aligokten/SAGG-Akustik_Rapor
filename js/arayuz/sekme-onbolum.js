@@ -112,8 +112,10 @@ function kartCevresel(ob) {
     <div class="kart-baslik"><h2>2. Çevresel gürültü</h2></div>
     <div class="bilgi-kutu">
       Parselin maruz kaldığı çevresel gürültü düzeyleri. Gündüz–akşam–gece göstergesi
-      <b>L<sub>gag</sub></b> bu üç değerden hesaplanır ve cephe hesaplarında dış gürültü
-      düzeyi olarak kullanılabilir.
+      <b>L<sub>gag</sub></b>, üç dilimin süreyle ağırlıklı enerji ortalamasıdır
+      (gündüz 07–19, akşam 19–23, gece 23–07) ve cephe hesaplarında dış gürültü düzeyi
+      olarak kullanılabilir. Avrupa'daki L<sub>den</sub>'den farklı olarak akşama ve
+      geceye ceza eklenmez.
     </div>
 
     <div class="izgara">

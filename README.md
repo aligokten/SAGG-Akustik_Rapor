@@ -621,12 +621,22 @@ olmaz, proje dosyası tek başına taşınabilir. Dosya başına sınır **4 MB*
 
 ### Çevresel gürültü ve L(gag)
 
-Gündüz–akşam–gece göstergesi, akşamı +5, geceyi +10 dBA cezalandıran 24 saatlik enerji
+Gündüz–akşam–gece göstergesi, üç zaman diliminin süreyle ağırlıklı 24 saatlik enerji
 ortalamasıdır:
 
 ```
-Lgag = 10·lg[ (12·10^(Lgündüz/10) + 4·10^((Lakşam+5)/10) + 8·10^((Lgece+10)/10)) / 24 ]
+Lgag = 10·lg[ (12·10^(Lgündüz/10) + 4·10^(Lakşam/10) + 8·10^(Lgece/10)) / 24 ]
 ```
+
+Ağırlıklar dilim uzunluklarıdır: gündüz 07.00–19.00 (12 saat), akşam 19.00–23.00
+(4 saat), gece 23.00–07.00 (8 saat).
+
+> **Akşama ve geceye ceza eklenmez.** Avrupa'daki L<sub>den</sub> göstergesi akşamı
+> +5, geceyi +10 dBA cezalandırır ve iki bağıntı sıkça karıştırılır; Çevresel
+> Gürültünün Değerlendirilmesi ve Yönetimi Yönetmeliği'ndeki L<sub>gag</sub> ise düz
+> enerji ortalamasıdır. Fark önemsiz değil: 60/55/50 dBA girdisinde cezalı bağıntı
+> 60,0 — doğru bağıntı **57,7 dBA** verir. v1.4.0 bu hesabı cezalı yapıyordu,
+> **v1.4.1** ile düzeltildi.
 
 Girilen düzeyler, seçilen alan türünün EK-VII sınır değerleriyle karşılaştırılır.
 "Yollar mevcut" işaretlendiğinde sınırlar 5 dBA yükselir — planlanmış ama henüz

@@ -57,17 +57,26 @@ export const CEVRESEL_SINIR_DEGERLER = {
 };
 
 /**
- * Gürültü göstergesi Lgag (gündüz–akşam–gece), 24 saatlik enerji
- * ortalamasıdır: akşam +5 dBA, gece +10 dBA cezalandırılır.
+ * Gürültü göstergesi Lgag (gündüz–akşam–gece), üç zaman diliminin süreyle
+ * ağırlıklı 24 saatlik enerji ortalamasıdır:
  *
- *   Lgag = 10·lg( (12·10^(Lg/10) + 4·10^((La+5)/10) + 8·10^((Lge+10)/10)) / 24 )
+ *   Lgag = 10·lg( (12·10^(Lgündüz/10) + 4·10^(Lakşam/10) + 8·10^(Lgece/10)) / 24 )
+ *
+ * Ağırlıklar zaman dilimlerinin uzunluğudur: gündüz 07-19 (12 saat),
+ * akşam 19-23 (4 saat), gece 23-07 (8 saat).
+ *
+ * DİKKAT — akşama +5, geceye +10 dBA CEZA UYGULANMAZ. Avrupa'daki Lden
+ * göstergesi bu cezaları taşır ve iki bağıntı sık karıştırılır; Çevresel
+ * Gürültünün Değerlendirilmesi ve Yönetimi Yönetmeliği'ndeki Lgag ise düz
+ * enerji ortalamasıdır. Fark küçük değildir: 60/55/50 dBA girdisinde cezalı
+ * bağıntı 60,0 — cezasız (doğru) bağıntı 57,7 dBA verir.
  *
  * @returns {number|null} Üç değer de sayı değilse null.
  */
 export function lgagHesapla({ gunduz, aksam, gece } = {}) {
   const g = Number(gunduz), a = Number(aksam), n = Number(gece);
   if (!Number.isFinite(g) || !Number.isFinite(a) || !Number.isFinite(n)) return null;
-  const toplam = 12 * 10 ** (g / 10) + 4 * 10 ** ((a + 5) / 10) + 8 * 10 ** ((n + 10) / 10);
+  const toplam = 12 * 10 ** (g / 10) + 4 * 10 ** (a / 10) + 8 * 10 ** (n / 10);
   return 10 * Math.log10(toplam / 24);
 }
 
