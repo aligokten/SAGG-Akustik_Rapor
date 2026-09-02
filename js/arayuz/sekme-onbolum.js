@@ -197,13 +197,17 @@ function kartGorseller(ob) {
     <div class="kart-baslik">
       <h2>${kacis(g.baslik)}</h2>
       <button type="button" class="dugme acik kucuk" data-eylem="gorsel-ekle" data-tur="${kacis(g.tur)}">
-        + Görsel ekle</button>
+        + ${g.numarasiz ? 'Belge sayfası ekle' : 'Görsel ekle'}</button>
     </div>
     <div class="bilgi-kutu">${kacis(g.aciklama)}
-      Raporda <b>Şekil ${kacis(g.bolum)}.x</b> olarak numaralanır.</div>
+      ${g.numarasiz
+        ? 'Şekil numarası verilmez. Belge birden çok sayfaysa her sayfayı ayrı ekleyin.'
+        : `Raporda <b>Şekil ${kacis(g.bolum)}.x</b> olarak numaralanır.`}</div>
 
     ${g.gorseller.length === 0
-      ? '<div class="bos-durum">Bu bölüme henüz görsel eklenmedi.</div>'
+      ? `<div class="bos-durum">${g.numarasiz
+          ? 'Belge henüz yüklenmedi. Belgenizin taranmış görüntüsünü (PNG/JPG) ekleyin.'
+          : 'Bu bölüme henüz görsel eklenmedi.'}</div>`
       : g.gorseller.map((x) => gorselSatiri(x)).join('')}
   </section>`).join('');
 }
@@ -217,9 +221,10 @@ function gorselSatiri(g) {
     </div>
     <div class="gorsel-alanlar">
       <div class="alan">
-        <label for="gb-${kacis(g.id)}">${kacis(g.etiket)} başlığı</label>
+        <label for="gb-${kacis(g.id)}">${kacis(g.etiket)}${g.numarasiz ? '' : ' başlığı'}</label>
         <input id="gb-${kacis(g.id)}" data-yol-gorsel="${kacis(g.id)}.baslik"
-          value="${kacis(g.baslik)}" placeholder="Örn. ZEMİN KAT PLANI">
+          value="${kacis(g.baslik)}" placeholder="${g.numarasiz ? 'Belge adı (isteğe bağlı)' : 'Örn. ZEMİN KAT PLANI'}"
+          ${g.numarasiz ? 'disabled title="Belge başlığı sabittir"' : ''}>
       </div>
       <div class="alan">
         <label for="ga-${kacis(g.id)}">Açıklama</label>

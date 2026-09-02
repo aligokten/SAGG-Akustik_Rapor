@@ -1,69 +1,132 @@
 /**
  * rapor-onbolum-sayfalari.js — Raporun ön bölümünün yazdırılabilir sayfaları.
  *
- * Hesap sayfalarından önce gelen bölümleri A4 sayfaları olarak üretir:
- *   1. Giriş ve parsel bilgileri (+ vaziyet planı)
- *   2. Çevresel gürültü
- *   4. Anahtar paftalar (kat planları ve kesitler)
- *   5. Yapı elemanı kod anahtarı ve mekân hassasiyet dereceleri
- *   7. Nokta detaylar
- *   9. Uygulama ve kontrol görselleri
- *  11. Malzeme özellikleri
- *  12. Sonuç ve öneriler
+ * Hesap sayfalarından önce gelen bölümleri üretir: giriş ve parsel künyesi,
+ * içindekiler, çevresel gürültü, anahtar paftalar, yapı elemanı kod anahtarı,
+ * nokta detaylar, uygulama görselleri, malzeme özellikleri, sonuç ve raporu
+ * hazırlayan uzmanın yeterlilik belgesi.
  *
- * Bölüm numaraları, sektörde kullanılan rapor düzenine uyacak biçimde
- * sabittir; hesap sayfaları (3, 6, 8, 10) aradaki numaraları taşır.
+ * Bölüm NUMARALARI burada sabit yazılmaz. Boş bölümler (ör. hiç nokta detay
+ * yüklenmemişse) hiç basılmadığından, numaralar gerçekten basılan bölümler
+ * üzerinden sırayla verilir; içindekiler de aynı listeden üretilir. Böylece
+ * başlıklarla içindekilerin ayrışması yapısal olarak olanaksızdır.
  */
 
 import { kacis, sayi } from './ortak.js';
 import {
-  CEVRESEL_SINIR_DEGERLER, cevreselDegerlendirme, girisCumlesi,
+  CEVRESEL_SINIR_DEGERLER, cevreselDegerlendirme, girisCumlesi, GIRIS_METNI,
   gorselleriGrupla, yapiElemaniAnahtari, mekanDereceleri, malzemeYogunluklari,
 } from '../cekirdek/rapor-onbolum.js';
 
 /**
- * Ön bölümün bütün sayfalarını üretir.
+ * Ön bölümün bölüm gruplarını döndürür.
  *
- * @param {Object} p       Proje künyesi
- * @param {Object} s       Hesap sonuçları
- * @param {Object} ob      Ön bölüm verisi
- * @param {Function} antet Sayfa antedini üreten işlev (sekme-rapor'dan gelir)
- * @param {Function} altbilgi Sayfa altbilgisini üreten işlev
+ * Her grup: { id, baslik, numarali, sayfalar(no) → [sayfa içeriği, …] }
+ * `sayfalar`, atanan bölüm numarasını alır; başlığı o numarayla yazar.
+ *
+ * @returns {Array} Ön bölüm kapalıysa boş dizi.
  */
-export function onBolumSayfalari(p, s, ob, antet, altbilgi) {
-  if (!ob || ob.etkin === false) return '';
+export function onBolumGruplari(p, s, ob) {
+  if (!ob || ob.etkin === false) return [];
 
   const gruplar = gorselleriGrupla(ob.gorseller || []);
-  const grup = (tur) => gruplar.find((g) => g.tur === tur)?.gorseller || [];
+  const gor = (tur) => gruplar.find((g) => g.tur === tur)?.gorseller || [];
 
-  const sayfa = (icerik) => `<div class="rapor rapor-sayfa-sonu">
-    ${antet(p)}${icerik}${altbilgi(p)}</div>`;
+  const liste = [
+    { id: 'giris', baslik: 'Giriş', numarali: true,
+      /*
+       * Vaziyet planı KENDİ sayfasında basılır. Künye tablosuyla aynı
+       * sayfaya sığdırmak için küçültülüyordu; sabit giriş metni eklenince
+       * sayfa taştı ve plan, arkasında koca bir boşlukla yetim kaldı.
+       * Ayrı sayfa, aynı kâğıt sayısıyla düzgün bir düzen verir ve plan
+       * tam boyunda basılır.
+       */
+      sayfalar: (no) => [
+        bolumGiris(no, p, ob),
+        ...(gor('vaziyet').length
+          ? [`<h2>${no}.2 Vaziyet planı</h2>${gor('vaziyet').map((g) => sekil(g)).join('')}`]
+          : []),
+      ] },
 
-  return [
-    sayfa(bolumGiris(p, ob, grup('vaziyet'))),
-    sayfa(bolumCevresel(ob)),
-    gorselSayfalari('4', 'Anahtar paftalar', [...grup('katPlani'), ...grup('kesit')],
-      'Yapı elemanı kodları aşağıdaki paftalar üzerinde gösterilmiştir.', sayfa),
-    sayfa(bolumAnahtar(s, ob)),
-    gorselSayfalari('7', 'Nokta detaylar', grup('noktaDetay'),
-      'Kritik birleşim noktalarının uygulama detayları.', sayfa),
-    gorselSayfalari('9', 'Uygulama ve kontrol', grup('uygulama'),
-      'Şantiyede uyulacak uygulama kuralları ve kontrol aşamaları.', sayfa),
-    sayfa(bolumMalzeme(s)),
-    bolumSonuc(ob) ? sayfa(bolumSonuc(ob)) : '',
-  ].join('');
+    { id: 'cevresel', baslik: 'Çevresel gürültü', numarali: true,
+      sayfalar: (no) => [bolumCevresel(no, ob)] },
+
+    gorselGrubu('paftalar', 'Anahtar paftalar', [...gor('katPlani'), ...gor('kesit')],
+      'Yapı elemanı kodları aşağıdaki paftalar üzerinde gösterilmiştir.'),
+
+    { id: 'anahtar', baslik: 'Yapı elemanları ve mekân dereceleri', numarali: true,
+      sayfalar: (no) => [bolumAnahtar(no, s, ob)] },
+
+    gorselGrubu('detaylar', 'Nokta detaylar', gor('noktaDetay'),
+      'Kritik birleşim noktalarının uygulama detayları.'),
+
+    gorselGrubu('uygulama', 'Uygulama ve kontrol', gor('uygulama'),
+      'Şantiyede uyulacak uygulama kuralları ve kontrol aşamaları.'),
+
+    { id: 'malzeme', baslik: 'Malzeme özellikleri', numarali: true,
+      sayfalar: (no) => [bolumMalzeme(no, s)] },
+
+    bolumSonucGrubu(ob),
+
+    // Uzman belgesi ön bölümün EN SONUNDA ve numarasız durur: bir rapor
+    // bölümü değil, rapora eklenen bir yeterlilik belgesidir.
+    gor('uzmanBelgesi').length
+      ? { id: 'uzmanBelgesi', baslik: 'D1 Temel Bina Akustik Uzman Belgesi', numarali: false,
+          sayfalar: () => gor('uzmanBelgesi').map((g) => `
+            <h1 style="font-size:18px">D1 Temel Bina Akustik Uzman Belgesi</h1>
+            <p>Bu raporu hazırlayan akustik uzmanın yeterlilik belgesi aşağıdadır.</p>
+            ${belgeGorseli(g)}`) }
+      : null,
+  ];
+
+  return liste.filter(Boolean);
 }
 
-/* ── 1. Giriş ───────────────────────────────────────────────────────── */
+/** Görsel taşıyan bir bölüm; hiç görsel yoksa bölüm hiç oluşmaz. */
+function gorselGrubu(id, baslik, gorseller, aciklama) {
+  if (!gorseller.length) return null;
+  // Bir A4 sayfasına en çok iki şekil sığar.
+  const sayfalar = [];
+  for (let i = 0; i < gorseller.length; i += 2) sayfalar.push(gorseller.slice(i, i + 2));
 
-function bolumGiris(p, ob, vaziyet) {
-  const metin = String(ob.giris || '').trim() || girisCumlesi(p);
+  return {
+    id, baslik, numarali: true,
+    sayfalar: (no) => sayfalar.map((grup, i) => `
+      ${i === 0
+        ? `<h1 style="font-size:18px">${no}. ${kacis(baslik)}</h1>
+           ${aciklama ? `<p>${kacis(aciklama)}</p>` : ''}`
+        : `<h2>${kacis(baslik)} (devam)</h2>`}
+      ${grup.map((g) => sekil(g)).join('')}`),
+  };
+}
+
+/** Sonuç bölümü; sonuç metni ve öneri yoksa hiç basılmaz. */
+function bolumSonucGrubu(ob) {
+  const sonuc = String(ob.sonuc || '').trim();
+  const oneriler = (ob.oneriler || []).map((x) => String(x || '').trim()).filter(Boolean);
+  if (!sonuc && !oneriler.length) return null;
+
+  return {
+    id: 'sonuc', baslik: 'Sonuç ve öneriler', numarali: true,
+    sayfalar: (no) => [`
+      <h1 style="font-size:18px">${no}. Sonuç ve öneriler</h1>
+      ${sonuc ? `<p>${kacis(sonuc)}</p>` : ''}
+      ${oneriler.length ? `<h2>${no}.1 Uygulama önerileri</h2>
+        <ol class="rapor-oneriler">${oneriler.map((o) => `<li>${kacis(o)}</li>`).join('')}</ol>` : ''}`],
+  };
+}
+
+/* ── Giriş ──────────────────────────────────────────────────────────── */
+
+function bolumGiris(no, p, ob) {
+  const ek = String(ob.giris || '').trim() || girisCumlesi(p);
 
   return `
-  <h1 style="font-size:18px">1. Giriş</h1>
-  ${metin ? `<p>${kacis(metin)}</p>` : ''}
+  <h1 style="font-size:18px">${no}. Giriş</h1>
+  <p>${kacis(GIRIS_METNI)}</p>
+  ${ek ? `<p>${kacis(ek)}</p>` : ''}
 
-  <h2>1.1 Yapı ve parsel bilgileri</h2>
+  <h2>${no}.1 Yapı ve parsel bilgileri</h2>
   <div class="tablo-sar"><table>
     <tbody>
       ${satir('İl / İlçe', [p.il, p.ilce].filter(Boolean).join(' / '))}
@@ -78,9 +141,7 @@ function bolumGiris(p, ob, vaziyet) {
       ${satir('Kapalı kullanım alanı', p.kapaliAlan ? `${p.kapaliAlan} m²` : '')}
       ${satir('İnşaat yılı', p.insaatYili)}
     </tbody>
-  </table></div>
-
-  ${vaziyet.map((g) => sekil(g, 'kucuk')).join('')}`;
+  </table></div>`;
 }
 
 /** Değeri boş olan künye satırı rapora hiç girmez. */
@@ -89,18 +150,41 @@ function satir(etiket, deger) {
   return v ? `<tr><th style="text-align:left;width:38%">${kacis(etiket)}</th><td>${kacis(v)}</td></tr>` : '';
 }
 
-/* ── 2. Çevresel gürültü ────────────────────────────────────────────── */
+/* ── İçindekiler ────────────────────────────────────────────────────── */
 
-function bolumCevresel(ob) {
+/**
+ * İçindekiler sayfasını üretir.
+ *
+ * Sayfa numaraları burada YAZILMAZ: kaç kâğıda basılacağı ancak yazdırma
+ * düzeninde ölçülerek bilinir (bkz. arayuz/sayfa-numaralari.js). Buraya
+ * yalnızca hedef bölümün kimliği konur; numarayı ölçüm doldurur.
+ */
+export function icindekilerSayfasi(girdiler) {
+  return `
+  <h1 style="font-size:18px">İçindekiler</h1>
+  <table class="icindekiler"><tbody>
+    ${girdiler.map((g) => `<tr>
+      <td class="ic-baslik">${g.no ? `${g.no}. ` : ''}${kacis(g.baslik)}</td>
+      <td class="ic-nokta"><span></span></td>
+      <td class="ic-sayfa" data-bolum-ref="${kacis(g.id)}">—</td>
+    </tr>`).join('')}
+  </tbody></table>
+  <p class="soluk" style="font-size:12px;margin-top:10px">
+    Sayfa numaraları, raporun yazdırma düzenine göre hesaplanır.</p>`;
+}
+
+/* ── Çevresel gürültü ───────────────────────────────────────────────── */
+
+function bolumCevresel(no, ob) {
   const d = cevreselDegerlendirme(ob.cevresel || {});
 
   return `
-  <h1 style="font-size:18px">2. Çevresel gürültü</h1>
+  <h1 style="font-size:18px">${no}. Çevresel gürültü</h1>
   <p>Parselin bulunduğu alan <b>${kacis(d.alan.ad)}</b> olarak değerlendirilmiştir.
     Çevredeki yollar ${d.mevcutYol ? 'mevcuttur' : 'henüz yapılmamış (planlanmış) yollardır'};
     sınır değerler buna göre okunmuştur.</p>
 
-  <h2>2.1 Çevresel gürültü sınır değerleri</h2>
+  <h2>${no}.1 Çevresel gürültü sınır değerleri</h2>
   <div class="tablo-sar"><table>
     <thead>
       <tr><th rowspan="2">Alan türü</th>
@@ -117,7 +201,7 @@ function bolumCevresel(ob) {
   </table></div>
   <p class="soluk" style="font-size:12px">Kaynak: ${kacis(CEVRESEL_SINIR_DEGERLER.kaynak)}</p>
 
-  <h2>2.2 Parselde kabul edilen gürültü düzeyleri</h2>
+  <h2>${no}.2 Parselde kabul edilen gürültü düzeyleri</h2>
   <div class="tablo-sar"><table>
     <thead><tr><th>Gösterge</th><th class="sayi">Kabul edilen</th>
       <th class="sayi">Sınır</th><th>Durum</th></tr></thead>
@@ -152,35 +236,12 @@ function gosterge(ad) {
   return alt ? `L<sub>${alt}</sub>` : kacis(ad);
 }
 
-/* ── 4/7/9. Görsel bölümleri ────────────────────────────────────────── */
+/* ── Şekiller ───────────────────────────────────────────────────────── */
 
-/**
- * Görselleri sayfalara böler.
- *
- * Bir A4 sayfasına en çok iki görsel sığar; daha fazlası varsa bölüm
- * başlığı ilk sayfada kalır ve kalanlar arkasından gelen sayfalara akar.
- */
-function gorselSayfalari(bolumNo, baslik, gorseller, aciklama, sayfa) {
-  if (!gorseller.length) return '';
-  const sayfalar = [];
-  for (let i = 0; i < gorseller.length; i += 2) sayfalar.push(gorseller.slice(i, i + 2));
-
-  return sayfalar.map((grup, i) => sayfa(`
-    ${i === 0 ? `<h1 style="font-size:18px">${kacis(bolumNo)}. ${kacis(baslik)}</h1>
-      ${aciklama ? `<p>${kacis(aciklama)}</p>` : ''}`
-      : `<h2>${kacis(baslik)} (devam)</h2>`}
-    ${grup.map((g) => sekil(g)).join('')}`)).join('');
-}
-
-/**
- * Numaralı bir şekil bloğu (görsel + alt yazı).
- *
- * `sinif` ile şekil küçültülebilir: künye tablosuyla aynı sayfayı paylaşan
- * vaziyet planı, tam boyda basıldığında sayfayı taşırıyordu.
- */
-function sekil(g, sinif = '') {
+/** Numaralı bir şekil bloğu (görsel + alt yazı). */
+function sekil(g) {
   return `
-  <figure class="rapor-sekil${sinif ? ` ${sinif}` : ''}">
+  <figure class="rapor-sekil">
     ${g.veri ? `<img src="${kacis(g.veri)}" alt="${kacis(g.baslik || g.etiket)}">`
              : '<div class="rapor-sekil-bos">Görsel yüklenmedi</div>'}
     <figcaption>${kacis(g.etiket)}${g.baslik ? ` (${kacis(g.baslik)})` : ''}${
@@ -188,16 +249,26 @@ function sekil(g, sinif = '') {
   </figure>`;
 }
 
-/* ── 5. Yapı elemanı anahtarı ve mekân dereceleri ───────────────────── */
+/** Uzman belgesi; sayfayı dolduracak biçimde, şekil numarası olmadan basılır. */
+function belgeGorseli(g) {
+  return `
+  <figure class="rapor-sekil belge-gorsel">
+    ${g.veri ? `<img src="${kacis(g.veri)}" alt="${kacis(g.etiket)}">`
+             : '<div class="rapor-sekil-bos">Belge yüklenmedi</div>'}
+    ${g.aciklama ? `<figcaption>${kacis(g.aciklama)}</figcaption>` : ''}
+  </figure>`;
+}
 
-function bolumAnahtar(s, ob) {
+/* ── Yapı elemanı anahtarı ve mekân dereceleri ──────────────────────── */
+
+function bolumAnahtar(no, s, ob) {
   const anahtar = yapiElemaniAnahtari(s);
   const mekanlar = mekanDereceleri(s);
 
   return `
-  <h1 style="font-size:18px">5. Yapı elemanları ve mekân dereceleri</h1>
+  <h1 style="font-size:18px">${no}. Yapı elemanları ve mekân dereceleri</h1>
 
-  <h2>5.1 Yapı elemanı kod anahtarı</h2>
+  <h2>${no}.1 Yapı elemanı kod anahtarı</h2>
   ${ob.yapiElemaniNotu ? `<p>${kacis(ob.yapiElemaniNotu)}</p>` : ''}
   ${anahtar.length === 0 ? '<p class="soluk">Hesap kaydı bulunmadığından anahtar üretilmedi.</p>'
     : anahtar.map((g) => `
@@ -209,7 +280,7 @@ function bolumAnahtar(s, ob) {
           <td>${kacis(r.kaynak)}</td><td>${kacis(r.alici)}</td></tr>`).join('')}</tbody>
       </table></div>`).join('')}
 
-  <h2>5.2 Gürültülülük düzeyi ve hassasiyet dereceleri</h2>
+  <h2>${no}.2 Gürültülülük düzeyi ve hassasiyet dereceleri</h2>
   ${mekanlar.length === 0 ? '<p class="soluk">Hesaplarda mekân seçilmedi.</p>'
     : `<div class="tablo-sar"><table>
         <thead><tr><th>Mekân</th><th>Bina türü</th>
@@ -222,13 +293,13 @@ function bolumAnahtar(s, ob) {
         I: çok hassas, II: hassas, III: az hassas.</p>`}`;
 }
 
-/* ── 11. Malzeme özellikleri ────────────────────────────────────────── */
+/* ── Malzeme özellikleri ────────────────────────────────────────────── */
 
-function bolumMalzeme(s) {
+function bolumMalzeme(no, s) {
   const malzemeler = malzemeYogunluklari(s);
   return `
-  <h1 style="font-size:18px">11. Malzeme özellikleri</h1>
-  <h2>11.1 Malzeme birim hacim ağırlıkları</h2>
+  <h1 style="font-size:18px">${no}. Malzeme özellikleri</h1>
+  <h2>${no}.1 Malzeme birim hacim ağırlıkları</h2>
   ${malzemeler.length === 0 ? '<p class="soluk">Hesaplarda malzeme çözülemedi.</p>'
     : `<div class="tablo-sar"><table>
         <thead><tr><th>Malzeme</th><th class="sayi">Birim hacim ağırlığı (kg/m³)</th></tr></thead>
@@ -238,18 +309,4 @@ function bolumMalzeme(s) {
       <p class="soluk" style="font-size:12px">
         Tablo, raporda geçen yapı elemanlarının katmanlarından türetilmiştir.
         Ses geçiş kaybı kestirimleri bu yoğunluklara dayanır.</p>`}`;
-}
-
-/* ── 12. Sonuç ──────────────────────────────────────────────────────── */
-
-function bolumSonuc(ob) {
-  const sonuc = String(ob.sonuc || '').trim();
-  const oneriler = (ob.oneriler || []).map((x) => String(x || '').trim()).filter(Boolean);
-  if (!sonuc && !oneriler.length) return '';
-
-  return `
-  <h1 style="font-size:18px">12. Sonuç ve öneriler</h1>
-  ${sonuc ? `<p>${kacis(sonuc)}</p>` : ''}
-  ${oneriler.length ? `<h2>12.1 Uygulama önerileri</h2>
-    <ol class="rapor-oneriler">${oneriler.map((o) => `<li>${kacis(o)}</li>`).join('')}</ol>` : ''}`;
 }

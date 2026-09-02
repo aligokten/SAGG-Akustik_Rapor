@@ -23,12 +23,13 @@ import { LISANS, telifSatiri } from '../veri/lisans.js';
 import { adaParselMetni, adresMetni, alanMetni } from '../durum.js';
 import { SINIFLAR, EK2_TABLO_2_2 } from '../veri/yonetmelik.js';
 import { belgeVerisi } from '../cekirdek/performans-belgesi.js';
-import { onBolumSayfalari } from './rapor-onbolum-sayfalari.js';
+import { onBolumGruplari, icindekilerSayfasi } from './rapor-onbolum-sayfalari.js';
 
 const dolguBul = (id) => bul(YALITIM_LEVHALARI, id);
 
 export function ciz(durum, s) {
   const p = durum.proje;
+  const sayfalar = raporSayfalari(durum, s);
 
   return `
   <div class="yazdirma-gizle" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
@@ -37,19 +38,109 @@ export function ciz(durum, s) {
     <span class="soluk" style="align-self:center;font-size:12.5px">Windows uygulamasında PDF doğrudan kaydedilir; tarayıcıda hedef olarak "PDF olarak kaydet" seçilir.</span>
   </div>
 
-  ${onBolumSayfalari(p, s, durum.onbolum, antet, altbilgi)}
+  ${sayfalar.map((x) => x.html).join('')}`;
+}
 
-  ${s.ayiricilar.length === 0
-    ? '<div class="bos-durum">Henüz ayırıcı eleman tanımlanmadı. Rapor, en az bir ayırıcı eleman gerektirir.</div>'
-    : s.ayiricilar.map((a, i) => ayiriciRaporu(p, a, i, s.ayiricilar.length)).join('')}
+/**
+ * Raporun bütün sayfalarını sırayla üretir.
+ *
+ * İki uçlu bir bağımlılık var: içindekiler bölüm listesini bilmeli, ama
+ * bölüm başlıkları da numarayı bilmeli. Bu yüzden önce bölüm listesi
+ * (üstveri) kuruluyor, numaralar sırayla veriliyor, sonra HTML üretiliyor.
+ * Boş bölüm hiç oluşmadığı için numaralar kendiliğinden sıkışıyor ve
+ * içindekiler ile başlıkların ayrışması olanaksız hâle geliyor.
+ *
+ * Her sayfaya `data-bolum-id` yazılır; içindekilerin sayfa numaraları
+ * bunlara bakılarak ölçülür (bkz. arayuz/sayfa-numaralari.js).
+ *
+ * @returns {Array<{id:string, html:string}>}
+ */
+export function raporSayfalari(durum, s) {
+  const p = durum.proje;
+  const gruplar = [...onBolumGruplari(p, s, durum.onbolum), ...hesapGruplari(p, s)];
 
-  ${s.darbeler.map((x) => darbeRaporu(p, x)).join('')}
+  // Numaralandırma: yalnızca `numarali` bölümler sayıya girer.
+  let no = 0;
+  const numarali = gruplar.map((g) => ({ ...g, no: g.numarali ? (no += 1) : null }));
 
-  ${s.cepheler.map((x, i) => cepheRaporu(p, x, i)).join('')}
+  const sayfalar = [];
+  /**
+   * @param {boolean} hazir Hesap sayfaları antet ve altbilgiyi kendi
+   *   içeriklerinde taşır; onlara ikinci kez sarılmaz.
+   */
+  const ekle = (id, icerik, { hazir = false, ekSinif = '' } = {}) => {
+    const ilk = sayfalar.length === 0;
+    const sinif = ['rapor', ilk ? '' : 'rapor-sayfa-sonu', ekSinif].filter(Boolean).join(' ');
+    sayfalar.push({
+      id,
+      html: `<div class="${sinif}" data-bolum-id="${kacis(id)}">
+        ${hazir ? icerik : `${antet(p)}${icerik}${altbilgi(p)}`}</div>`,
+    });
+  };
 
-  ${ekBolumler(p, s)}
+  for (const g of numarali) {
+    const secenek = { hazir: !!g.hazir, ekSinif: g.ekSinif || '' };
+    g.sayfalar(g.no).forEach((icerik, i) => ekle(i === 0 ? g.id : `${g.id}-${i}`, icerik, secenek));
 
-  ${performansBelgesi(p, s)}`;
+    // İçindekiler, girişin hemen ardından gelir; kendisi listeye girmez.
+    if (g.id === 'giris') {
+      ekle('icindekiler', icindekilerSayfasi(
+        numarali.map((x) => ({ id: x.id, no: x.no, baslik: x.baslik }))));
+    }
+  }
+  return sayfalar;
+}
+
+/**
+ * Hesap sayfalarını ön bölümle aynı grup biçiminde sarar.
+ *
+ * Bu sayfalar kendi `.rapor` kabuklarını üretiyor; buradaki sarmalayıcı
+ * yalnızca içindekiler için başlık ve kimlik sağlıyor, dolayısıyla ham
+ * HTML olduğu gibi taşınıyor.
+ */
+function hesapGruplari(p, s) {
+  const gruplar = [];
+
+  if (s.ayiricilar.length) {
+    gruplar.push({
+      id: 'ayiricilar', baslik: 'Ayırıcı elemanlarda hava doğuşlu ses yalıtımı', numarali: true, hazir: true,
+      sayfalar: () => s.ayiricilar.map((a, i) => icerikCikar(ayiriciRaporu(p, a, i, s.ayiricilar.length))),
+    });
+  }
+  if (s.darbeler.length) {
+    gruplar.push({
+      id: 'darbeler', baslik: 'Döşemelerde darbe sesi yalıtımı', numarali: true, hazir: true,
+      sayfalar: () => s.darbeler.map((x) => icerikCikar(darbeRaporu(p, x))),
+    });
+  }
+  if (s.cepheler.length) {
+    gruplar.push({
+      id: 'cepheler', baslik: 'Cephede ses yalıtımı', numarali: true, hazir: true,
+      sayfalar: () => s.cepheler.map((x, i) => icerikCikar(cepheRaporu(p, x, i))),
+    });
+  }
+  const ozet = ekBolumler(p, s);
+  if (ozet) {
+    gruplar.push({ id: 'ozet', baslik: 'Hesap özetleri', numarali: true, hazir: true,
+      sayfalar: () => [icerikCikar(ozet)] });
+  }
+  gruplar.push({ id: 'belge', baslik: 'Akustik performans belgesi (EK-10)', numarali: false, hazir: true,
+    sayfalar: () => [icerikCikar(performansBelgesi(p, s))], ekSinif: 'belge' });
+
+  return gruplar;
+}
+
+/**
+ * Hazır bir `.rapor` kabuğundan iç içeriği çıkarır.
+ *
+ * Hesap sayfaları antet ve altbilgiyi kendileri sarıyor; sayfa üreticisi
+ * bunları yeniden saracağı için dış kabuk ve tekrar eden antet/altbilgi
+ * ayıklanır. Böylece hesap sayfalarının kendi kodu değişmeden kalır.
+ */
+function icerikCikar(html) {
+  const bas = html.indexOf('>', html.indexOf('<div class="rapor'));
+  const son = html.lastIndexOf('</div>');
+  return bas < 0 || son < 0 ? html : html.slice(bas + 1, son);
 }
 
 /* ── Antet ────────────────────────────────────────────────────────── */

@@ -15,6 +15,8 @@ import { bosProje, ornekProje, bosOnBolum, yeniGorsel, cepheleriNormallestir } f
 import { projeyiHesapla } from '../js/hesap.js';
 import { ciz as raporCiz } from '../js/arayuz/sekme-rapor.js';
 import { ciz as onBolumCiz } from '../js/arayuz/sekme-onbolum.js';
+import { raporSayfalari } from '../js/arayuz/sekme-rapor.js';
+import { GIRIS_METNI } from '../js/cekirdek/rapor-onbolum.js';
 
 /* ── Lgag ────────────────────────────────────────────────────────── */
 
@@ -248,21 +250,22 @@ test('Görselli bölümler raporda numaralanmış şekil olarak basılır', () =
   const html = raporCiz(d, projeyiHesapla(d));
   assert.match(html, /Şekil 4\.1.*ZEMİN KAT PLANI/s);
   assert.match(html, /Şekil 4\.2.*A-A KESİTİ/s);
-  assert.match(html, /4\. Anahtar paftalar/);
+  // Bölüm numarası, basılan bölümlere göre sırayla verilir; sabit değildir.
+  assert.match(html, /\d+\. Anahtar paftalar/);
 });
 
-test('Sonuç ve öneri boşken 12. bölüm hiç basılmaz', () => {
+test('Sonuç ve öneri boşken sonuç bölümü hiç basılmaz', () => {
   const d = ornekProje();
   d.onbolum.sonuc = '';
   d.onbolum.oneriler = ['', '   '];
-  assert.doesNotMatch(raporCiz(d, projeyiHesapla(d)), /12\. Sonuç/);
+  assert.doesNotMatch(raporCiz(d, projeyiHesapla(d)), /Sonuç ve öneriler/);
 });
 
 test('Öneriler raporda numaralı liste olur', () => {
   const d = ornekProje();
   d.onbolum.oneriler = ['Pencereler Rw ≥ 34 dB olacaktır.', 'Şaftlar yalıtılacaktır.'];
   const html = raporCiz(d, projeyiHesapla(d));
-  assert.match(html, /12\.1 Uygulama önerileri/);
+  assert.match(html, /\d+\.1 Uygulama önerileri/);
   assert.match(html, /Şaftlar yalıtılacaktır/);
 });
 
@@ -289,4 +292,135 @@ test('Kullanıcı metni, künyeden türetilen cümlenin yerine geçer', () => {
   const html = raporCiz(d, projeyiHesapla(d));
   assert.match(html, /Elle yazılmış giriş\./);
   assert.doesNotMatch(html, /Rapora konu yapı, Ankara/);
+});
+
+/* ── Sabit giriş metni ───────────────────────────────────────────── */
+
+test('Sabit giriş metni her raporda yer alır', () => {
+  const d = ornekProje();
+  assert.ok(raporCiz(d, projeyiHesapla(d)).includes(GIRIS_METNI.slice(0, 120)));
+});
+
+test('Kullanıcı kendi metnini yazsa da sabit metin kalır', () => {
+  const d = ornekProje();
+  d.onbolum.giris = 'Elle yazılmış ek açıklama.';
+  const html = raporCiz(d, projeyiHesapla(d));
+  assert.ok(html.includes(GIRIS_METNI.slice(0, 120)), 'sabit metin silinmemeli');
+  assert.match(html, /Elle yazılmış ek açıklama\./);
+});
+
+test('Boş künyeli projede bile sabit metin basılır', () => {
+  const d = bosProje();
+  assert.ok(raporCiz(d, projeyiHesapla(d)).includes(GIRIS_METNI.slice(0, 120)));
+});
+
+/* ── İçindekiler ─────────────────────────────────────────────────── */
+
+test('İçindekiler, girişin hemen ardından gelir', () => {
+  const d = ornekProje();
+  const idler = raporSayfalari(d, projeyiHesapla(d)).map((x) => x.id);
+  assert.equal(idler[0], 'giris');
+  assert.equal(idler[1], 'icindekiler');
+});
+
+test('İçindekilerdeki her girdinin karşılığı bir sayfadır', () => {
+  const d = ornekProje();
+  const sayfalar = raporSayfalari(d, projeyiHesapla(d));
+  const idler = new Set(sayfalar.map((x) => x.id));
+  const html = sayfalar.map((x) => x.html).join('');
+
+  const referanslar = [...html.matchAll(/data-bolum-ref="([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(referanslar.length > 0, 'içindekiler girdisi yok');
+  for (const r of referanslar) {
+    assert.ok(idler.has(r), `"${r}" girdisinin sayfası yok — içindekiler ayrışmış`);
+  }
+});
+
+test('İçindekiler kendini listelemez', () => {
+  const d = ornekProje();
+  const html = raporSayfalari(d, projeyiHesapla(d)).map((x) => x.html).join('');
+  const referanslar = [...html.matchAll(/data-bolum-ref="([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(!referanslar.includes('icindekiler'));
+});
+
+test('Bölüm numaraları boşluksuz ve sırayla verilir', () => {
+  const d = ornekProje();
+  // Nokta detay ve uygulama görseli yok → o bölümler hiç basılmaz;
+  // numaralar yine 1'den başlayıp birer birer artmalı.
+  const html = raporSayfalari(d, projeyiHesapla(d)).map((x) => x.html).join('');
+  const numaralar = [...html.matchAll(/<h1 style="font-size:18px">(\d+)\./g)].map((m) => Number(m[1]));
+  assert.ok(numaralar.length >= 4);
+  assert.deepEqual(numaralar, numaralar.map((_, i) => i + 1));
+});
+
+test('Bölüm eklenince numaralar kendiliğinden kayar', () => {
+  const d = ornekProje();
+  const oncekiSayi = raporSayfalari(d, projeyiHesapla(d))
+    .map((x) => x.html).join('').match(/<h1 style="font-size:18px">\d+\./g).length;
+
+  d.onbolum.gorseller = [{ ...yeniGorsel('noktaDetay'), veri: 'data:image/png;base64,AAA' }];
+  const sonrakiSayi = raporSayfalari(d, projeyiHesapla(d))
+    .map((x) => x.html).join('').match(/<h1 style="font-size:18px">\d+\./g).length;
+
+  assert.equal(sonrakiSayi, oncekiSayi + 1);
+});
+
+test('Her sayfada tam olarak bir antet ve bir altbilgi bulunur', () => {
+  const d = ornekProje();
+  for (const sayfa of raporSayfalari(d, projeyiHesapla(d))) {
+    const altbilgi = (sayfa.html.match(/rapor-altbilgi/g) || []).length;
+    assert.equal(altbilgi, 1, `${sayfa.id}: altbilgi ${altbilgi} kez`);
+  }
+});
+
+/* ── D1 uzman belgesi ────────────────────────────────────────────── */
+
+test('Uzman belgesi şekil numarası almaz', () => {
+  const n = sekilleriNumarala([
+    { id: 'a', tur: 'katPlani' },
+    { id: 'b', tur: 'uzmanBelgesi' },
+  ]);
+  const belge = n.find((x) => x.tur === 'uzmanBelgesi');
+  assert.equal(belge.no, null);
+  assert.equal(belge.numarasiz, true);
+  assert.match(belge.etiket, /D1 Temel Bina Akustik Uzman Belgesi/);
+});
+
+test('Uzman belgesi ön bölümün EN SONUNDA yer alır', () => {
+  const d = ornekProje();
+  d.onbolum.gorseller = [
+    { ...yeniGorsel('uzmanBelgesi'), veri: 'data:image/png;base64,AAA' },
+    { ...yeniGorsel('katPlani'), baslik: 'ZEMİN KAT', veri: 'data:image/png;base64,BBB' },
+  ];
+  const idler = raporSayfalari(d, projeyiHesapla(d)).map((x) => x.id);
+  const belge = idler.indexOf('uzmanBelgesi');
+  const paftalar = idler.indexOf('paftalar');
+  const hesap = idler.indexOf('ayiricilar');
+
+  assert.ok(belge > paftalar, 'belge, paftalardan sonra olmalı');
+  assert.ok(belge < hesap, 'belge, hesap sayfalarından önce olmalı');
+});
+
+test('Belge yüklenmediyse o bölüm hiç basılmaz', () => {
+  const d = ornekProje();
+  const idler = raporSayfalari(d, projeyiHesapla(d)).map((x) => x.id);
+  assert.ok(!idler.includes('uzmanBelgesi'));
+});
+
+test('Çok sayfalı belge her sayfası ayrı basılır', () => {
+  const d = ornekProje();
+  d.onbolum.gorseller = [
+    { ...yeniGorsel('uzmanBelgesi'), veri: 'data:image/png;base64,AAA' },
+    { ...yeniGorsel('uzmanBelgesi'), veri: 'data:image/png;base64,BBB' },
+  ];
+  const idler = raporSayfalari(d, projeyiHesapla(d)).map((x) => x.id);
+  assert.ok(idler.includes('uzmanBelgesi'));
+  assert.ok(idler.includes('uzmanBelgesi-1'));
+});
+
+test('Uzman belgesi panelde kendi kartıyla görünür', () => {
+  const d = ornekProje();
+  const html = onBolumCiz(d, projeyiHesapla(d));
+  assert.match(html, /D1 Temel Bina Akustik Uzman Belgesi/);
+  assert.match(html, /data-eylem="gorsel-ekle" data-tur="uzmanBelgesi"/);
 });

@@ -644,13 +644,56 @@ yapılmamış yollar için daha sıkı değerler geçerlidir. Üç düzeyden bir
 L<sub>gag</sub> hesaplanmaz ve tabloda "—" görünür; eksik veriyi varsayımla doldurmak,
 raporu sessizce yanlışlamak olurdu.
 
+### Sabit giriş metni
+
+Raporun giriş bölümü, projeye göre değişmeyen bir kapsam beyanıyla başlar: incelemenin
+mimari plan ve kesitlere dayandığı, çevresel gürültü parametrelerinin hangi yönetmelikten
+alındığı, komşuluk ilişkilerinin akustik olarak tanımlandığı ve hedef tasarım değerlerinin
+denetlendiği. Bu metin `cekirdek/rapor-onbolum.js` içinde `GIRIS_METNI` olarak durur,
+her raporda basılır ve panelden silinemez. Kullanıcının yazdığı giriş metni ile künyeden
+türeyen cümle bunun **ardına** eklenir.
+
+### İçindekiler ve sayfa numaraları
+
+Girişin ardından, sayfa numaralı bir içindekiler sayfası basılır.
+
+Bölüm numaraları elle yazılmaz. Boş bölümler (ör. hiç nokta detay yüklenmemişse) hiç
+basılmadığından, numaralar gerçekten basılan bölümler üzerinden sırayla verilir ve
+içindekiler aynı listeden üretilir — başlıklarla içindekilerin ayrışması yapısal olarak
+olanaksızdır.
+
+Sayfa numaraları ölçülerek bulunur. Bunun neden gerektiği önemli: yazdırma biçemleri
+düzeni gerçekten değiştirir (tablo yazı boyu 10,5 px'e iner, `.tablo-sar` kaydırması
+kapanır ve hücreler satır atlar, kenar çubuğu kalkar). Ekrandan ölçmek, doğru görünen
+ama yanlış bir içindekiler üretirdi. Bu yüzden `arayuz/sayfa-numaralari.js`, biçem
+sayfasındaki `@media print` bloklarını geçici olarak `all` medyasına çevirir, raporu
+A4'ün yazılabilir genişliğine (718 px) kısar, ölçer ve her şeyi geri alır. Kuralların
+ikinci bir kopyası tutulmadığı için biçem değiştiğinde ölçüm kendiliğinden uyar.
+
+Sayfalama, blokların **konumları** üzerinden benzetilir; yüksekliklerini toplamak yetmez,
+çünkü `getBoundingClientRect()` kenar boşluklarını içermez — ölçülen bir örnekte çocuk
+toplamı 1754 px iken bölümün gerçek yüksekliği 2058 px'ti. Sayfaya sığan bölünmez bloklar
+(kartlar, şekiller, lisans künyesi) sınırın ötesine itilir ve bu itme sonraki blokları
+kaydırır.
+
+> Doğrulama: örnek proje + yedi çizim + uzman belgesi ile üretilen 24 sayfalık raporda,
+> her bölüm tek başına PDF'e basılıp gerçek kâğıt sayısı sayıldı. **On yedi bölümün
+> tamamında ölçülen sayfa numarası gerçek PDF ile birebir tutuyor.**
+
+### D1 Temel Bina Akustik Uzman Belgesi
+
+Ön bölümün en sonunda, raporu hazırlayan uzmanın yeterlilik belgesi yer alır. Panelden
+belgenin taranmış görüntüsü yüklenir; belge birden çok sayfaysa her sayfa ayrı eklenir ve
+her biri kendi kâğıdına basılır. Bu bölüm şekil numarası almaz — bir rapor şekli değil,
+rapora eklenen bir belgedir. Belge yüklenmemişse bölüm hiç basılmaz.
+
 ### Sayfa sığdırma
 
-Ön bölümün sekiz sayfasının her biri **tek bir A4'e sığar** (yazılabilir yükseklik
-277 mm ≈ 1047 px). Bir sayfaya en çok iki şekil konur; şekil yüksekliği yazdırmada
-310 px'e, künye tablosuyla aynı sayfayı paylaşan vaziyet planında 175 px'e kısılır.
-Bu sınırlar keyfî değil ölçülmüştür: kısılmadan önce giriş sayfası 1190 px'e çıkıyor ve
-yalnızca altbilginin düştüğü boş bir sayfa üretiyordu.
+Ön bölüm sayfalarının her biri **tek bir A4'e sığar** (yazılabilir yükseklik
+277 mm ≈ 1047 px). Bir sayfaya en çok iki şekil konur ve şekil yüksekliği yazdırmada
+310 px'e kısılır. Vaziyet planı kendi sayfasında basılır: künye tablosuyla aynı sayfaya
+sığdırmak için küçültülüyordu, sabit giriş metni eklenince sayfa taştı ve plan arkasında
+koca bir boşlukla yetim kaldı — ayrı sayfa, aynı kâğıt sayısıyla düzgün bir düzen verir.
 
 ### Rapor sayfa düzeni
 
@@ -818,6 +861,7 @@ js/
     katman-editor.js           Çok katmanlı yapı elemanı düzenleyici (paylaşılan bileşen)
     oda-cizimi.js              İzometrik oda şeması (SVG) üretici
     rapor-onbolum-sayfalari.js Raporun ön bölümünün yazdırılabilir A4 sayfaları
+    sayfa-numaralari.js        İçindekiler sayfa numaralarını yazdırma düzeninde ölçer
     xlsx-yazici.js             Dış bağımlılıksız .xlsx (ZIP/OOXML) yazıcı
     sekme-*.js                 Bölüm ekranları
     simgeler.js                Satır içi SVG simge seti

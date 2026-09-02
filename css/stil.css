@@ -563,9 +563,36 @@ tr.vurgu > td, tr.vurgu > th{ background:var(--vurgu-zemin, rgba(120,160,255,.14
    * aksi hâlde yalnızca altbilginin düştüğü boş bir sayfa üretiliyordu.
    */
   .rapor-sekil img{ max-height:310px }
-  .rapor-sekil.kucuk img{ max-height:175px }
+  /* Belge, kendi sayfasında tek başına durur: sayfa yüksekliğine kadar açılır. */
+  /* A4'ün yazılabilir yüksekliğinden antet, başlık ve altbilgi düşülünce
+     belgeye kalan yer ≈760 px'tir; belge tek sayfada kalır. */
+  .rapor-sekil.belge-gorsel img{ max-height:760px }
   .rapor-sekil-bos{ display:none }
 }
+
+/* ── İçindekiler ─────────────────────────────────────────────────────
+ *
+ * Klasik nokta dolgulu düzen: başlık solda, sayfa numarası sağda, arası
+ * noktalarla dolar. Noktalar bir ara hücrenin alt kenarlığından çizilir —
+ * karakter tekrarına göre hem yeniden akışa dayanıklı hem de metne
+ * karışmaz (kopyalanan metinde nokta yığını çıkmaz).
+ */
+table.icindekiler{ width:100%; border-collapse:collapse; margin-top:10px }
+table.icindekiler td{ border:0; padding:5px 0; vertical-align:bottom }
+table.icindekiler .ic-baslik{ white-space:nowrap; padding-right:6px }
+table.icindekiler .ic-nokta{ width:100% }
+table.icindekiler .ic-nokta span{
+  display:block; border-bottom:1px dotted var(--cizgi-koyu); transform:translateY(-4px);
+}
+table.icindekiler .ic-sayfa{
+  padding-left:8px; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap;
+  /* Üç haneli sayfa numarası da sarılmadan sığsın. */
+  min-width:2.6em;
+}
+
+/* Uzman belgesi kendi sayfasında durur; başlık ve altbilgiden artan yeri
+   doldurur, taşmaz. */
+.rapor-sekil.belge-gorsel img{ max-height:520px }
 
 @page{ size:A4; margin:10mm }
 
@@ -643,6 +670,20 @@ tr.vurgu > td, tr.vurgu > th{ background:var(--vurgu-zemin, rgba(120,160,255,.14
   .rapor th, .rapor td{ white-space:normal !important; overflow-wrap:anywhere; }
   /* Dikey yazılan belge başlığı sarılmamalı; kendi ekseninde zaten dardır. */
   .rapor .belge-dikey{ white-space:nowrap !important; }
+  /*
+   * İÇİNDEKİLER, yukarıdaki sarma kuralının DIŞINDA kalır.
+   *
+   * `.ic-nokta` hücresi nokta dolgusunu üretmek için genişliğin tamamını
+   * ister; başlık hücresine `overflow-wrap:anywhere` uygulanınca başlık
+   * en dar hâline (harf harf) sarılıyor ve on dört satırlık bir liste
+   * 1400 px'e çıkıyordu — yani içindekiler iki kâğıda taşıyor ve bütün
+   * sayfa numaraları kayıyordu. Başlıklar kısa olduğundan sarılmamaları
+   * güvenlidir.
+   */
+  .rapor table.icindekiler .ic-baslik,
+  .rapor table.icindekiler .ic-sayfa{
+    white-space:nowrap !important; overflow-wrap:normal !important;
+  }
   /* Ölçüt sütunundaki asgari genişlik, tabloyu kâğıttan taşıran etkendi. */
   .belge-olcut{ min-width:0 !important; }
   .yazdirma-goster{break-inside:avoid}

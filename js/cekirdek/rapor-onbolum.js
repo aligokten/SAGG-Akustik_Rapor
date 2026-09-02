@@ -16,6 +16,27 @@ import {
   EK2_TABLO_2_1, GURULTULULUK_KODU, HASSASIYET_KODU, BINA_TURLERI,
 } from '../veri/yonetmelik.js';
 
+/* ── Sabit giriş metni ───────────────────────────────────────────────
+ *
+ * Raporun giriş bölümünde HER ZAMAN yer alan, projeye göre değişmeyen
+ * kapsam beyanı. İncelemenin neye dayandığını ve neyin denetlendiğini
+ * söyler; bu yüzden kullanıcı metnine bırakılmaz, kaldırılamaz.
+ */
+export const GIRIS_METNI =
+  'Bu raporda aşağıda bilgileri verilen yapı için Binaların Gürültüye Karşı ' +
+  'Korunması Hakkında Yönetmelik\u2019te belirtilen parametrelere göre AKUSTİK ' +
+  'RAPOR hazırlanmıştır. İnceleme, mimari plan ve kesitler kullanılarak ' +
+  'yapılmıştır. Binanın bulunduğu alanın çevresel gürültü parametreleri ' +
+  'Çevresel Gürültünün Değerlendirilmesi ve Yönetimi Yönetmeliği referans ' +
+  'alınarak belirlenmiştir. Yapıdaki hacimler, gürültü kaynağı olmaları ' +
+  'durumunda gürültülülük dereceleri, alıcı olmaları durumunda gürültüye ' +
+  'karşı hassasiyet değerleri kat planlarında ve kesitlerde kolaylıkla ' +
+  'anlaşılır şekilde gösterilmiştir. Komşuluk ilişkileri akustik olarak ' +
+  'tanımlanmıştır. Hedef akustik tasarım değerleri belirlenip, tasarım ' +
+  'hedefine uygunluğu incelenmiştir. Yapı içinde oluşabilecek gürültü ' +
+  'kaynakları incelenmiş ve uygulama sırasında alınması gereken önlemler ' +
+  'belirtilmiştir.';
+
 /* ── Görsel bölümleri ────────────────────────────────────────────────
  *
  * Referans raporlarda şekil numaraları bölüm numarasını taşır:
@@ -34,6 +55,11 @@ export const GORSEL_BOLUMLERI = [
     aciklama: 'Duvar–döşeme birleşimi, şaft, tesisat geçişi gibi kritik noktaların uygulama detayları.' },
   { tur: 'uygulama',  bolum: '9', baslik: 'Uygulama ve kontrol görselleri',
     aciklama: 'Şantiyede uyulacak uygulama kuralları ve kontrol aşamalarına ait görseller.' },
+  // Uzman belgesi bir "şekil" değil, raporun eki olan bir yeterlilik
+  // belgesidir: numaralandırmaya girmez ve ön bölümün en sonunda yer alır.
+  { tur: 'uzmanBelgesi', bolum: null, numarasiz: true,
+    baslik: 'D1 Temel Bina Akustik Uzman Belgesi',
+    aciklama: 'Raporu hazırlayan uzmanın yeterlilik belgesi. Ön bölümün en sonunda basılır.' },
 ];
 
 export const GORSEL_TURLERI = GORSEL_BOLUMLERI.map((b) => b.tur);
@@ -144,11 +170,21 @@ export function sekilleriNumarala(gorseller = []) {
   const sayaclar = new Map();
   const sirali = [];
   for (const b of GORSEL_BOLUMLERI) {
-    for (const g of gorseller.filter((x) => x.tur === b.tur)) {
+    const grup = gorseller.filter((x) => x.tur === b.tur);
+    grup.forEach((g, i) => {
+      // Numarasız bölümlerde (uzman belgesi) etiket, belgenin kendi adıdır;
+      // birden çok sayfa yüklenmişse sıra numarasıyla ayrılır.
+      if (b.numarasiz) {
+        sirali.push({
+          ...g, bolum: null, no: null, numarasiz: true,
+          etiket: grup.length > 1 ? `${b.baslik} (${i + 1}/${grup.length})` : b.baslik,
+        });
+        return;
+      }
       const n = (sayaclar.get(b.bolum) || 0) + 1;
       sayaclar.set(b.bolum, n);
       sirali.push({ ...g, bolum: b.bolum, no: `${b.bolum}.${n}`, etiket: `Şekil ${b.bolum}.${n}` });
-    }
+    });
   }
   return sirali;
 }

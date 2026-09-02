@@ -8,6 +8,7 @@ import { simge } from './arayuz/simgeler.js';
 import * as YK from './cekirdek/katmanli-eleman.js';
 import { DUVARLAR, DOSEMELER, SIVALAR, bul as malzemeBul } from './veri/malzemeler.js';
 import { odaSVG, cepheSVG } from './arayuz/oda-cizimi.js';
+import { icindekileriDoldur } from './arayuz/sayfa-numaralari.js';
 import { v3ProjeyiDonustur, v3SemasiMi } from './veri/v3-donusturucu.js';
 import * as FAV from './veri/favoriler.js';
 import { favoriTaslaginiAyarla, favoriTaslaginiOku, favoriTaslaginiTemizle } from './arayuz/katman-editor.js';
@@ -533,6 +534,11 @@ function ciz() {
   ustBasligiCiz();
   D.kaydet(durum);
   canliModelleriBagla();
+  // İçindekilerin sayfa numaraları, ancak sayfa yazdırma düzeninde
+  // ölçülerek bulunabilir; çizimden hemen sonra doldurulur.
+  if (etkinSekme === 'rapor') {
+    try { icindekileriDoldur(kok); } catch { /* ölçüm başarısızsa "—" kalır */ }
+  }
   odagiGeriYukle(odak);
 }
 
