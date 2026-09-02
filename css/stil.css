@@ -542,8 +542,14 @@ tr.vurgu > td, tr.vurgu > th{ background:var(--vurgu-zemin, rgba(120,160,255,.14
  * ortasından sayfa bölünmesi engellenir.
  */
 .rapor-sekil{ margin:12px 0 16px; text-align:center; break-inside:avoid; page-break-inside:avoid }
+/*
+ * Çizim, kullanılabilir genişliğin tamamını kaplar. Kat planı ve kesitler
+ * ancak bu ölçüde okunabilir oluyor; en/boy oranı korunduğu için yükseklik
+ * kendiliğinden gelir. Yükseklik sınırı, tek bir çizimin sayfayı aşmasını
+ * önler.
+ */
 .rapor-sekil img{
-  max-width:100%; max-height:420px; object-fit:contain;
+  width:100%; height:auto; max-height:520px; object-fit:contain;
   border:1px solid var(--cizgi); border-radius:var(--r-s); background:#fff;
 }
 .rapor-sekil-bos{
@@ -562,7 +568,13 @@ tr.vurgu > td, tr.vurgu > th{ background:var(--vurgu-zemin, rgba(120,160,255,.14
    * tablosuyla aynı sayfayı paylaşan şekil ise tek başına sığmalıdır —
    * aksi hâlde yalnızca altbilginin düştüğü boş bir sayfa üretiliyordu.
    */
-  .rapor-sekil img{ max-height:310px }
+  /*
+   * Yazdırmada tek bir çizime kalan yer: A4'ün 1047 px'lik yazılabilir
+   * yüksekliğinden antet (~79), bölüm başlığı (~50) ve altbilgi (~30)
+   * düşülür. Kalan ~880 px'in altında kalan bu sınır, geniş bir planın
+   * sayfayı enine doldurmasına izin verirken tek başına taşmasını önler.
+   */
+  .rapor-sekil img{ max-height:820px }
   /* Belge, kendi sayfasında tek başına durur: sayfa yüksekliğine kadar açılır. */
   /* A4'ün yazılabilir yüksekliğinden antet, başlık ve altbilgi düşülünce
      belgeye kalan yer ≈760 px'tir; belge tek sayfada kalır. */
@@ -590,9 +602,9 @@ table.icindekiler .ic-sayfa{
   min-width:2.6em;
 }
 
-/* Uzman belgesi kendi sayfasında durur; başlık ve altbilgiden artan yeri
-   doldurur, taşmaz. */
-.rapor-sekil.belge-gorsel img{ max-height:520px }
+/* Uzman belgesi genelde dikey (portre) olduğundan enine gerilmez; kendi
+   oranında, sayfaya sığacak yükseklikte basılır. */
+.rapor-sekil.belge-gorsel img{ width:auto; max-width:100%; max-height:520px }
 
 @page{ size:A4; margin:10mm }
 

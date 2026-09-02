@@ -655,7 +655,7 @@ türeyen cümle bunun **ardına** eklenir.
 
 ### İçindekiler ve sayfa numaraları
 
-Girişin ardından, sayfa numaralı bir içindekiler sayfası basılır.
+Rapor, sayfa numaralı bir içindekiler sayfasıyla başlar.
 
 Bölüm numaraları elle yazılmaz. Boş bölümler (ör. hiç nokta detay yüklenmemişse) hiç
 basılmadığından, numaralar gerçekten basılan bölümler üzerinden sırayla verilir ve
@@ -676,8 +676,8 @@ toplamı 1754 px iken bölümün gerçek yüksekliği 2058 px'ti. Sayfaya sığa
 (kartlar, şekiller, lisans künyesi) sınırın ötesine itilir ve bu itme sonraki blokları
 kaydırır.
 
-> Doğrulama: örnek proje + yedi çizim + uzman belgesi ile üretilen 24 sayfalık raporda,
-> her bölüm tek başına PDF'e basılıp gerçek kâğıt sayısı sayıldı. **On yedi bölümün
+> Doğrulama: örnek proje + yedi çizim + uzman belgesi ile üretilen 26 sayfalık raporda,
+> her bölüm tek başına PDF'e basılıp gerçek kâğıt sayısı sayıldı. **Yirmi bölümün
 > tamamında ölçülen sayfa numarası gerçek PDF ile birebir tutuyor.**
 
 ### D1 Temel Bina Akustik Uzman Belgesi
@@ -687,13 +687,25 @@ belgenin taranmış görüntüsü yüklenir; belge birden çok sayfaysa her sayf
 her biri kendi kâğıdına basılır. Bu bölüm şekil numarası almaz — bir rapor şekli değil,
 rapora eklenen bir belgedir. Belge yüklenmemişse bölüm hiç basılmaz.
 
-### Sayfa sığdırma
+### Çizim boyutu ve sayfa düzeni
+
+**Her çizim kendi sayfasında ve sayfa genişliğinde basılır.** Önceden sayfaya iki şekil
+konuyordu; bu, her şeklin yüksekliğini yarım sayfaya hapsediyor ve kat planlarını sayfa
+genişliğinin çok altında bırakıyordu. Hepsini tek akışa vermek de çözüm değildi: o zaman
+bir bölüm birkaç kâğıda yayılıyor, antet ile altbilgi yalnızca ilk ve son kâğıda düşüyor
+ve aradaki sayfalar başlıksız kalıyordu. Çizim başına bir sayfa ikisini birden çözer.
 
 Ön bölüm sayfalarının her biri **tek bir A4'e sığar** (yazılabilir yükseklik
-277 mm ≈ 1047 px). Bir sayfaya en çok iki şekil konur ve şekil yüksekliği yazdırmada
-310 px'e kısılır. Vaziyet planı kendi sayfasında basılır: künye tablosuyla aynı sayfaya
-sığdırmak için küçültülüyordu, sabit giriş metni eklenince sayfa taştı ve plan arkasında
-koca bir boşlukla yetim kaldı — ayrı sayfa, aynı kâğıt sayısıyla düzgün bir düzen verir.
+277 mm ≈ 1047 px). Yazdırmada çizim yüksekliği 820 px ile sınırlanır; bu, antet, bölüm
+başlığı ve altbilgi düşüldükten sonra kalan yerin altındadır.
+
+### Altbilgi ve lisans künyesi
+
+Her sayfanın altında ince bir altbilgi şeridi bulunur (hazırlayan ve program adı).
+**Program lisans künyesi yalnızca hesap sayfalarında** basılır — ayırıcı eleman, döşeme,
+cephe, hesap özetleri ve EK-10 belgesi. Hesabı üreten programın kim olduğu ve sorumluluğun
+kimde olduğu oralarda anlamlıdır; anlatı sayfalarının (içindekiler, giriş, paftalar,
+sonuç) altında yinelenmesi yalnızca yer kaplıyordu.
 
 ### Rapor sayfa düzeni
 

@@ -74,19 +74,19 @@ export function raporSayfalari(durum, s) {
     sayfalar.push({
       id,
       html: `<div class="${sinif}" data-bolum-id="${kacis(id)}">
-        ${hazir ? icerik : `${antet(p)}${icerik}${altbilgi(p)}`}</div>`,
+        ${hazir ? icerik : `${antet(p)}${icerik}${altbilgi(p, false)}`}</div>`,
     });
   };
+
+  // İçindekiler raporun İLK sayfasıdır; kendisi listeye girmez.
+  if (numarali.length) {
+    ekle('icindekiler', icindekilerSayfasi(
+      numarali.map((x) => ({ id: x.id, no: x.no, baslik: x.baslik }))));
+  }
 
   for (const g of numarali) {
     const secenek = { hazir: !!g.hazir, ekSinif: g.ekSinif || '' };
     g.sayfalar(g.no).forEach((icerik, i) => ekle(i === 0 ? g.id : `${g.id}-${i}`, icerik, secenek));
-
-    // İçindekiler, girişin hemen ardından gelir; kendisi listeye girmez.
-    if (g.id === 'giris') {
-      ekle('icindekiler', icindekilerSayfasi(
-        numarali.map((x) => ({ id: x.id, no: x.no, baslik: x.baslik }))));
-    }
   }
   return sayfalar;
 }
@@ -274,12 +274,29 @@ function ayiriciRaporu(p, a, indeks, toplam) {
  * Raporun her sayfasında yinelenen altbilgi: hazırlayan, program künyesi ve
  * lisans / sorumluluk ibareleri.
  */
-function altbilgi(p) {
+/**
+ * Sayfa altbilgisi.
+ *
+ * Program lisans künyesi YALNIZCA hesap sayfalarında basılır: hesabı
+ * üreten programın kim olduğu ve sorumluluğun kimde olduğu oralarda
+ * anlamlıdır. Anlatı sayfalarında (giriş, paftalar, sonuç) her sayfanın
+ * altında yinelenmesi yer kaplıyor ve raporu ağırlaştırıyordu.
+ *
+ * @param {Object} p
+ * @param {boolean} [lisans] Lisans künyesi basılsın mı
+ */
+function altbilgi(p, lisans = true) {
   return `
   <div class="rapor-altbilgi">
     <span>Hazırlayan: ${kacis(p.akustikUzman || '—')}</span>
     <span>SAGG Akustik Hesap Paneli · Katmanlı Model v3</span>
   </div>
+  ${lisans ? lisansKunyesi(p) : ''}`;
+}
+
+/** Program lisans ve sorumluluk künyesi. */
+function lisansKunyesi(p) {
+  return `
   <div class="rapor-lisans">
     <div class="rapor-lisans-satir"><b>Program lisans sahibi</b><span>${kacis(LISANS.sahip)}</span></div>
     <div class="rapor-lisans-satir"><b>Program geliştirici</b><span>${kacis(LISANS.gelistirici)}</span></div>

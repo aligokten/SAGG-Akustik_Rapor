@@ -316,11 +316,11 @@ test('Boş künyeli projede bile sabit metin basılır', () => {
 
 /* ── İçindekiler ─────────────────────────────────────────────────── */
 
-test('İçindekiler, girişin hemen ardından gelir', () => {
+test('İçindekiler raporun ilk sayfasıdır', () => {
   const d = ornekProje();
   const idler = raporSayfalari(d, projeyiHesapla(d)).map((x) => x.id);
-  assert.equal(idler[0], 'giris');
-  assert.equal(idler[1], 'icindekiler');
+  assert.equal(idler[0], 'icindekiler');
+  assert.equal(idler[1], 'giris');
 });
 
 test('İçindekilerdeki her girdinin karşılığı bir sayfadır', () => {

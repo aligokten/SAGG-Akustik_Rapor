@@ -32,25 +32,50 @@ test('Tarih yoksa veya bozuksa içinde bulunulan yıl kullanılır', () => {
 
 /* ── Raporda gerçekten görünüyor mu ───────────────────────────────── */
 
-const { ciz } = await import('../js/arayuz/sekme-rapor.js');
+const { ciz, raporSayfalari } = await import('../js/arayuz/sekme-rapor.js');
 const { ornekProje } = await import('../js/durum.js');
 const { projeyiHesapla } = await import('../js/hesap.js');
 
-test('Lisans bilgileri her rapor sayfasının altbilgisinde yer alır', () => {
+/**
+ * Lisans künyesi, HESAP sayfalarının altbilgisinde bulunur.
+ *
+ * Anlatı sayfalarında (içindekiler, giriş, paftalar, sonuç) basılmaz:
+ * hesabı üreten programın kim olduğu ve sorumluluğun kimde olduğu
+ * hesapların yanında anlamlıdır; her sayfanın altında yinelenmesi yalnızca
+ * yer kaplıyordu.
+ */
+const HESAP_SAYFALARI = ['ayiricilar', 'darbeler', 'cepheler', 'ozet', 'belge'];
+const hesapSayfasiMi = (id) => HESAP_SAYFALARI.some((x) => id === x || id.startsWith(`${x}-`));
+
+test('Lisans künyesi hesap sayfalarında bulunur', () => {
+  const durum = ornekProje();
+  const sayfalar = raporSayfalari(durum, projeyiHesapla(durum));
+  const hesaplar = sayfalar.filter((x) => hesapSayfasiMi(x.id));
+
+  assert.ok(hesaplar.length >= durum.ayiricilar.length + 1, `hesap sayfası: ${hesaplar.length}`);
+  for (const sayfa of hesaplar) {
+    assert.ok(sayfa.html.includes('Program lisans sahibi'), `${sayfa.id}: künye yok`);
+    assert.ok(sayfa.html.includes(LISANS.gelistirici), `${sayfa.id}: geliştirici yok`);
+    assert.ok(sayfa.html.includes(LISANS.sorumluluk), `${sayfa.id}: sorumluluk notu yok`);
+  }
+});
+
+test('Lisans künyesi anlatı sayfalarında yinelenmez', () => {
+  const durum = ornekProje();
+  const sayfalar = raporSayfalari(durum, projeyiHesapla(durum));
+  const anlati = sayfalar.filter((x) => !hesapSayfasiMi(x.id));
+
+  assert.ok(anlati.length > 0, 'anlatı sayfası bulunamadı');
+  for (const sayfa of anlati) {
+    assert.ok(!sayfa.html.includes('Program lisans sahibi'), `${sayfa.id}: künye yinelenmiş`);
+  }
+});
+
+test('Lisans künyesi raporda en az bir kez geçer', () => {
   const durum = ornekProje();
   const html = ciz(durum, projeyiHesapla(durum));
-
-  // Sayfa sayısı sabitlenmez: her hesap kendi sayfasına alındıkça değişiyor.
-  // Sınanan şey asıl kural — HER rapor sayfasında künye bulunur.
-  const sayfaSayisi = (html.match(/<div class="rapor[ "]/g) || []).length;
-  const say = (metin) => html.split(metin).length - 1;
-
-  assert.ok(sayfaSayisi >= durum.ayiricilar.length + 2, `sayfa sayısı: ${sayfaSayisi}`);
-  assert.equal(say('Program lisans sahibi'), sayfaSayisi);
-  assert.equal(say('Program geliştirici'), sayfaSayisi);
-  assert.equal(say(LISANS.gelistirici), sayfaSayisi);
-  assert.equal(say(LISANS.sorumluluk), sayfaSayisi);
   assert.ok(html.includes(LISANS.haklar));
+  assert.ok(html.includes(LISANS.sorumluluk));
 });
 
 test('Lisans sahibinin unvanı raporda kaçışsız bozulmadan görünür', () => {

@@ -82,21 +82,29 @@ export function onBolumGruplari(p, s, ob) {
   return liste.filter(Boolean);
 }
 
-/** Görsel taşıyan bir bölüm; hiç görsel yoksa bölüm hiç oluşmaz. */
+/**
+ * Görsel taşıyan bir bölüm; hiç görsel yoksa bölüm hiç oluşmaz.
+ *
+ * HER ÇİZİM KENDİ SAYFASINDA basılır. Önceden sayfaya iki şekil
+ * konuyordu; bu, her şeklin yüksekliğini yarım sayfaya hapsediyor ve
+ * kat planları gibi çizimleri sayfa genişliğinin çok altında bırakıyordu.
+ *
+ * Hepsini tek akışa vermek de çözüm değil: o zaman bir bölüm birkaç
+ * kâğıda yayılıyor ve antet ile altbilgi yalnızca ilk ve son kâğıda
+ * düşüyor — aradaki sayfalar başlıksız kalıyor. Her çizime bir sayfa
+ * ayırmak ikisini birden çözer: çizim sayfa genişliğini kullanır ve her
+ * kâğıt kendi antedini ve altbilgisini taşır.
+ */
 function gorselGrubu(id, baslik, gorseller, aciklama) {
   if (!gorseller.length) return null;
-  // Bir A4 sayfasına en çok iki şekil sığar.
-  const sayfalar = [];
-  for (let i = 0; i < gorseller.length; i += 2) sayfalar.push(gorseller.slice(i, i + 2));
-
   return {
     id, baslik, numarali: true,
-    sayfalar: (no) => sayfalar.map((grup, i) => `
+    sayfalar: (no) => gorseller.map((g, i) => `
       ${i === 0
         ? `<h1 style="font-size:18px">${no}. ${kacis(baslik)}</h1>
            ${aciklama ? `<p>${kacis(aciklama)}</p>` : ''}`
         : `<h2>${kacis(baslik)} (devam)</h2>`}
-      ${grup.map((g) => sekil(g)).join('')}`),
+      ${sekil(g)}`),
   };
 }
 
