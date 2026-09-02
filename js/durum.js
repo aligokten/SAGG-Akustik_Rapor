@@ -52,7 +52,37 @@ export function bosProje() {
     darbeler: [],
     cepheler: [],
     hacimler: [],
+    onbolum: bosOnBolum(),
   };
+}
+
+/**
+ * Raporun ön bölümü: hesaplardan önce gelen anlatı, çevresel gürültü
+ * değerlendirmesi, anahtar paftalar ve sonuç/öneriler.
+ *
+ * Görseller (kat planı, kesit, nokta detay) proje JSON'unun içine data:
+ * URL olarak gömülür; harici dosya bağımlılığı olmaz.
+ */
+export function bosOnBolum() {
+  return {
+    etkin: true,          // false ise ön bölüm rapora hiç girmez
+    giris: '',            // serbest metin; boşsa künyeden cümle türetilir
+    cevresel: {
+      alanTuru: 'hassas',
+      mevcutYol: false,   // planlanmamış (mevcut) yollar sınır değeri 5 dBA yükseltir
+      gunduz: null, aksam: null, gece: null,
+      aciklama: '',
+    },
+    gorseller: [],        // { id, tur, baslik, aciklama, veri }
+    yapiElemaniNotu: '',
+    sonuc: '',
+    oneriler: [],         // serbest metin maddeleri
+  };
+}
+
+/** Bir görsel kaydı (kat planı, kesit, nokta detay …). */
+export function yeniGorsel(tur) {
+  return { id: yeniId('g'), tur, baslik: '', aciklama: '', veri: '' };
 }
 
 /** Yeni bir ayırıcı eleman kaydı (düşey veya yatay). */
@@ -232,6 +262,26 @@ export function dogramaAlani(e) {
  * değişmez.
  */
 export function cepheleriNormallestir(d) {
+  // Ön bölüm, sürüm 1.4 ile eklendi; daha eski projelerde hiç yoktur.
+  // Eksik alanları tek tek tamamlamak, kullanıcının kaydettiği ön bölümü
+  // silmeden yeni alanların da varsayılanla gelmesini sağlar.
+  const varsayilan = bosOnBolum();
+  if (!d.onbolum || typeof d.onbolum !== 'object') {
+    d.onbolum = varsayilan;
+  } else {
+    for (const [k, v] of Object.entries(varsayilan)) {
+      if (d.onbolum[k] === undefined) d.onbolum[k] = v;
+    }
+    for (const [k, v] of Object.entries(varsayilan.cevresel)) {
+      if (d.onbolum.cevresel?.[k] === undefined) {
+        d.onbolum.cevresel = { ...varsayilan.cevresel, ...(d.onbolum.cevresel || {}) };
+        break;
+      }
+    }
+    if (!Array.isArray(d.onbolum.gorseller)) d.onbolum.gorseller = [];
+    if (!Array.isArray(d.onbolum.oneriler)) d.onbolum.oneriler = [];
+  }
+
   for (const c of (d?.cepheler || [])) {
     if (!c.konum) c.konum = 'orta';
     if (!Number.isFinite(c.ctr)) c.ctr = -3;

@@ -587,6 +587,61 @@ npm run paketle           # dist/ içine kurulum .exe'si üretir, yayınlamaz
 > Uyarıyı tümüyle kaldırmak için ücretli bir kod imzalama sertifikası gerekir; sertifika alındığında
 > `electron-builder.mjs` içine `win.certificateFile`/`certificatePassword` eklenmesi yeterlidir.
 
+## Raporun ön bölümü
+
+Teslim edilen akustik rapor, hesap sayfalarından ibaret değildir: önünde parsel künyesi,
+çevresel gürültü değerlendirmesi, anahtar paftalar (kat planları ve kesitler), yapı elemanı
+kod anahtarı, mekân hassasiyet tablosu ve nokta detaylar bulunur. **Rapor ön bölümü**
+sekmesi bu kısmı üretir.
+
+Tasarımın çekirdeği şudur: *kullanıcı aynı bilgiyi iki kez girmez.* Parsel, mal sahibi ve
+bina bilgileri **Proje künyesi** sekmesinden olduğu gibi akar; yapı elemanı kod anahtarı,
+mekân dereceleri ve malzeme yoğunlukları ise **hesaplardan türetilir**. Sekmede bunlar
+salt okunur olarak önizlenir — değiştirmek için ilgili hesap kaydı düzenlenir.
+
+### Çizim ekleme ve şekil numaralandırma
+
+Beş görsel bölümü vardır ve her biri raporda kendi bölüm numarasını taşır:
+
+| Bölüm | İçerik | Şekil numarası |
+|---|---|---|
+| Vaziyet planı | Parsel ve çevre yollar | Şekil 1.1 |
+| Kat planları | Zemin / normal / çatı katı | Şekil 4.1 … |
+| Kesitler | Düşey kesitler | kat planlarının ardından sürer |
+| Nokta detaylar | Birleşim ve şaft detayları | Şekil 7.1 … |
+| Uygulama ve kontrol | Şantiye kuralları | Şekil 9.1 … |
+
+Numaraları kullanıcı yazmaz: listedeki sıraya göre kendiliğinden verilir, ↑/↓ ile sıra
+değiştirildiğinde yeniden hesaplanır. Kat planları ile kesitler **aynı bölümü paylaşır**
+(4), bu yüzden kesitler kat planlarının bıraktığı yerden numaralanmayı sürdürür.
+
+Çizimler proje JSON'unun içine `data:` URL olarak gömülür — harici dosya bağımlılığı
+olmaz, proje dosyası tek başına taşınabilir. Dosya başına sınır **4 MB**'tır; sınır
+`localStorage` kotasını (tipik 5 MB) tek bir çizimle doldurmamak içindir.
+
+### Çevresel gürültü ve L(gag)
+
+Gündüz–akşam–gece göstergesi, akşamı +5, geceyi +10 dBA cezalandıran 24 saatlik enerji
+ortalamasıdır:
+
+```
+Lgag = 10·lg[ (12·10^(Lgündüz/10) + 4·10^((Lakşam+5)/10) + 8·10^((Lgece+10)/10)) / 24 ]
+```
+
+Girilen düzeyler, seçilen alan türünün EK-VII sınır değerleriyle karşılaştırılır.
+"Yollar mevcut" işaretlendiğinde sınırlar 5 dBA yükselir — planlanmış ama henüz
+yapılmamış yollar için daha sıkı değerler geçerlidir. Üç düzeyden biri bile eksikse
+L<sub>gag</sub> hesaplanmaz ve tabloda "—" görünür; eksik veriyi varsayımla doldurmak,
+raporu sessizce yanlışlamak olurdu.
+
+### Sayfa sığdırma
+
+Ön bölümün sekiz sayfasının her biri **tek bir A4'e sığar** (yazılabilir yükseklik
+277 mm ≈ 1047 px). Bir sayfaya en çok iki şekil konur; şekil yüksekliği yazdırmada
+310 px'e, künye tablosuyla aynı sayfayı paylaşan vaziyet planında 175 px'e kısılır.
+Bu sınırlar keyfî değil ölçülmüştür: kısılmadan önce giriş sayfası 1190 px'e çıkıyor ve
+yalnızca altbilginin düştüğü boş bir sayfa üretiyordu.
+
 ### Rapor sayfa düzeni
 
 Her hesap **kendi sayfasında** başlar (`break-before: page`): her ayırıcı eleman, her döşeme
@@ -740,6 +795,7 @@ js/
     reverberasyon.js           Sabine
     degerlendirme.js           Yönetmelik gereksinimleri ve sınıf belirleme
     performans-belgesi.js      EK-10 Akustik Performans Belgesi verisi
+    rapor-onbolum.js           Raporun ön bölümü: çevresel gürültü, şekil numaraları, kod anahtarı
   veri/
     yonetmelik.js              ★ Yönetmelik ekleri — düzenlenebilir veri katmanı
     malzemeler.js              ★ Malzeme kütüphanesi + eski kimlik göç haritası
@@ -751,6 +807,7 @@ js/
     sekme-kutuphane.js         Malzeme kütüphanesi (aranabilir döküm) + katman favorileri
     katman-editor.js           Çok katmanlı yapı elemanı düzenleyici (paylaşılan bileşen)
     oda-cizimi.js              İzometrik oda şeması (SVG) üretici
+    rapor-onbolum-sayfalari.js Raporun ön bölümünün yazdırılabilir A4 sayfaları
     xlsx-yazici.js             Dış bağımlılıksız .xlsx (ZIP/OOXML) yazıcı
     sekme-*.js                 Bölüm ekranları
     simgeler.js                Satır içi SVG simge seti

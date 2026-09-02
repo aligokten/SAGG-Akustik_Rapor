@@ -12,6 +12,8 @@ export const SIMGELER = {
   panel: sar('<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>'),
   // Proje künyesi — belge
   proje: sar('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>'),
+  // Rapor ön bölümü — pafta/çizim tabakası
+  onbolum: sar('<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M9 9v9"/><path d="M6 21h12"/>'),
   // Ayırıcı elemanlar — iki mekân arasında duvar
   ayirici: sar('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/><path d="M7 9v6M17 9v6"/>'),
   // Darbe sesi — yukarıdan gelen darbe

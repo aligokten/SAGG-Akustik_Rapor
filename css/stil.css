@@ -502,6 +502,71 @@ details > *:last-child{margin-bottom:12px}
  *  dışa aktarımı (printToPDF, preferCSSPageSize) aynı ölçüyü kullansın;
  *  aksi hâlde iki yol farklı kâğıt boyutu üretebiliyordu (ör. ABD Letter).
  */
+
+/* ── Rapor ön bölümü sekmesi ─────────────────────────────────────────
+ *
+ * Kat planı / kesit gibi çizimler proje verisine gömüldüğünden panelde
+ * küçük bir önizleme ile birlikte düzenlenir.
+ */
+.gorsel-satir{
+  display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap;
+  padding:12px 0; border-top:1px solid var(--cizgi);
+}
+.gorsel-satir:first-of-type{ border-top:0 }
+.gorsel-onizleme{
+  flex:0 0 190px; height:130px; display:grid; place-items:center; overflow:hidden;
+  border:1px solid var(--cizgi); border-radius:var(--r-s); background:var(--yuzey-2);
+  font-size:12px;
+}
+.gorsel-onizleme img{ width:100%; height:100%; object-fit:contain; display:block }
+.gorsel-alanlar{ flex:1 1 300px; display:grid; gap:8px }
+.gorsel-dugmeler{ display:flex; gap:6px; flex-wrap:wrap; align-items:center }
+
+.oneri-satir{ display:flex; gap:8px; align-items:center; margin-bottom:6px }
+.oneri-satir input{ flex:1 }
+.oneri-no{ flex:0 0 24px; text-align:right; color:var(--soluk); font-variant-numeric:tabular-nums }
+
+/* Onay kutusu satırı (ör. "Ön bölüm rapora eklensin"). */
+.onay{ display:flex; gap:8px; align-items:center; cursor:pointer; user-select:none }
+.onay input{ width:16px; height:16px; margin:0 }
+
+/* Ölçüt kutucuklarının yan yana dizildiği satır. */
+.olcut-satir{ display:flex; gap:10px; flex-wrap:wrap }
+
+/* Seçili satırı vurgulama (ör. parselin alan türü). */
+tr.vurgu > td, tr.vurgu > th{ background:var(--vurgu-zemin, rgba(120,160,255,.14)); font-weight:600 }
+
+/* ── Raporda numaralı şekiller ───────────────────────────────────────
+ *
+ * Bir A4 sayfasına iki şekil sığacak biçimde sınırlanır; yazdırmada şeklin
+ * ortasından sayfa bölünmesi engellenir.
+ */
+.rapor-sekil{ margin:12px 0 16px; text-align:center; break-inside:avoid; page-break-inside:avoid }
+.rapor-sekil img{
+  max-width:100%; max-height:420px; object-fit:contain;
+  border:1px solid var(--cizgi); border-radius:var(--r-s); background:#fff;
+}
+.rapor-sekil-bos{
+  height:180px; display:grid; place-items:center; font-size:12px; color:var(--soluk);
+  border:1px dashed var(--cizgi); border-radius:var(--r-s);
+}
+.rapor-sekil figcaption{ margin-top:6px; font-size:12px; color:var(--soluk) }
+.rapor-oneriler{ margin:8px 0 0 20px; padding:0 }
+.rapor-oneriler li{ margin-bottom:5px }
+
+@media print{
+  /*
+   * Yazdırmada şekil yüksekliği, sayfanın geri kalanına göre kısılır:
+   * A4'ün yazılabilir yüksekliği 1047 px (277 mm @96 dpi) ve buna antet ile
+   * altbilgi de girer. Kendi başına duran bir bölümde iki şekil, künye
+   * tablosuyla aynı sayfayı paylaşan şekil ise tek başına sığmalıdır —
+   * aksi hâlde yalnızca altbilginin düştüğü boş bir sayfa üretiliyordu.
+   */
+  .rapor-sekil img{ max-height:310px }
+  .rapor-sekil.kucuk img{ max-height:175px }
+  .rapor-sekil-bos{ display:none }
+}
+
 @page{ size:A4; margin:10mm }
 
 @media print{

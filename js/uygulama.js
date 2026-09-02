@@ -15,6 +15,7 @@ import * as D from './durum.js';
 import { projeyiHesapla } from './hesap.js';
 import * as sekmePanel from './arayuz/sekme-panel.js';
 import * as sekmeProje from './arayuz/sekme-proje.js';
+import * as sekmeOnBolum from './arayuz/sekme-onbolum.js';
 import * as sekmeAyirici from './arayuz/sekme-ayirici.js';
 import * as sekmeDarbe from './arayuz/sekme-darbe.js';
 import * as sekmeCephe from './arayuz/sekme-cephe.js';
@@ -51,6 +52,9 @@ const SEKMELER = [
     baslik: 'Panel', yol: 'Akustik performans genel görünümü' },
   { id: 'proje',   ad: 'Proje künyesi',      simge: '▣',
     baslik: 'Proje künyesi', yol: 'Künye, hedef sınıf ve hesap ayarları' },
+  { id: 'onbolum', ad: 'Rapor ön bölümü', simge: '▧',
+    baslik: 'Rapor ön bölümü', yol: 'Giriş, çevresel gürültü, anahtar paftalar ve sonuç',
+    sayim: (d) => (d.onbolum?.gorseller || []).length },
 
   { grup: 'Hesaplar', id: 'ayirici', ad: 'Ayırıcı elemanlar', simge: '▥',
     baslik: 'Ayırıcı elemanlarda hava doğuşlu ses yalıtımı', yol: 'TS EN 12354-1 · DnT,A · EK-3 Tablo 3.2',
@@ -124,6 +128,56 @@ function binaResminiOku(dosya) {
   };
   okuyucu.onerror = () => alert('Resim okunamadı.');
   okuyucu.readAsDataURL(dosya);
+}
+
+/* ── Rapor ön bölümü: görseller ─────────────────────────────────────── */
+
+/**
+ * Kat planı / kesit / detay görselini okur ve ön bölüm kaydına gömer.
+ *
+ * Çizimler binanın resminden büyük olduğundan sınır daha yüksek tutulur;
+ * yine de localStorage kotasını (tipik 5 MB) tek çizimle doldurmamak için
+ * bir üst sınır gerekir.
+ */
+const GORSEL_SINIRI = 4 * 1024 * 1024;
+
+function gorseliOku(id, dosya) {
+  if (!dosya.type.startsWith('image/')) {
+    alert('Lütfen bir resim dosyası seçin (PNG, JPG veya SVG).');
+    return;
+  }
+  if (dosya.size > GORSEL_SINIRI) {
+    alert(`Görsel çok büyük (${(dosya.size / 1024 / 1024).toFixed(1)} MB). En çok 4 MB olmalı.`);
+    return;
+  }
+  const kayit = (durum.onbolum?.gorseller || []).find((g) => g.id === id);
+  if (!kayit) return;
+  const okuyucu = new FileReader();
+  okuyucu.onload = () => {
+    kayit.veri = String(okuyucu.result || '');
+    ciz();
+  };
+  okuyucu.onerror = () => alert('Görsel okunamadı.');
+  okuyucu.readAsDataURL(dosya);
+}
+
+/**
+ * Bir görseli kendi bölümü içinde yukarı/aşağı taşır.
+ *
+ * Şekil numaraları listedeki sıraya göre verildiğinden, taşıma yalnızca
+ * aynı türdeki görseller arasında anlamlıdır: bir kat planını nokta
+ * detayların arasına sokmak numaralandırmayı bozardı.
+ */
+function gorseliTasi(id, yon) {
+  const liste = durum.onbolum?.gorseller || [];
+  const g = liste.find((x) => x.id === id);
+  if (!g) return;
+  const ayniTur = liste.filter((x) => x.tur === g.tur);
+  const yer = ayniTur.indexOf(g);
+  const hedef = ayniTur[yer + yon];
+  if (!hedef) return;
+  const a = liste.indexOf(g), b = liste.indexOf(hedef);
+  [liste[a], liste[b]] = [liste[b], liste[a]];
 }
 
 /* ── Yönetmelik verisi düzenleme ve kalıcılık ───────────────────────── */
@@ -465,6 +519,7 @@ function ciz() {
   const cizimler = {
     panel: () => sekmePanel.ciz(durum, sonuclar),
     proje: () => sekmeProje.ciz(durum),
+    onbolum: () => sekmeOnBolum.ciz(durum, sonuclar),
     ayirici: () => sekmeAyirici.ciz(durum, sonuclar),
     darbe: () => sekmeDarbe.ciz(durum, sonuclar),
     cephe: () => sekmeCephe.ciz(durum, sonuclar),
@@ -706,6 +761,22 @@ function olaylariBagla() {
       favoriTaslaginiAyarla(el.dataset.yolTabani, el.dataset.favoriAlan, el.value);
       return;
     }
+    if (el.dataset?.yolGorsel) {
+      // "<id>.<alan>" — görsel kaydını kimliğinden bulup alanını yazar.
+      const [id, alanAdi] = el.dataset.yolGorsel.split('.');
+      const g = (durum.onbolum?.gorseller || []).find((x) => x.id === id);
+      if (g) g[alanAdi] = el.value;
+      setTimeout(gecikmeliCiz, 0);
+      return;
+    }
+    if (el.dataset?.yolOneri !== undefined) {
+      const i = Number(el.dataset.yolOneri);
+      if (durum.onbolum?.oneriler && i >= 0 && i < durum.onbolum.oneriler.length) {
+        durum.onbolum.oneriler[i] = el.value;
+      }
+      setTimeout(gecikmeliCiz, 0);
+      return;
+    }
     if (el.dataset?.yol) {
       yolAyarla(durum, el.dataset.yol, degerCoz(el));
       D.kaydet(durum);
@@ -749,6 +820,22 @@ function olaylariBagla() {
       }
       return;
     }
+    if (el.dataset?.yolGorsel) {
+      // "<id>.<alan>" — görsel kaydını kimliğinden bulup alanını yazar.
+      const [id, alanAdi] = el.dataset.yolGorsel.split('.');
+      const g = (durum.onbolum?.gorseller || []).find((x) => x.id === id);
+      if (g) g[alanAdi] = el.value;
+      setTimeout(gecikmeliCiz, 0);
+      return;
+    }
+    if (el.dataset?.yolOneri !== undefined) {
+      const i = Number(el.dataset.yolOneri);
+      if (durum.onbolum?.oneriler && i >= 0 && i < durum.onbolum.oneriler.length) {
+        durum.onbolum.oneriler[i] = el.value;
+      }
+      setTimeout(gecikmeliCiz, 0);
+      return;
+    }
     if (el.dataset?.yol) {
       yolAyarla(durum, el.dataset.yol, degerCoz(el));
       // Çizim bir sonraki döngüye bırakılır: 'change' alandan çıkarken
@@ -774,6 +861,9 @@ function olaylariBagla() {
       el.value = '';
     } else if (el.id === 'bina-resmi' && el.files?.[0]) {
       binaResminiOku(el.files[0]);
+      el.value = '';
+    } else if (el.dataset?.gorselDosya && el.files?.[0]) {
+      gorseliOku(el.dataset.gorselDosya, el.files[0]);
       el.value = '';
     } else if (el.id === 'favori-ice' && el.files?.[0]) {
       dosyaOku(el.files[0], (veri) => {
@@ -813,6 +903,31 @@ function olaylariBagla() {
       if (eylem === 'favori-sil') {
         const f = FAV.favoriBul(dugme.dataset.favoriId);
         if (f && confirm(`"${f.ad}" favorisi silinsin mi?`)) { FAV.favoriSil(f.id); ciz(); }
+        return;
+      }
+      if (eylem === 'gorsel-ekle') {
+        durum.onbolum.gorseller.push(D.yeniGorsel(dugme.dataset.tur));
+        ciz();
+        return;
+      }
+      if (eylem === 'gorsel-sil') {
+        const liste = durum.onbolum.gorseller;
+        const yer = liste.findIndex((g) => g.id === dugme.dataset.id);
+        if (yer >= 0 && confirm('Bu görsel rapordan kaldırılsın mı?')) {
+          liste.splice(yer, 1);
+          ciz();
+        }
+        return;
+      }
+      if (eylem === 'gorsel-yukari' || eylem === 'gorsel-asagi') {
+        gorseliTasi(dugme.dataset.id, eylem === 'gorsel-yukari' ? -1 : 1);
+        ciz();
+        return;
+      }
+      if (eylem === 'oneri-ekle') { durum.onbolum.oneriler.push(''); ciz(); return; }
+      if (eylem === 'oneri-sil') {
+        durum.onbolum.oneriler.splice(Number(dugme.dataset.indeks), 1);
+        ciz();
         return;
       }
       if (eylem === 'bina-resmi-sil') {

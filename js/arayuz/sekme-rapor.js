@@ -23,6 +23,7 @@ import { LISANS, telifSatiri } from '../veri/lisans.js';
 import { adaParselMetni, adresMetni, alanMetni } from '../durum.js';
 import { SINIFLAR, EK2_TABLO_2_2 } from '../veri/yonetmelik.js';
 import { belgeVerisi } from '../cekirdek/performans-belgesi.js';
+import { onBolumSayfalari } from './rapor-onbolum-sayfalari.js';
 
 const dolguBul = (id) => bul(YALITIM_LEVHALARI, id);
 
@@ -35,6 +36,8 @@ export function ciz(durum, s) {
     <button class="dugme acik" data-eylem="excel-indir">Sınır değer tablosunu Excel'e aktar</button>
     <span class="soluk" style="align-self:center;font-size:12.5px">Windows uygulamasında PDF doğrudan kaydedilir; tarayıcıda hedef olarak "PDF olarak kaydet" seçilir.</span>
   </div>
+
+  ${onBolumSayfalari(p, s, durum.onbolum, antet, altbilgi)}
 
   ${s.ayiricilar.length === 0
     ? '<div class="bos-durum">Henüz ayırıcı eleman tanımlanmadı. Rapor, en az bir ayırıcı eleman gerektirir.</div>'
