@@ -19,6 +19,15 @@ export const A4_YAZILABILIR_GENISLIK = (210 - 20) / 25.4 * 96;   // ≈ 718,1 px
 export const A4_YAZILABILIR_YUKSEKLIK = (297 - 20) / 25.4 * 96;  // ≈ 1047,1 px
 
 /**
+ * Sayfa numarasına ayrılan alt şerit (px).
+ *
+ * İçerik bu şeride hiç girmez; numara ile altbilgi metni birbirinin üstüne
+ * binmesin diye. Şeridi ayırmamak, numarayı "…Katmanlı Model v3" satırının
+ * üzerine bastırıyordu.
+ */
+const NUMARA_SERIDI = 26;
+
+/**
  * `@media print` bloklarını geçici olarak açar ve `geri()` döndürür.
  *
  * Başka bir kaynaktan gelen (cross-origin) biçem sayfasında `cssRules`
@@ -73,6 +82,7 @@ function atomlar(kap, bolumUst, liste = []) {
     }
     const bicem = getComputedStyle(c);
     liste.push({
+      el: c,
       ust: r.top - bolumUst,
       h: r.height,
       bolunmez: bolunmezMi(bicem, r.height),
@@ -83,19 +93,38 @@ function atomlar(kap, bolumUst, liste = []) {
 }
 
 /**
- * Bir bölümün kaç kâğıda basılacağı.
+ * Bir bölümün kaç kâğıda basılacağı ve kaydırma noktaları.
  *
  * Blokların doğal konumları üzerinden sayfalama benzetilir: sayfa sınırında
  * bölünemeyen bir blok, sınırın ötesine "itilir" ve bu itme sonraki bütün
  * blokları kaydırır. Sonuçta bölümün kaydırma sonrası toplam yüksekliği
  * sayfa yüksekliğine bölünerek kâğıt sayısı bulunur.
+ *
+ * `kaydirmalar`, itmelerin nerede ve ne kadar olduğunu tutar. Basılı konum
+ * ile DOM konumu arasındaki bağ budur:
+ *
+ *     basiliY(domY) = domY + Σ miktar   (nokta ≤ domY olan kaydırmalar)
+ *
+ *
+ * @returns {{kagit:number, kaydirmalar:Array<{nokta:number,miktar:number}>}}
  */
-function kagitSayisi(bolum) {
+/**
+ * Kapak sayfaları sabit ölçülü, tek kâğıtlık tasarımlardır; ölçülmezler.
+ * (Alt kenar boşlukları sıfır olduğu için yükseklikleri öteki sayfalardan
+ * farklıdır ve genel ölçüm onları iki kâğıt sayardı.)
+ */
+const TEK_KAGIT = new Set(['kapak', 'arkaKapak']);
+
+function sayfaBilgisi(bolum) {
+  if (TEK_KAGIT.has(bolum.dataset.bolumId)) return { kagit: 1, kaydirmalar: [] };
   const bolumUst = bolum.getBoundingClientRect().top;
   const liste = atomlar(bolum, bolumUst);
   const yukseklik = bolum.getBoundingClientRect().height;
-  if (!liste.length) return Math.max(1, Math.ceil(yukseklik / A4_YAZILABILIR_YUKSEKLIK));
+  if (!liste.length) {
+    return { kagit: Math.max(1, Math.ceil(yukseklik / A4_YAZILABILIR_YUKSEKLIK)), kaydirmalar: [] };
+  }
 
+  const kaydirmalar = [];
   let kaydirma = 0;
   for (let i = 0; i < liste.length; i += 1) {
     const a = liste[i];
@@ -107,14 +136,61 @@ function kagitSayisi(bolum) {
     if (a.sonrakiyle && liste[i + 1]) taban = liste[i + 1].ust + kaydirma + liste[i + 1].h;
 
     const sayfaSonu = (Math.floor(ust / A4_YAZILABILIR_YUKSEKLIK) + 1) * A4_YAZILABILIR_YUKSEKLIK;
+    // İçeriğin girebileceği son nokta: sayfa sonu eksi numara şeridi.
+    const dolumSonu = sayfaSonu - NUMARA_SERIDI;
     const birim = taban - ust;
     const bolunemez = a.bolunmez || (a.sonrakiyle && birim <= A4_YAZILABILIR_YUKSEKLIK);
 
-    if (taban > sayfaSonu && bolunemez && birim <= A4_YAZILABILIR_YUKSEKLIK) {
-      kaydirma += sayfaSonu - ust;
+    if (taban > dolumSonu && bolunemez && birim <= A4_YAZILABILIR_YUKSEKLIK) {
+      const miktar = sayfaSonu - ust;   // blok, sonraki sayfanın başına iner
+      kaydirmalar.push({ el: a.el, miktar });
+      kaydirma += miktar;
     }
   }
-  return Math.max(1, Math.ceil((yukseklik + kaydirma) / A4_YAZILABILIR_YUKSEKLIK));
+  return {
+    kagit: Math.max(1, Math.ceil((yukseklik + kaydirma) / A4_YAZILABILIR_YUKSEKLIK)),
+    kaydirmalar,
+  };
+}
+
+/** Kapak sayfaları numaralanmaz. */
+export const NUMARASIZ = new Set(['kapak', 'arkaKapak']);
+
+/** Önceki turdan kalan dolgu ve numaraları siler (ölçüm bunlarsız yapılmalı). */
+function izleriSil(kok) {
+  for (const el of kok.querySelectorAll('.sayfa-dolgu, .sayfa-no')) el.remove();
+}
+
+/**
+ * Sayfa numaralarını kâğıtların SAĞ ALT köşesine yerleştirir.
+ *
+ * Numarayı doğru yere koymanın önünde tek bir engel vardı: bir blok sayfa
+ * sonunda bölünemeyip aşağı itildiğinde, kâğıdın alt kısmı boş kalır ama o
+ * boşluğun DOM'da KARŞILIĞI YOKTUR — oraya mutlak konumla ulaşılamaz
+ * (denendi: numaralar sayfa ortasında kalıyordu).
+ *
+ * Çözüm, boşluğu gerçekten var etmek: itmenin olacağı yere tam o yükseklikte
+ * bir dolgu bloğu konur. Böylece blok zaten ineceği yere doğal olarak iner —
+ * sayfalama değişmez — ve DOM konumu ile basılı konum birebir örtüşür.
+ * Numaralar artık sayfa yüksekliğinin katlarına konabilir.
+ */
+function numaralariYerlestir(bolum, ilkSayfa, bilgi) {
+  for (const k of bilgi.kaydirmalar) {
+    const dolgu = document.createElement('div');
+    dolgu.className = 'sayfa-dolgu';
+    dolgu.style.height = `${k.miktar}px`;
+    k.el.parentElement.insertBefore(dolgu, k.el);
+  }
+
+  if (NUMARASIZ.has(bolum.dataset.bolumId)) return;
+
+  for (let i = 1; i <= bilgi.kagit; i += 1) {
+    const el = document.createElement('div');
+    el.className = 'sayfa-no';
+    el.textContent = String(ilkSayfa + i - 1);
+    el.style.top = `${Math.round(i * A4_YAZILABILIR_YUKSEKLIK - NUMARA_SERIDI + 8)}px`;
+    bolum.appendChild(el);
+  }
 }
 
 /**
@@ -141,10 +217,14 @@ function olc(kok) {
 
   const sayfalar = new Map();
   try {
+    // Ölçüm önceki turun dolgularından arınmış düzende yapılmalı.
+    izleriSil(kok);
     let imlec = 1;
     for (const b of bolumler) {
       sayfalar.set(b.dataset.bolumId, imlec);
-      imlec += kagitSayisi(b);
+      const bilgi = sayfaBilgisi(b);
+      numaralariYerlestir(b, imlec, bilgi);
+      imlec += bilgi.kagit;
     }
   } finally {
     kapsayici.style.width = eskiGenislik;

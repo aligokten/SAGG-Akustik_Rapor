@@ -731,6 +731,32 @@ cephe, hesap özetleri ve EK-10 belgesi. Hesabı üreten programın kim olduğu 
 kimde olduğu oralarda anlamlıdır; anlatı sayfalarının (içindekiler, giriş, paftalar,
 sonuç) altında yinelenmesi yalnızca yer kaplıyordu.
 
+Künye **tek satırdır**. Önce kutulu, dört satırlık bir blok olarak basılıyordu; hesap
+sayfalarının sonuna eklendiğinde sayfayı taşırıp yalnızca kendisinin düştüğü boş bir kâğıt
+üretiyordu. İçeriğin tamamı (telif, geliştirici, sorumluluk ibaresi) korunur.
+
+### Sayfa numaraları
+
+Numaralar her kâğıdın **sağ alt köşesinde**, yalnızca rakam olarak basılır. Kapak ve arka
+kapakta numara yoktur; numaralar kâğıt sırasını gösterdiği için içindekilerdeki değerlerle
+birebir örtüşür.
+
+Numarayı yerine koymanın önünde tek bir engel vardı: bir blok sayfa sonunda bölünemeyip
+aşağı itildiğinde kâğıdın alt kısmı boş kalır, ama o boşluğun **DOM'da karşılığı yoktur** —
+oraya mutlak konumla ulaşılamaz. İlk denemede numaralar bu yüzden sayfa ortasında kalıyor,
+hatta üst üste biniyordu.
+
+Çözüm, boşluğu gerçekten var etmek: itmenin olacağı yere tam o yükseklikte bir dolgu bloğu
+konur. Blok zaten ineceği yere doğal olarak iner — sayfalama değişmez — ve DOM konumu ile
+basılı konum birebir örtüşür. Ayrıca her kâğıdın alt 26 px'i numaraya ayrılır; şerit
+ayrılmadığında numara "…Katmanlı Model v3" satırının üstüne basılıyordu.
+
+> Chromium'un kendi altbilgisi (`printToPDF`, `displayHeaderFooter`) da denendi: numarayı
+> doğru yere basıyor, ama sayfayı ayırt edemediği için **kapaklara da** numara koyuyor.
+> `@page` ile kapakların alt boşluğunu sıfırlamak da işe yaramadı — altbilgi CSS kenar
+> boşluğundan bağımsız çiziliyor. Bu yüzden numaralar belgenin içinde üretiliyor; böylece
+> web ve masaüstü çıktısı da aynı oluyor.
+
 ### Rapor sayfa düzeni
 
 Her hesap **kendi sayfasında** başlar (`break-before: page`): her ayırıcı eleman, her döşeme

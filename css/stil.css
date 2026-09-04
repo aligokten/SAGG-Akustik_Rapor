@@ -429,23 +429,26 @@ details > *:last-child{margin-bottom:12px}
   border-top:1px solid var(--cizgi); font-size:11px; color:var(--soluk);
 }
 
-/* Lisans / sorumluluk bloğu — raporun her sayfasının en altında yinelenir. */
+/*
+ * Lisans / sorumluluk künyesi — altbilginin bir parçası, tek satır.
+ *
+ * Kutulu dört satırlık blok, hesap sayfalarını taşırıp yalnızca kendisinin
+ * düştüğü boş kâğıtlar üretiyordu; içerik korunarak tek satıra indirildi.
+ */
 .rapor-lisans{
-  margin-top:10px; padding:11px 13px; border:1px solid var(--cizgi);
-  border-radius:var(--r-s); background:var(--yuzey-2); font-size:11px; color:var(--metin-2);
-}
-.rapor-lisans-satir{display:flex; gap:8px; line-height:1.5}
-.rapor-lisans-satir b{
-  flex:0 0 138px; font-weight:700; color:var(--soluk);
-  text-transform:uppercase; letter-spacing:.04em; font-size:9.5px; padding-top:1px;
-}
-.rapor-lisans-telif{margin:7px 0 0; font-size:10.5px; color:var(--soluk)}
-.rapor-lisans-sorumluluk{
-  margin:7px 0 0; padding-top:7px; border-top:1px solid var(--cizgi);
-  font-weight:650; color:var(--metin); font-size:11.5px;
+  margin:5px 0 0; font-size:9.5px; line-height:1.45; color:var(--soluk);
 }
 
 .rapor-sayfa-sonu{margin-top:34px; padding-top:34px; border-top:4px double var(--cizgi-koyu)}
+
+/*
+ * Sayfa numarası ve sayfa dolgusu YALNIZCA yazdırmada görünür.
+ * Konumları yazdırma düzenine göre hesaplanır (arayuz/sayfa-numaralari.js);
+ * ekrandaki akışta yanlış yerlere düşer ve dolgular koca boşluklar açardı.
+ */
+.sayfa-no, .sayfa-dolgu{ display:none }
+
+
 
 /* ── Kenar çubuğunu katlama ─────────────────────────────────────── */
 /* Menü düğmesi her genişlikte görünür: dar ekranda çekmeceyi açar, geniş
@@ -707,6 +710,7 @@ table.icindekiler .ic-sayfa{
 
 @page{ size:A4; margin:10mm }
 
+
 @media print{
   /*
    * BEYAZ SAYFA — HER KOŞULDA.
@@ -760,7 +764,13 @@ table.icindekiler .ic-sayfa{
   body{color:#000}
   .kabuk{display:block}
   .icerik{padding:0; max-width:none}
-  .rapor{border:0; padding:0; box-shadow:none; max-width:none}
+  /* Sayfa numaraları ve dolgular bu kutuya göre konumlanır. */
+  .rapor{border:0; padding:0; box-shadow:none; max-width:none; position:relative}
+  .sayfa-dolgu{ display:block }
+  .sayfa-no{
+    display:block; position:absolute; right:0;
+    font-size:10px; color:#333; font-variant-numeric:tabular-nums;
+  }
   .kart{box-shadow:none; break-inside:avoid}
   table{font-size:10.5px}
   th{background:#f1f1f1 !important; color:#000}
@@ -800,7 +810,7 @@ table.icindekiler .ic-sayfa{
   .yazdirma-goster{break-inside:avoid}
   h2{break-after:avoid}
   /* Lisans bloğu sayfaya bölünmesin; ekrandaki dolgu zemin baskıda gereksiz. */
-  .rapor-lisans{break-inside:avoid; background:transparent !important}
+  .rapor-lisans{break-inside:avoid; background:transparent !important; font-size:8.5px}
 }
 
 /* ── Satır içi SVG simgeler ─────────────────────────────────────── */
@@ -1148,7 +1158,7 @@ table.icindekiler .ic-sayfa{
   .belge-imza-alan{ min-height:48px; font-size:13px }
   /* Belge sayfasındaki lisans künyesi daha sıkı dizilir; içerik aynı kalır. */
   .belge .rapor-altbilgi{ margin-top:8px; padding-top:6px }
-  .belge .rapor-lisans{ padding:5px 8px; font-size:8px; line-height:1.32 }
+  .belge .rapor-lisans{ font-size:8px; line-height:1.3 }
   .belge-baslik h1{ background:#f2dfa0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact }
   .belge-ok, .belge-tablo th, .belge-toplam td, .belge-sinif-dizi b.secili{
     -webkit-print-color-adjust:exact; print-color-adjust:exact;

@@ -304,15 +304,18 @@ function altbilgi(p, lisans = true) {
   ${lisans ? lisansKunyesi(p) : ''}`;
 }
 
-/** Program lisans ve sorumluluk künyesi. */
+/**
+ * Program lisans ve sorumluluk künyesi — tek satırlık altbilgi.
+ *
+ * Önce kutulu, dört satırlık bir blok olarak basılıyordu; hesap sayfalarının
+ * sonuna eklendiğinde sayfayı taşırıp yalnızca kendisinin düştüğü boş bir
+ * kâğıt üretiyordu. İçeriğin tamamı korunur, yalnızca tek satıra sığacak
+ * biçimde sıkıştırılır.
+ */
 function lisansKunyesi(p) {
   return `
-  <div class="rapor-lisans">
-    <div class="rapor-lisans-satir"><b>Program lisans sahibi</b><span>${kacis(LISANS.sahip)}</span></div>
-    <div class="rapor-lisans-satir"><b>Program geliştirici</b><span>${kacis(LISANS.gelistirici)}</span></div>
-    <p class="rapor-lisans-telif">${kacis(telifSatiri(p.tarih))}</p>
-    <p class="rapor-lisans-sorumluluk">${kacis(LISANS.sorumluluk)}</p>
-  </div>`;
+  <p class="rapor-lisans">${kacis(telifSatiri(p.tarih))} · Geliştirici:
+    ${kacis(LISANS.gelistirici)} · ${kacis(LISANS.sorumluluk)}</p>`;
 }
 
 /**

@@ -54,10 +54,18 @@ test('Lisans künyesi hesap sayfalarında bulunur', () => {
 
   assert.ok(hesaplar.length >= durum.ayiricilar.length + 1, `hesap sayfası: ${hesaplar.length}`);
   for (const sayfa of hesaplar) {
-    assert.ok(sayfa.html.includes('Program lisans sahibi'), `${sayfa.id}: künye yok`);
+    assert.ok(sayfa.html.includes(LISANS.sahip), `${sayfa.id}: lisans sahibi yok`);
     assert.ok(sayfa.html.includes(LISANS.gelistirici), `${sayfa.id}: geliştirici yok`);
     assert.ok(sayfa.html.includes(LISANS.sorumluluk), `${sayfa.id}: sorumluluk notu yok`);
   }
+});
+
+test('Lisans künyesi tek satırlık altbilgidir', () => {
+  // Kutulu çok satırlı blok, hesap sayfalarını taşırıp boş kâğıt üretiyordu.
+  const durum = ornekProje();
+  const sayfa = raporSayfalari(durum, projeyiHesapla(durum)).find((x) => x.id === 'ayiricilar');
+  assert.match(sayfa.html, /<p class="rapor-lisans">/);
+  assert.doesNotMatch(sayfa.html, /rapor-lisans-satir|rapor-lisans-telif|rapor-lisans-sorumluluk/);
 });
 
 test('Lisans künyesi anlatı sayfalarında yinelenmez', () => {
@@ -67,7 +75,7 @@ test('Lisans künyesi anlatı sayfalarında yinelenmez', () => {
 
   assert.ok(anlati.length > 0, 'anlatı sayfası bulunamadı');
   for (const sayfa of anlati) {
-    assert.ok(!sayfa.html.includes('Program lisans sahibi'), `${sayfa.id}: künye yinelenmiş`);
+    assert.ok(!sayfa.html.includes('rapor-lisans'), `${sayfa.id}: künye yinelenmiş`);
   }
 });
 

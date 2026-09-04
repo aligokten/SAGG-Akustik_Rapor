@@ -497,3 +497,27 @@ test('Kat planları hâlâ sayfada tek başına basılır', () => {
   assert.equal(paftalar.length, 2);
   assert.doesNotMatch(paftalar[0].html, /sekil-izgara/);
 });
+
+/* ── Sayfa numaraları ────────────────────────────────────────────── */
+
+test('Numarasız sayfalar tam olarak kapak ve arka kapaktır', async () => {
+  const { NUMARASIZ } = await import('../js/arayuz/sayfa-numaralari.js');
+  assert.deepEqual([...NUMARASIZ].sort(), ['arkaKapak', 'kapak']);
+
+  // Kimlikler rapor üreticisiyle eşleşmeli; ayrışırlarsa kapaklara numara basılır.
+  const d = ornekProje();
+  const idler = raporSayfalari(d, projeyiHesapla(d)).map((x) => x.id);
+  for (const id of NUMARASIZ) {
+    assert.ok(idler.includes(id), `${id} sayfası rapor üreticisinde yok`);
+  }
+});
+
+test('Kapak sayfaları tek kâğıt sayılır', async () => {
+  const modul = await import('../js/arayuz/sayfa-numaralari.js');
+  // Kapaklar sabit ölçülü tasarımlardır; ölçüme sokulmadan tek kâğıt kabul
+  // edilirler. Kaynakta bu kuralın durduğunu sabitle.
+  const { readFileSync } = await import('node:fs');
+  const kod = readFileSync(new URL('../js/arayuz/sayfa-numaralari.js', import.meta.url), 'utf8');
+  assert.match(kod, /TEK_KAGIT\.has\(bolum\.dataset\.bolumId\)/);
+  assert.ok(modul.A4_YAZILABILIR_YUKSEKLIK > 1000);
+});
