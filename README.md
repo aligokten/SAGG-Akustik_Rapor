@@ -587,6 +587,24 @@ npm run paketle           # dist/ içine kurulum .exe'si üretir, yayınlamaz
 > Uyarıyı tümüyle kaldırmak için ücretli bir kod imzalama sertifikası gerekir; sertifika alındığında
 > `electron-builder.mjs` içine `win.certificateFile`/`certificatePassword` eklenmesi yeterlidir.
 
+## Kapak ve arka kapak
+
+Rapor, kullanıcının hazırladığı kapak tasarımıyla başlar ve arka kapakla biter. Kapak düz
+bir görüntü olarak gömülmez — **proje adı, ilgili belediye ve mahalle/ada/parsel proje
+künyesinden gelir**, bu yüzden metin canlı olmak zorundadır. Sabit olan yalnızca dekoratif
+parçalardır (mimari çizim filigranı, SAGG marka işareti ve satır simgeleri); onlar kapak
+PDF'inden çıkarılıp `assets/kapak-*.png` olarak depoya alınmıştır.
+
+Kapak, A4'ün yazılabilir alanı ölçüsünde (718×1040 px) sabit bir tuvaldir ve blokları
+akışa değil tasarımdaki yerlerine göre mutlak konumlandırılır: kapakta öğeler birbirini
+itmemeli, her biri kendi yerinde durmalıdır. Değeri boş olan künye satırı kapağa hiç
+girmez — boş bir "İlgili Belediye Adı" satırı, doldurulmayı bekleyen bir form gibi
+görünürdü.
+
+Kapak ve arka kapak antet, altbilgi ve lisans künyesi taşımaz ve içindekilerde
+listelenmez; ama sayfa sayımına girerler, bu yüzden içindekilerin numaraları kapaktan
+sonrasını doğru sayar.
+
 ## Raporun ön bölümü
 
 Teslim edilen akustik rapor, hesap sayfalarından ibaret değildir: önünde parsel künyesi,
@@ -680,6 +698,12 @@ kaydırır.
 > her bölüm tek başına PDF'e basılıp gerçek kâğıt sayısı sayıldı. **Yirmi bölümün
 > tamamında ölçülen sayfa numarası gerçek PDF ile birebir tutuyor.**
 
+### Nokta detaylar — sayfada dört detay
+
+Nokta detaylar 2×2 ızgarada, **sayfaya dörder** yerleşir. Kat planları ve kesitler ise
+sayfa genişliğini kullandıkları için sayfada tek başına basılır; ikisi de aynı
+`gorselGrubu` üreticisinden gelir, farkı yalnızca sayfa başına düşen görsel sayısıdır.
+
 ### D1 Temel Bina Akustik Uzman Belgesi
 
 Ön bölümün en sonunda, raporu hazırlayan uzmanın yeterlilik belgesi yer alır. Panelden
@@ -722,6 +746,21 @@ L<sub>n,w,eq</sub> → ΔL<sub>w</sub> → K → L′<sub>nT,w</sub> zinciriyle 
 ile cephede olduğu gibi — **canlı 3B mahal şeması** taşır. Şema iki oda kipinde üst ve alt mekânı
 kaydırmasıyla birlikte, tek oda kipinde alıcı mekânı gösterir; yalnızca doğrudan hacim girilen
 kipte ölçü bulunmadığı için şema çizilemez.
+
+### Masaüstü çıktısında kâğıt zemini
+
+Masaüstü sürümünün PDF'i, sayfa **kenarları koyu** basıyordu; web sürümünde aynı sorun
+yoktu. Neden şu: `@page` kenar boşlukları belge tuvalinin DIŞINDA kalır, oraya
+biçemlerdeki `html{background:#fff}` ulaşmaz ve Chromium boşluğu pencerenin taban
+rengiyle doldurur. Uygulama koyu temada çalıştığı için taban rengi `#12161d`'dir;
+tarayıcıda ise taban beyazdır, bu yüzden web çıktısı hep temiz görünüyordu.
+
+Düzeltme: `printToPDF` çağrılmadan önce pencerenin taban rengi beyaza çekilir, sonra
+`finally` ile geri alınır. Pencere ekranda kendi zeminini bastığı için bu değişiklik
+görünmez.
+
+> Ölçüldü (Electron, gerçek pencere ayarlarıyla): düzeltme öncesi sayfa kenarları
+> **(18, 22, 29)** — yani tam olarak `#12161d` —, sonrasında **(255, 255, 255)**.
 
 ### Raporu PDF'e aktarma
 
@@ -873,6 +912,7 @@ js/
     katman-editor.js           Çok katmanlı yapı elemanı düzenleyici (paylaşılan bileşen)
     oda-cizimi.js              İzometrik oda şeması (SVG) üretici
     rapor-onbolum-sayfalari.js Raporun ön bölümünün yazdırılabilir A4 sayfaları
+    rapor-kapak.js             Rapor kapağı ve arka kapağı (künyeden dolan alanlar)
     sayfa-numaralari.js        İçindekiler sayfa numaralarını yazdırma düzeninde ölçer
     xlsx-yazici.js             Dış bağımlılıksız .xlsx (ZIP/OOXML) yazıcı
     sekme-*.js                 Bölüm ekranları

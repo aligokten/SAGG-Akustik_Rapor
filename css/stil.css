@@ -575,6 +575,10 @@ tr.vurgu > td, tr.vurgu > th{ background:var(--vurgu-zemin, rgba(120,160,255,.14
    * sayfayı enine doldurmasına izin verirken tek başına taşmasını önler.
    */
   .rapor-sekil img{ max-height:820px }
+  /* Izgarada dört detay: hücre yüksekliği yarım sayfayı aşmamalı. */
+  .sekil-izgara .rapor-sekil img{ max-height:355px }
+  /* Kapak sayfaları antet/altbilgi taşımaz; tam sayfa ve bölünmez. */
+  .kapak{ height:1040px; break-inside:avoid }
   /* Belge, kendi sayfasında tek başına durur: sayfa yüksekliğine kadar açılır. */
   /* A4'ün yazılabilir yüksekliğinden antet, başlık ve altbilgi düşülünce
      belgeye kalan yer ≈760 px'tir; belge tek sayfada kalır. */
@@ -605,6 +609,101 @@ table.icindekiler .ic-sayfa{
 /* Uzman belgesi genelde dikey (portre) olduğundan enine gerilmez; kendi
    oranında, sayfaya sığacak yükseklikte basılır. */
 .rapor-sekil.belge-gorsel img{ width:auto; max-width:100%; max-height:520px }
+
+/* ── Nokta detay ızgarası ────────────────────────────────────────────
+ *
+ * Sayfaya dört detay: iki sütun, iki satır. Hücre yüksekliği, A4'ün
+ * yazılabilir yüksekliğinden antet, bölüm başlığı ve altbilgi düşüldükten
+ * sonra kalan yerin yarısıdır.
+ */
+.sekil-izgara{ display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; align-items:start }
+.sekil-izgara .rapor-sekil{ margin:0 }
+.sekil-izgara .rapor-sekil img{ max-height:330px }
+
+/* ── Rapor kapağı ve arka kapağı ─────────────────────────────────────
+ *
+ * Kullanıcının hazırladığı kapak tasarımının yeniden kurulmuş hâli.
+ * Kapak, sabit ölçülü bir tuvaldir: A4'ün yazılabilir alanı (718×1040 px
+ * @96 dpi). Bloklar akışa değil, tasarımdaki yerlerine göre MUTLAK
+ * konumlandırılır — kapakta öğeler birbirini itmemeli, her biri kendi
+ * yerinde durmalıdır.
+ */
+.kapak{
+  position:relative; overflow:hidden;
+  height:1040px; color:#111; background:#fff;
+  font-family:'Inter', system-ui, sans-serif;
+}
+.kapak-filigran{
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; pointer-events:none; z-index:0;
+}
+/* İçerik katmanı filigranın üstünde; konumlandırma alt kurallarda. */
+.kapak-ic, .kapak-yan, .kapak-ust-cizgi, .kapak-alt{ position:absolute; z-index:1 }
+
+/* Sol kenardaki dikey etiket */
+.kapak-yan{
+  left:8px; top:132px;
+  writing-mode:vertical-rl; transform:rotate(180deg);
+  font-size:8.5px; letter-spacing:.2em; color:#6b6b6b; text-transform:uppercase;
+}
+/* Üstteki turuncu çizgi ve artı işareti */
+.kapak-ust-cizgi{ left:86px; right:60px; top:66px; height:1px; background:#f07a2a }
+.kapak-arti{ position:absolute; left:-24px; top:-11px; color:#f07a2a; font-size:19px; line-height:1 }
+
+.kapak-ic{ left:88px; right:48px; top:0; bottom:0 }
+
+.kapak-marka{ position:absolute; top:96px; left:0 }
+.kapak-sagg{ width:78px; height:auto; display:block }
+.kapak-marka-alt{
+  margin-top:16px; font-size:16px; color:#3a3a3a;
+  border-bottom:1px solid #d3cec7; padding-bottom:13px; display:inline-block; min-width:225px;
+}
+
+/* `.rapor h1{font-size:23px}` bu başlığı eziyordu; özgüllük ondan yüksek. */
+.kapak h1.kapak-baslik{
+  position:absolute; top:236px; left:0; margin:0;
+  font-size:68px; line-height:.99; font-weight:800; letter-spacing:-.03em; color:#111;
+}
+
+.kapak-surum{ position:absolute; top:452px; left:0; display:flex; align-items:center; gap:9px }
+.kapak-surum img{ width:25px; height:25px; object-fit:contain }
+.kapak-surum span{ font-size:12px; font-style:italic; color:#333 }
+
+/* Künye satırları — simge | etiket | değer */
+.kapak-kunye{ position:absolute; top:540px; left:0; width:530px }
+.kapak-kunye-satir{
+  display:grid; grid-template-columns:64px 170px 1fr; align-items:center;
+  gap:6px; padding:12px 0; border-bottom:1px solid #d3cec7;
+}
+.kapak-kunye-satir:last-child{ border-bottom:0 }
+.kapak-kunye-simge{ width:40px; height:40px; object-fit:contain }
+.kapak-kunye-etiket{
+  font-size:12px; font-weight:700; color:#111;
+  border-left:1px solid #d3cec7; padding-left:13px; min-height:24px; display:flex; align-items:center;
+}
+.kapak-kunye-deger{
+  font-size:12px; font-weight:600; color:#222; padding-left:12px;
+  border-left:1px solid #d3cec7; min-height:24px; display:flex; align-items:center;
+}
+
+.kapak-imza{
+  position:absolute; top:790px; left:0; width:530px;
+  display:flex; justify-content:space-between; font-size:11.5px; color:#555;
+}
+
+.kapak-alt{
+  left:88px; right:48px; bottom:44px;
+  display:flex; align-items:center; gap:8px; font-size:11px; color:#444;
+  border-top:1px solid #cfcac3; padding-top:13px;
+}
+.kapak-kure{ color:#f07a2a; display:inline-flex; width:14px; height:14px }
+.kapak-kure svg{ width:14px; height:14px }
+.kapak-ayrac{ color:#f07a2a; margin:0 3px }
+
+/* Arka kapakta marka bloğu sayfanın altındadır. */
+.kapak-arka-alt{ position:absolute; bottom:118px; left:0 }
+.kapak-arka-alt .kapak-marka{ position:static }
+.kapak-arka-alt .kapak-surum{ position:static; margin-top:26px }
 
 @page{ size:A4; margin:10mm }
 

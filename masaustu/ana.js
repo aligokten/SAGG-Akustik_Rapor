@@ -22,7 +22,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { guncellemeyiBaslat, guncellemeyiElleDenetle } from './guncelleyici.js';
-import { guvenliYol, menuSablonu, BAGLANTILAR } from './yardimcilar.js';
+import { guvenliYol, menuSablonu, BAGLANTILAR, PENCERE_ZEMINI, YAZDIRMA_ZEMINI } from './yardimcilar.js';
 
 const buDosya = path.dirname(fileURLToPath(import.meta.url));
 /** Web uygulamasının kökü (index.html'in bulunduğu dizin). */
@@ -85,7 +85,7 @@ function pencereAc() {
     minWidth: 1024,
     minHeight: 640,
     show: false,
-    backgroundColor: '#12161d',
+    backgroundColor: PENCERE_ZEMINI,
     title: 'SAGG Akustik Hesap Aracı',
     icon: path.join(KOK, 'assets', 'favicon-512.png'),
     webPreferences: {
@@ -138,7 +138,22 @@ async function pdfeAktar(pencere, dosyaAdi) {
   });
   if (secim.canceled || !secim.filePath) return { durum: 'iptal' };
 
+  /*
+   * KÂĞIT KENARLARI DA BEYAZ OLMALI.
+   *
+   * `@page` kenar boşlukları belge tuvalinin DIŞINDA kalır; oraya
+   * biçemlerdeki `html{background:#fff}` ulaşmaz ve Chromium boşluğu
+   * pencerenin taban rengiyle doldurur. Uygulama koyu temada çalıştığı
+   * için taban rengi #12161d ve PDF'in kenarları koyu çıkıyordu —
+   * tarayıcıda taban rengi beyaz olduğundan web sürümünde sorun yoktu.
+   *
+   * Ölçüldü: düzeltme öncesi sayfa kenarları (18,22,29), sonrasında
+   * (255,255,255). Pencere ekranda kendi zeminini bastığı için taban
+   * renginin geçici olarak değişmesi görünmez.
+   */
+  const eskiZemin = PENCERE_ZEMINI;
   try {
+    pencere.setBackgroundColor(YAZDIRMA_ZEMINI);
     const veri = await pencere.webContents.printToPDF({
       // Sayfa boyutu ve kenar boşlukları css/stil.css içindeki `@page`
       // kuralından okunur (preferCSSPageSize). Böylece masaüstü çıktısı ile
@@ -159,6 +174,9 @@ async function pdfeAktar(pencere, dosyaAdi) {
       buttons: ['Tamam'],
     });
     return { durum: 'hata', mesaj: String(hata?.message || hata) };
+  } finally {
+    // Taban rengi her durumda geri alınır; hata yolunda da.
+    if (!pencere.isDestroyed()) pencere.setBackgroundColor(eskiZemin);
   }
 }
 

@@ -17,6 +17,7 @@ import { ciz as raporCiz } from '../js/arayuz/sekme-rapor.js';
 import { ciz as onBolumCiz } from '../js/arayuz/sekme-onbolum.js';
 import { raporSayfalari } from '../js/arayuz/sekme-rapor.js';
 import { GIRIS_METNI } from '../js/cekirdek/rapor-onbolum.js';
+import { UYGULAMA_SURUMU } from '../js/veri/lisans.js';
 
 /* ── Lgag ────────────────────────────────────────────────────────── */
 
@@ -316,11 +317,13 @@ test('Boş künyeli projede bile sabit metin basılır', () => {
 
 /* ── İçindekiler ─────────────────────────────────────────────────── */
 
-test('İçindekiler raporun ilk sayfasıdır', () => {
+test('Kapak ilk, içindekiler ikinci, arka kapak son sayfadır', () => {
   const d = ornekProje();
   const idler = raporSayfalari(d, projeyiHesapla(d)).map((x) => x.id);
-  assert.equal(idler[0], 'icindekiler');
-  assert.equal(idler[1], 'giris');
+  assert.equal(idler[0], 'kapak');
+  assert.equal(idler[1], 'icindekiler');
+  assert.equal(idler[2], 'giris');
+  assert.equal(idler[idler.length - 1], 'arkaKapak');
 });
 
 test('İçindekilerdeki her girdinin karşılığı bir sayfadır', () => {
@@ -365,11 +368,14 @@ test('Bölüm eklenince numaralar kendiliğinden kayar', () => {
   assert.equal(sonrakiSayi, oncekiSayi + 1);
 });
 
-test('Her sayfada tam olarak bir antet ve bir altbilgi bulunur', () => {
+test('Her içerik sayfasında tam olarak bir altbilgi bulunur', () => {
   const d = ornekProje();
+  // Kapak ve arka kapak kendi tasarımlarıdır; antet/altbilgi taşımazlar.
+  const KAPAKLAR = ['kapak', 'arkaKapak'];
   for (const sayfa of raporSayfalari(d, projeyiHesapla(d))) {
     const altbilgi = (sayfa.html.match(/rapor-altbilgi/g) || []).length;
-    assert.equal(altbilgi, 1, `${sayfa.id}: altbilgi ${altbilgi} kez`);
+    assert.equal(altbilgi, KAPAKLAR.includes(sayfa.id) ? 0 : 1,
+      `${sayfa.id}: altbilgi ${altbilgi} kez`);
   }
 });
 
@@ -423,4 +429,71 @@ test('Uzman belgesi panelde kendi kartıyla görünür', () => {
   const html = onBolumCiz(d, projeyiHesapla(d));
   assert.match(html, /D1 Temel Bina Akustik Uzman Belgesi/);
   assert.match(html, /data-eylem="gorsel-ekle" data-tur="uzmanBelgesi"/);
+});
+
+/* ── Kapak ve arka kapak ─────────────────────────────────────────── */
+
+test('Kapak, proje künyesindeki bilgilerle dolar', () => {
+  const d = ornekProje();
+  d.proje.ad = 'Raşit Helvacıoğlu Konut+Ticari Projesi';
+  d.proje.belediye = 'Milas Belediyesi';
+  d.proje.mahalle = 'İsmetpaşa';
+  d.proje.ada = '265';
+  d.proje.parsel = '17';
+
+  const kapak = raporSayfalari(d, projeyiHesapla(d))[0].html;
+  assert.match(kapak, /RAŞİT HELVACIOĞLU KONUT\+TİCARİ PROJESİ/);
+  assert.match(kapak, /MİLAS BELEDİYESİ/);
+  assert.match(kapak, /İSMETPAŞA \/ 265\/17/);
+});
+
+test('Kapakta boş künye satırı hiç basılmaz', () => {
+  const d = bosProje();
+  const kapak = raporSayfalari(d, projeyiHesapla(d))[0].html;
+  assert.doesNotMatch(kapak, /İlgili Belediye Adı/);
+  assert.doesNotMatch(kapak, /Proje Adı/);
+  // Tasarımın sabit parçaları yine de basılır.
+  assert.match(kapak, /Mimari<br>Akustik<br>Rapor/);
+});
+
+test('Kapak ve arka kapak program sürümünü gösterir', () => {
+  const d = ornekProje();
+  const sayfalar = raporSayfalari(d, projeyiHesapla(d));
+  const desen = new RegExp(`SAGG AKUSTİK HESAP v${UYGULAMA_SURUMU.replace(/\./g, '\\.')}`);
+  assert.match(sayfalar[0].html, desen);
+  assert.match(sayfalar[sayfalar.length - 1].html, desen);
+});
+
+test('Program sürümü package.json ile aynıdır', async () => {
+  const { readFileSync } = await import('node:fs');
+  const paket = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.equal(UYGULAMA_SURUMU, paket.version,
+    'lisans.js içindeki UYGULAMA_SURUMU, package.json sürümüyle aynı olmalı');
+});
+
+/* ── Nokta detay ızgarası ────────────────────────────────────────── */
+
+test('Nokta detaylar sayfaya dörder yerleşir', () => {
+  const d = ornekProje();
+  d.onbolum.gorseller = Array.from({ length: 6 }, (_, i) => ({
+    ...yeniGorsel('noktaDetay'), baslik: `DETAY ${i + 1}`, veri: 'data:image/png;base64,AAA',
+  }));
+  const sayfalar = raporSayfalari(d, projeyiHesapla(d));
+  const detay = sayfalar.filter((x) => x.id === 'detaylar' || x.id.startsWith('detaylar-'));
+
+  assert.equal(detay.length, 2, '6 detay 2 sayfaya bölünmeli');
+  assert.equal((detay[0].html.match(/rapor-sekil/g) || []).length, 4);
+  assert.equal((detay[1].html.match(/rapor-sekil/g) || []).length, 2);
+  assert.match(detay[0].html, /sekil-izgara/);
+});
+
+test('Kat planları hâlâ sayfada tek başına basılır', () => {
+  const d = ornekProje();
+  d.onbolum.gorseller = Array.from({ length: 2 }, (_, i) => ({
+    ...yeniGorsel('katPlani'), baslik: `KAT ${i + 1}`, veri: 'data:image/png;base64,AAA',
+  }));
+  const sayfalar = raporSayfalari(d, projeyiHesapla(d));
+  const paftalar = sayfalar.filter((x) => x.id === 'paftalar' || x.id.startsWith('paftalar-'));
+  assert.equal(paftalar.length, 2);
+  assert.doesNotMatch(paftalar[0].html, /sekil-izgara/);
 });

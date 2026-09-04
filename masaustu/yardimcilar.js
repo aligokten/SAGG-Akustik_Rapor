@@ -66,6 +66,28 @@ export function yuzde(ilerleme) {
 /* ── Uygulama menüsü ─────────────────────────────────────────────── */
 
 /** Menüde açılacak dış adresler. */
+/**
+ * Pencerenin taban rengi.
+ *
+ * Koyu tema açılışında beyaz bir parlama olmasın diye uygulama penceresi
+ * koyu bir zeminle açılır.
+ */
+export const PENCERE_ZEMINI = '#12161d';
+
+/**
+ * PDF'e aktarırken kullanılan taban rengi — BEYAZ OLMAK ZORUNDA.
+ *
+ * `@page` kenar boşlukları belge tuvalinin dışında kalır; oraya
+ * biçemlerdeki `html{background:#fff}` ulaşmaz ve Chromium boşluğu
+ * pencerenin taban rengiyle doldurur. Taban koyu kaldığında PDF'in
+ * kenarları koyu basılıyordu; tarayıcıda taban beyaz olduğu için web
+ * sürümünde bu sorun hiç görülmüyordu.
+ *
+ * Ölçüldü: düzeltme öncesi sayfa kenarları (18,22,29), sonrasında
+ * (255,255,255).
+ */
+export const YAZDIRMA_ZEMINI = '#ffffff';
+
 export const BAGLANTILAR = {
   web: 'https://aligokten.github.io/SAGG-Akustik_Rapor/',
   site: 'https://www.saggplus.com',

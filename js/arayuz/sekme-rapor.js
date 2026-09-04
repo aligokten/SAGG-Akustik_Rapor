@@ -24,6 +24,7 @@ import { adaParselMetni, adresMetni, alanMetni } from '../durum.js';
 import { SINIFLAR, EK2_TABLO_2_2 } from '../veri/yonetmelik.js';
 import { belgeVerisi } from '../cekirdek/performans-belgesi.js';
 import { onBolumGruplari, icindekilerSayfasi } from './rapor-onbolum-sayfalari.js';
+import { kapakSayfasi, arkaKapakSayfasi } from './rapor-kapak.js';
 
 const dolguBul = (id) => bul(YALITIM_LEVHALARI, id);
 
@@ -78,7 +79,14 @@ export function raporSayfalari(durum, s) {
     });
   };
 
-  // İçindekiler raporun İLK sayfasıdır; kendisi listeye girmez.
+  /*
+   * Kapak raporun ilk, arka kapak son sayfasıdır. İkisi de antet ve
+   * altbilgi taşımaz (kendi tasarımları var) ve içindekilerde listelenmez —
+   * ama sayfa sayımına girerler, bu yüzden içindekiler kapaktan sonrasını
+   * doğru numaralar.
+   */
+  ekle('kapak', kapakSayfasi(p), { hazir: true, ekSinif: 'kapak-sayfa' });
+
   if (numarali.length) {
     ekle('icindekiler', icindekilerSayfasi(
       numarali.map((x) => ({ id: x.id, no: x.no, baslik: x.baslik }))));
@@ -88,6 +96,8 @@ export function raporSayfalari(durum, s) {
     const secenek = { hazir: !!g.hazir, ekSinif: g.ekSinif || '' };
     g.sayfalar(g.no).forEach((icerik, i) => ekle(i === 0 ? g.id : `${g.id}-${i}`, icerik, secenek));
   }
+
+  ekle('arkaKapak', arkaKapakSayfasi(), { hazir: true, ekSinif: 'kapak-sayfa' });
   return sayfalar;
 }
 

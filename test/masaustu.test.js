@@ -10,8 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  guvenliYol, surumNotu, yuzde, menuSablonu, menuEtiketleri, BAGLANTILAR,
-} from '../masaustu/yardimcilar.js';
+  guvenliYol, surumNotu, yuzde, menuSablonu, menuEtiketleri, BAGLANTILAR, PENCERE_ZEMINI, YAZDIRMA_ZEMINI } from '../masaustu/yardimcilar.js';
 import yapi from '../electron-builder.mjs';
 
 const KOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -186,4 +185,32 @@ test('Yardım menüsü kurumsal adresleri gösterir', () => {
   assert.ok(ETIKETLER.includes('SAGG+ — www.saggplus.com'));
   assert.ok(ETIKETLER.includes('Destek: info@saggplus.com'));
   assert.equal(BAGLANTILAR.site, 'https://www.saggplus.com');
+});
+
+/* ── PDF'e aktarmada kâğıt zemini ─────────────────────────────────── */
+
+/**
+ * `@page` kenar boşlukları belge tuvalinin dışındadır; oraya biçemlerdeki
+ * `html{background:#fff}` ulaşmaz ve Chromium boşluğu pencerenin taban
+ * rengiyle doldurur. Uygulama koyu temada çalıştığı için masaüstü
+ * çıktısının kenarları koyu basılıyordu. PDF alınırken taban beyaza
+ * çekilir; bu testler o kuralın sessizce geri alınmasını engeller.
+ */
+test('Yazdırma taban rengi beyazdır', () => {
+  assert.equal(YAZDIRMA_ZEMINI.toLowerCase(), '#ffffff');
+});
+
+test('Pencere taban rengi ile yazdırma tabanı farklıdır', () => {
+  assert.notEqual(PENCERE_ZEMINI.toLowerCase(), YAZDIRMA_ZEMINI.toLowerCase());
+});
+
+test('PDF dışa aktarımı tabanı beyaza çekip geri alır', async () => {
+  const { readFileSync } = await import('node:fs');
+  const kod = readFileSync(new URL('../masaustu/ana.js', import.meta.url), 'utf8');
+
+  const aktarim = kod.slice(kod.indexOf('printToPDF') - 2000, kod.indexOf('printToPDF') + 1500);
+  assert.match(aktarim, /setBackgroundColor\(YAZDIRMA_ZEMINI\)/,
+    'printToPDF öncesi taban beyaza çekilmeli');
+  assert.match(kod, /finally\s*\{[\s\S]*?setBackgroundColor\(eskiZemin\)/,
+    'taban rengi her durumda (finally) geri alınmalı');
 });

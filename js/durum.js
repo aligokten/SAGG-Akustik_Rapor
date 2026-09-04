@@ -23,6 +23,7 @@ export function bosProje() {
       ada: '',
       parsel: '',
       adres: '',                  // açık adres (sokak, no)
+      belediye: '',               // ilgili belediye — rapor kapağında görünür
       adaParsel: '',              // eski serbest metin alanı; ada/parsel boşsa yedek olarak kullanılır
 
       // ── Bina bilgileri (EK-10 belgesi) ──

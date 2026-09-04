@@ -58,7 +58,7 @@ export function onBolumGruplari(p, s, ob) {
       sayfalar: (no) => [bolumAnahtar(no, s, ob)] },
 
     gorselGrubu('detaylar', 'Nokta detaylar', gor('noktaDetay'),
-      'Kritik birleşim noktalarının uygulama detayları.'),
+      'Kritik birleşim noktalarının uygulama detayları.', 4),
 
     gorselGrubu('uygulama', 'Uygulama ve kontrol', gor('uygulama'),
       'Şantiyede uyulacak uygulama kuralları ve kontrol aşamaları.'),
@@ -95,16 +95,24 @@ export function onBolumGruplari(p, s, ob) {
  * ayırmak ikisini birden çözer: çizim sayfa genişliğini kullanır ve her
  * kâğıt kendi antedini ve altbilgisini taşır.
  */
-function gorselGrubu(id, baslik, gorseller, aciklama) {
+function gorselGrubu(id, baslik, gorseller, aciklama, sayfaBasina = 1) {
   if (!gorseller.length) return null;
+
+  const kumeler = [];
+  for (let i = 0; i < gorseller.length; i += sayfaBasina) {
+    kumeler.push(gorseller.slice(i, i + sayfaBasina));
+  }
+
   return {
     id, baslik, numarali: true,
-    sayfalar: (no) => gorseller.map((g, i) => `
+    sayfalar: (no) => kumeler.map((kume, i) => `
       ${i === 0
         ? `<h1 style="font-size:18px">${no}. ${kacis(baslik)}</h1>
            ${aciklama ? `<p>${kacis(aciklama)}</p>` : ''}`
         : `<h2>${kacis(baslik)} (devam)</h2>`}
-      ${sekil(g)}`),
+      ${sayfaBasina > 1
+        ? `<div class="sekil-izgara">${kume.map((g) => sekil(g)).join('')}</div>`
+        : kume.map((g) => sekil(g)).join('')}`),
   };
 }
 

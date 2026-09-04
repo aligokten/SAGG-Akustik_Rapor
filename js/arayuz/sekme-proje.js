@@ -55,6 +55,8 @@ export function ciz(durum) {
         <input id="pr-ada" data-yol="proje.ada" value="${kacis(p.ada)}"></div>
       <div class="alan"><label for="pr-parsel">Parsel</label>
         <input id="pr-parsel" data-yol="proje.parsel" value="${kacis(p.parsel)}"></div>
+      <div class="alan"><label for="pr-belediye">İlgili belediye</label>
+        <input id="pr-belediye" data-yol="proje.belediye" value="${kacis(p.belediye)}" placeholder="Örn. Milas Belediyesi"></div>
       <div class="alan gr-2"><label for="pr-adres">Açık adres</label>
         <input id="pr-adres" data-yol="proje.adres" value="${kacis(p.adres)}" placeholder="Sokak, kapı no"></div>
     </div>
