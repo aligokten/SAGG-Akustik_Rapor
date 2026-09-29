@@ -515,10 +515,6 @@ function odagiGeriYukle(od) {
 }
 
 function ciz() {
-  // Rapor sekmesi demo hesabına kapalıdır; kayıtlı durumdan ya da başka bir
-  // yoldan seçilmiş olsa bile her çizimde panele düşülür.
-  if (demoMu() && etkinSekme === 'rapor') etkinSekme = 'panel';
-
   const sonuclar = projeyiHesapla(durum);
   const kok = $('#icerik');
   const odak = odakDurumunuAl();
@@ -1057,12 +1053,9 @@ yonetmeligiYukle();
 olaylariBagla();
 ciz();
 
-// Oturum bilgisi ağdan geldiği için arayüz önce çizilir, demo kısıtları
-// sonra uygulanır: rapor sekmesi listeden çıkarılır ve menü yeniden çizilir.
+// Oturum bilgisi ağdan geldiği için arayüz önce çizilir; demo filigranı ve
+// dışa aktarma kısıtı bilgi gelince devreye girer. Rapor sekmesi demo
+// hesabında da açıktır, yalnızca filigranlı görüntülenir ve dışa aktarılamaz.
 oturumBandiniBaslat($('.ust-eylemler')).then(() => {
-  if (!demoMu()) return;
-  const sira = SEKMELER.findIndex((s) => s.id === 'rapor');
-  if (sira >= 0) SEKMELER.splice(sira, 1);
-  if (etkinSekme === 'rapor') etkinSekme = SEKMELER[0].id;
-  ciz();
+  if (demoMu()) ciz();
 });
