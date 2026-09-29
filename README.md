@@ -1013,6 +1013,22 @@ Pages açılana kadar uygulama, GitHub'daki dosyaları doğru MIME türleriyle s
 https://raw.githack.com/aligokten/SAGG-Akustik_Rapor/claude/ks-schallschutzrechner-turkish-lgtwfl/index.html
 ```
 
+## Web sürümünde giriş ve demo hesapları
+
+**akustik.saggplus.com**'daki web sürümü, saggplus.com sunucusundaki bir giriş kapısının arkasında
+yayımlanır (Nginx `auth_request`). Hesaplar saggplus.com yönetim panelindeki **Akustik
+Kullanıcıları** sayfasından açılır; kurulum ve Nginx örneği
+[aligokten/saggplus.com](https://github.com/aligokten/saggplus.com) deposunun README'sindedir.
+
+- **Demo hesabı**: e-posta adresine tanımlı geçici şifre; **ilk girişten itibaren 24 saat** geçerlidir.
+  Süre dolunca şifre silinir ve hesap kalıcı olarak kapanır.
+- **Tam lisans**: süresiz, yönetici iptal edene dek geçerli.
+
+Uygulama `/api/akustik/oturum` ucundan oturumu okur (`js/arayuz/oturum-bandi.js`): üst çubuğa
+**Çıkış** düğmesini ve demo hesabında **kalan süreyi** ekler; süre dolduğunda sayfayı yeniler, kapı da
+kullanıcıyı giriş sayfasına gönderir. Uç bulunmayan ortamlarda (GitHub Pages, Windows uygulaması,
+yerel sunucu) bu bant hiç görünmez.
+
 ## Akustik performans belgesi
 
 ### Künye alanları
