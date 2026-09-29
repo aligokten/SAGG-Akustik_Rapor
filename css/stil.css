@@ -179,6 +179,19 @@ a{color:var(--vurgu)}
 .oturum-demo.son-saat{background:var(--hata-zemin); color:var(--hata); border-color:var(--hata-kontur)}
 @media print{ .oturum-bandi{display:none} }
 
+/* Demo oturumunda ekranın ve çıktının üzerine çapraz filigran basılır.
+   Gri ton bilerek seçildi: hem açık hem koyu temada okunur kalıyor.
+   Katman tıklamaları geçirir, arayüzü engellemez. */
+body.demo-oturum::before{
+  content:''; position:fixed; inset:0; z-index:9000; pointer-events:none;
+  opacity:.12;
+  background-repeat:repeat;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='200'%3E%3Ctext x='160' y='104' fill='%23808080' font-family='Helvetica,Arial,sans-serif' font-size='30' font-weight='700' text-anchor='middle' transform='rotate(-28 160 100)'%3ESAGG%2B DEMO%3C/text%3E%3C/svg%3E");
+}
+@media print{
+  body.demo-oturum::before{position:fixed; opacity:.18}
+}
+
 /* Demo oturumunda rapor çıktısı: kâğıda/PDF'e raporun kendisi değil, tam
    sürüme yönlendiren uyarı basılır (bkz. js/arayuz/oturum-bandi.js). */
 .demo-baski-uyarisi{display:none}
