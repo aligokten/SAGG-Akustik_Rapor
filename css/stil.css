@@ -179,6 +179,18 @@ a{color:var(--vurgu)}
 .oturum-demo.son-saat{background:var(--hata-zemin); color:var(--hata); border-color:var(--hata-kontur)}
 @media print{ .oturum-bandi{display:none} }
 
+/* Demo oturumunda rapor çıktısı: kâğıda/PDF'e raporun kendisi değil, tam
+   sürüme yönlendiren uyarı basılır (bkz. js/arayuz/oturum-bandi.js). */
+.demo-baski-uyarisi{display:none}
+@media print{
+  body.demo-oturum .kabuk{display:none !important}
+  body.demo-oturum .demo-baski-uyarisi{
+    display:block !important; padding:28mm 20mm; text-align:center;
+    font-size:13pt; line-height:1.7; color:#000}
+  body.demo-oturum .demo-baski-uyarisi strong{display:block; font-size:16pt; margin-bottom:10mm}
+  body.demo-oturum .demo-baski-uyarisi p{margin:0 0 4mm}
+}
+
 .icerik{padding:22px 26px 60px; max-width:1440px; width:100%}
 
 /* ── Düğmeler ───────────────────────────────────────────────────── */

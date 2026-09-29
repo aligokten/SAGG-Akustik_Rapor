@@ -9,7 +9,7 @@ import * as YK from './cekirdek/katmanli-eleman.js';
 import { DUVARLAR, DOSEMELER, SIVALAR, bul as malzemeBul } from './veri/malzemeler.js';
 import { odaSVG, cepheSVG } from './arayuz/oda-cizimi.js';
 import { icindekileriDoldur } from './arayuz/sayfa-numaralari.js';
-import { oturumBandiniBaslat } from './arayuz/oturum-bandi.js';
+import { oturumBandiniBaslat, demoMu, ILETISIM_EPOSTA } from './arayuz/oturum-bandi.js';
 import { v3ProjeyiDonustur, v3SemasiMi } from './veri/v3-donusturucu.js';
 import * as FAV from './veri/favoriler.js';
 import { favoriTaslaginiAyarla, favoriTaslaginiOku, favoriTaslaginiTemizle } from './arayuz/katman-editor.js';
@@ -682,6 +682,16 @@ function raporDosyaAdi() {
  * ve yazı tipleri `@media print` kurallarıyla zaten doğru dökülüyor.
  */
 async function raporuPdfeAktar() {
+  // Demo hesabı raporu dışa aktaramaz; tarayıcının yazdırma penceresi de
+  // @media print kurallarıyla rapor yerine uyarı sayfasını basar.
+  if (demoMu()) {
+    alert(
+      'Demo sürümünde rapor PDF olarak kaydedilemez ve çıktısı alınamaz.\n\n' +
+      `Tam sürüm için lütfen bizimle iletişime geçiniz:\n${ILETISIM_EPOSTA}`
+    );
+    return;
+  }
+
   const kopru = window.saggMasaustu;
   if (kopru?.pdfeAktar) {
     try {
