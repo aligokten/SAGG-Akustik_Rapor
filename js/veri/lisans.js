@@ -12,7 +12,7 @@
  * sürümünde gerçek sürüm ön yükleme köprüsünden gelir ve bunun yerine
  * kullanılır (kurulu uygulama güncellendiğinde doğru olan odur).
  */
-export const UYGULAMA_SURUMU = '1.6.1';
+export const UYGULAMA_SURUMU = '1.7.0';
 
 /** Raporda gösterilecek program sürümü. */
 export function programSurumu() {
