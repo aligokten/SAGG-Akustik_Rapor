@@ -17,6 +17,7 @@ import {
   girisCumlesi, gorselleriGrupla, yapiElemaniAnahtari, mekanDereceleri,
   malzemeYogunluklari,
 } from '../cekirdek/rapor-onbolum.js';
+import * as HAZIR from '../veri/hazir-gorseller.js';
 
 export function ciz(durum, s) {
   const p = durum.proje;
@@ -208,11 +209,55 @@ function kartGorseller(ob) {
       ? `<div class="bos-durum">${g.numarasiz
           ? 'Belge henüz yüklenmedi. Belgenizin taranmış görüntüsünü (PNG/JPG) ekleyin.'
           : 'Bu bölüme henüz görsel eklenmedi.'}</div>`
-      : g.gorseller.map((x) => gorselSatiri(x)).join('')}
+      : g.gorseller.map((x) => gorselSatiri(x, HAZIR_TURLERI.has(g.tur))).join('')}
+    ${HAZIR_TURLERI.has(g.tur) ? hazirKitaplik(g, ob.gorseller) : ''}
   </section>`).join('');
 }
 
-function gorselSatiri(g) {
+const HAZIR_TURLERI = new Set(HAZIR.HAZIR_TURLER);
+
+/**
+ * Uzman belgesi ve nokta detaylar için kalıcı kitaplık: burada saklananlar
+ * her yeni projeye kendiliğinden eklenir ("otomatik" işaretliyse) ya da
+ * tek tıkla mevcut projeye alınır.
+ */
+function hazirKitaplik(g, projeGorselleri) {
+  if (!HAZIR.kullanilabilir()) return '';
+  const kayitlar = HAZIR.hazirGorseller(g.tur);
+  const projede = (k) => projeGorselleri.some((x) => x.veri === k.veri);
+  const eksik = kayitlar.filter((k) => !projede(k)).length;
+  const ad = g.numarasiz ? 'belge sayfası' : 'detay';
+
+  return `
+    <div class="hazir-kitaplik">
+      <div class="hazir-baslik">
+        <h3>Hazır ${g.numarasiz ? 'belge' : 'detaylar'} <span class="soluk">(${kayitlar.length})</span></h3>
+        ${eksik > 0 ? `<button type="button" class="dugme acik kucuk" data-eylem="hazir-hepsini-ekle"
+            data-tur="${kacis(g.tur)}">Tümünü projeye ekle (${eksik})</button>` : ''}
+      </div>
+      ${kayitlar.length === 0
+        ? `<p class="soluk hazir-ipucu">Yüklediğiniz bir ${ad} için <b>Hazırlara kaydet</b> deyin; bu
+            bilgisayarda saklanır ve her yeni projeye kendiliğinden eklenir.</p>`
+        : `<div class="hazir-izgara">${kayitlar.map((k) => `
+        <div class="hazir-oge" data-hazir="${kacis(k.id)}">
+          <div class="hazir-onizleme"><img src="${kacis(k.veri)}" alt="${kacis(k.baslik || g.baslik)}"></div>
+          <div class="hazir-ad" title="${kacis(k.baslik)}">${kacis(k.baslik || (g.numarasiz ? g.baslik : 'Adsız detay'))}</div>
+          <label class="hazir-otomatik">
+            <input type="checkbox" data-hazir-otomatik="${kacis(k.id)}" ${k.otomatik ? 'checked' : ''}>
+            Yeni projelere ekle</label>
+          <div class="gorsel-dugmeler">
+            ${projede(k)
+              ? '<span class="rozet uygun">Projede</span>'
+              : `<button type="button" class="dugme acik kucuk" data-eylem="hazir-ekle"
+                  data-id="${kacis(k.id)}">Projeye ekle</button>`}
+            <button type="button" class="dugme tehlike kucuk" data-eylem="hazir-sil"
+              data-id="${kacis(k.id)}" title="Kitaplıktan kaldır (projeye dokunmaz)">Kaldır</button>
+          </div>
+        </div>`).join('')}</div>`}
+    </div>`;
+}
+
+function gorselSatiri(g, hazirlanabilir = false) {
   return `
   <div class="gorsel-satir" data-gorsel="${kacis(g.id)}">
     <div class="gorsel-onizleme">
@@ -238,6 +283,12 @@ function gorselSatiri(g) {
         <button type="button" class="dugme acik kucuk" data-eylem="gorsel-yukari" data-id="${kacis(g.id)}" title="Yukarı taşı">↑</button>
         <button type="button" class="dugme acik kucuk" data-eylem="gorsel-asagi" data-id="${kacis(g.id)}" title="Aşağı taşı">↓</button>
         <button type="button" class="dugme tehlike kucuk" data-eylem="gorsel-sil" data-id="${kacis(g.id)}">Sil</button>
+        ${hazirlanabilir && g.veri && HAZIR.kullanilabilir()
+          ? (HAZIR.kitaplikta(g.veri)
+            ? '<span class="rozet uygun" title="Bu görsel hazır kitaplıkta saklı">★ Hazırlarda</span>'
+            : `<button type="button" class="dugme acik kucuk" data-eylem="hazir-kaydet" data-id="${kacis(g.id)}"
+                title="Bu bilgisayarda sakla; sonraki projelere hazır gelsin">★ Hazırlara kaydet</button>`)
+          : ''}
       </div>
     </div>
   </div>`;

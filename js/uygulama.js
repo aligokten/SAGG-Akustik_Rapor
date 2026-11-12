@@ -12,6 +12,7 @@ import { icindekileriDoldur } from './arayuz/sayfa-numaralari.js';
 import { oturumBandiniBaslat, demoMu, ILETISIM_EPOSTA } from './arayuz/oturum-bandi.js';
 import { v3ProjeyiDonustur, v3SemasiMi } from './veri/v3-donusturucu.js';
 import * as FAV from './veri/favoriler.js';
+import * as HAZIR from './veri/hazir-gorseller.js';
 import { favoriTaslaginiAyarla, favoriTaslaginiOku, favoriTaslaginiTemizle } from './arayuz/katman-editor.js';
 import * as D from './durum.js';
 import { projeyiHesapla } from './hesap.js';
@@ -40,7 +41,11 @@ const YONETMELIK_TABLOLARI = {
 
 // Kayıtlı bir çalışma varsa ondan devam edilir; yoksa panel boş bir projeyle
 // açılır. Örnek proje yalnızca üst çubuktaki "Örnek proje" düğmesiyle yüklenir.
-let durum = D.yukle() || D.bosProje();
+// Yeni açılan boş projeye, hazır kitaplık yüklendiğinde uzman belgesi ve
+// nokta detaylar eklenir (bkz. Başlangıç).
+let durum = D.yukle();
+const yeniProjeyleAcildi = !durum;
+durum ||= D.bosProje();
 let etkinSekme = 'panel';
 
 const TEMA_DEPO = 'sagg-akustik-tema';
@@ -808,6 +813,10 @@ function olaylariBagla() {
 
   document.addEventListener('change', (e) => {
     const el = e.target;
+    if (el.dataset?.hazirOtomatik) {
+      HAZIR.otomatikAyarla(el.dataset.hazirOtomatik, el.checked).catch(() => {});
+      return;
+    }
     if (el.dataset?.favoriAlan) {
       favoriTaslaginiAyarla(el.dataset.yolTabani, el.dataset.favoriAlan, el.value);
       return;
@@ -936,6 +945,29 @@ function olaylariBagla() {
         }
         return;
       }
+      if (eylem === 'hazir-kaydet') {
+        const g = (durum.onbolum?.gorseller || []).find((x) => x.id === dugme.dataset.id);
+        if (g) {
+          HAZIR.kaydet(g).then(ciz).catch((e) => alert(`Hazır görsel kaydedilemedi: ${e?.message || e}`));
+        }
+        return;
+      }
+      if (eylem === 'hazir-ekle') {
+        const k = HAZIR.hazirGorseller().find((x) => x.id === dugme.dataset.id);
+        if (k) { HAZIR.projeyeEkle(durum, [k]); ciz(); }
+        return;
+      }
+      if (eylem === 'hazir-hepsini-ekle') {
+        HAZIR.projeyeEkle(durum, HAZIR.hazirGorseller(dugme.dataset.tur));
+        ciz();
+        return;
+      }
+      if (eylem === 'hazir-sil') {
+        if (confirm('Bu görsel hazır kitaplıktan kaldırılsın mı? Projelere eklenmiş kopyalar yerinde kalır.')) {
+          HAZIR.sil(dugme.dataset.id).then(ciz).catch((e) => alert(`Kaldırılamadı: ${e?.message || e}`));
+        }
+        return;
+      }
       if (eylem === 'gorsel-yukari' || eylem === 'gorsel-asagi') {
         gorseliTasi(dugme.dataset.id, eylem === 'gorsel-yukari' ? -1 : 1);
         ciz();
@@ -1007,7 +1039,9 @@ function olaylariBagla() {
   });
   $('#btn-sifirla').addEventListener('click', () => {
     if (confirm('Proje sıfırlanacak. Devam edilsin mi?')) {
-      durum = D.bosProje(); D.temizle(); ciz();
+      durum = D.bosProje(); D.temizle();
+      HAZIR.otomatikleriEkle(durum);
+      ciz();
     }
   });
 }
@@ -1052,6 +1086,13 @@ temayiBaslat();
 yonetmeligiYukle();
 olaylariBagla();
 ciz();
+
+// Hazır görsel kitaplığı (IndexedDB) eşzamansız okunur; okununca yeni
+// projeye otomatik görseller eklenir ve ön bölüm sekmesi kitaplıkla çizilir.
+HAZIR.yukle().then(() => {
+  if (yeniProjeyleAcildi) HAZIR.otomatikleriEkle(durum);
+  ciz();
+});
 
 // Oturum bilgisi ağdan geldiği için arayüz önce çizilir; demo filigranı ve
 // dışa aktarma kısıtı bilgi gelince devreye girer. Rapor sekmesi demo

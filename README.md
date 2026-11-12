@@ -637,6 +637,25 @@ değiştirildiğinde yeniden hesaplanır. Kat planları ile kesitler **aynı bö
 olmaz, proje dosyası tek başına taşınabilir. Dosya başına sınır **4 MB**'tır; sınır
 `localStorage` kotasını (tipik 5 MB) tek bir çizimle doldurmamak içindir.
 
+### Hazır görseller: uzman belgesi ve nokta detaylar
+
+Uzman belgesi ve firmanın standart nokta detayları her raporda aynıdır. Bunları her
+projede yeniden yüklememek için program içinde **hazır görseller kitaplığı** vardır:
+
+1. Belgeyi ya da detayı bir kez projeye yükleyin, satırındaki **★ Hazırlara kaydet**
+   düğmesine basın.
+2. Kitaplıktaki görseller her **yeni projeye** (ilk açılış, **Sıfırla**) kendiliğinden
+   eklenir. Bir görseli otomatik eklenmekten çıkarmak için **Yeni projelere ekle**
+   işaretini kaldırın.
+3. Açık bir projeye almak için bölümün altındaki **Projeye ekle** / **Tümünü projeye ekle**
+   düğmelerini kullanın. Projede zaten olan görsel ikinci kez eklenmez.
+4. **Kaldır**, görseli yalnızca kitaplıktan çıkarır; projelere eklenmiş kopyalar yerinde kalır.
+
+Kitaplık tarayıcının IndexedDB deposunda (masaüstü uygulamasında uygulamanın kendi
+deposunda) tutulur: 5 MB'lık `localStorage` kotasını paylaşmaz, sayfa yenilense de
+kalır. Bu bilgisayara ve tarayıcıya özeldir: başka bir cihaza ya da başka bir kullanıcının
+(ör. demo hesabının) tarayıcısına geçmez. Kod: `js/veri/hazir-gorseller.js`.
+
 ### Çevresel gürültü ve L(gag)
 
 Gündüz–akşam–gece göstergesi, üç zaman diliminin süreyle ağırlıklı 24 saatlik enerji
