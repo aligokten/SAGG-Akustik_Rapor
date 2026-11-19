@@ -65,6 +65,24 @@ export function yuzde(ilerleme) {
 
 /* ── Uygulama menüsü ─────────────────────────────────────────────── */
 
+/** macOS uygulama menüsünde görünen kısa ad. */
+export const UYGULAMA_ADI = 'SAGG Akustik Hesap';
+
+/** macOS'ta güncellemenin indirileceği sayfa (bkz. guncelleyici.js). */
+export const SON_SURUM_SAYFASI = 'https://github.com/aligokten/SAGG-Akustik_Rapor/releases/latest';
+
+/**
+ * Güncelleme uygulama içinde indirilip kurulabilir mi?
+ *
+ * macOS'ta electron-updater (Squirrel.Mac) yalnızca Apple Developer
+ * sertifikasıyla imzalı uygulamayı günceller; ad-hoc imzalı paket her
+ * derlemede farklı imza taşıdığı için kurulum reddedilir. Bu yüzden macOS'ta
+ * yeni sürüm yalnızca bildirilir ve indirme sayfası açılır.
+ */
+export function kendiGuncellenebilir(platform) {
+  return platform !== 'darwin';
+}
+
 /** Menüde açılacak dış adresler. */
 /**
  * Pencerenin taban rengi.
@@ -101,18 +119,38 @@ export const BAGLANTILAR = {
  * (ve BULUNMADIĞI) test edilebilir bir olgudur. Örneğin "Geliştirici
  * araçları" ve "Sürüm notları" girdileri bilinçli olarak yoktur.
  *
+ * macOS'ta ilk menü her zaman uygulamanın adını taşır ve "Hakkında",
+ * "Gizle", "Çık" girdileri oradadır (platform kuralı); Dosya menüsündeki
+ * "Çıkış" ve Yardım'daki "Hakkında" bu yüzden orada tekrarlanmaz.
+ *
  * @param {Object} eylemler Tıklama davranışları (ana süreç sağlar)
  * @param {string} surum Uygulama sürümü ("Hakkında" ve destek konusu için)
+ * @param {string} [platform] process.platform ('darwin' → macOS düzeni)
  */
-export function menuSablonu(eylemler, surum) {
+export function menuSablonu(eylemler, surum, platform = '') {
   const e = eylemler || {};
+  const mac = platform === 'darwin';
   return [
+    ...(mac ? [{
+      label: UYGULAMA_ADI,
+      submenu: [
+        { label: `${UYGULAMA_ADI} hakkında`, click: e.hakkinda },
+        { label: 'Güncellemeleri denetle…', click: e.guncelleme },
+        { type: 'separator' },
+        { label: 'Hizmetler', role: 'services' },
+        { type: 'separator' },
+        { label: `${UYGULAMA_ADI} uygulamasını gizle`, role: 'hide' },
+        { label: 'Diğerlerini gizle', role: 'hideOthers' },
+        { label: 'Tümünü göster', role: 'unhide' },
+        { type: 'separator' },
+        { label: `${UYGULAMA_ADI} uygulamasından çık`, role: 'quit' },
+      ],
+    }] : []),
     {
       label: 'Dosya',
       submenu: [
         { label: 'Raporu PDF olarak kaydet…', accelerator: 'CmdOrCtrl+P', click: e.pdf },
-        { type: 'separator' },
-        { label: 'Çıkış', role: 'quit' },
+        ...(mac ? [] : [{ type: 'separator' }, { label: 'Çıkış', role: 'quit' }]),
       ],
     },
     {
@@ -138,13 +176,11 @@ export function menuSablonu(eylemler, surum) {
     {
       label: 'Yardım',
       submenu: [
-        { label: 'Güncellemeleri denetle…', click: e.guncelleme },
-        { type: 'separator' },
+        ...(mac ? [] : [{ label: 'Güncellemeleri denetle…', click: e.guncelleme }, { type: 'separator' }]),
         { label: 'Web sürümünü aç (tarayıcıda)', click: e.web },
         { label: `SAGG+ — ${BAGLANTILAR.site.replace('https://', '')}`, click: e.site },
         { label: `Destek: ${BAGLANTILAR.destek}`, click: e.destek },
-        { type: 'separator' },
-        { label: 'Hakkında', click: e.hakkinda },
+        ...(mac ? [] : [{ type: 'separator' }, { label: 'Hakkında', click: e.hakkinda }]),
       ],
     },
   ];

@@ -10,7 +10,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  guvenliYol, surumNotu, yuzde, menuSablonu, menuEtiketleri, BAGLANTILAR, PENCERE_ZEMINI, YAZDIRMA_ZEMINI } from '../masaustu/yardimcilar.js';
+  guvenliYol, surumNotu, yuzde, menuSablonu, menuEtiketleri, BAGLANTILAR, PENCERE_ZEMINI, YAZDIRMA_ZEMINI,
+  UYGULAMA_ADI, SON_SURUM_SAYFASI, kendiGuncellenebilir } from '../masaustu/yardimcilar.js';
 import yapi from '../electron-builder.mjs';
 
 const KOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -213,4 +214,43 @@ test('PDF dışa aktarımı tabanı beyaza çekip geri alır', async () => {
     'printToPDF öncesi taban beyaza çekilmeli');
   assert.match(kod, /finally\s*\{[\s\S]*?setBackgroundColor\(eskiZemin\)/,
     'taban rengi her durumda (finally) geri alınmalı');
+});
+
+/* ── macOS ─────────────────────────────────────────────────────────── */
+
+test('macOS hedefi universal dmg + zip, ad-hoc imzalı', () => {
+  const yap = yapi;
+  const hedefler = yap.mac.target.map((t) => `${t.target}:${t.arch.join(',')}`);
+  assert.deepEqual(hedefler, ['dmg:universal', 'zip:universal']);
+  // Ad-hoc imza olmadan Apple Silicon Mac uygulamayı "hasarlı" sayar.
+  assert.equal(yap.mac.identity, '-');
+  assert.equal(yap.mac.hardenedRuntime, false);
+  assert.match(yap.mac.artifactName, /\$\{version\}-mac\.\$\{ext\}$/);
+  assert.ok(fs.existsSync(path.join(KOK, yap.mac.icon)), 'mac simgesi bulunmalı');
+});
+
+test('macOS menüsü uygulama adıyla başlar, Çık ve Hakkında oradadır', () => {
+  const sablon = menuSablonu({}, '9.9.9', 'darwin');
+  assert.equal(sablon[0].label, UYGULAMA_ADI);
+  const ilk = sablon[0].submenu;
+  assert.ok(ilk.some((a) => a.role === 'quit'));
+  assert.ok(ilk.some((a) => /hakkında/i.test(a.label || '')));
+  assert.ok(ilk.some((a) => a.role === 'hide'));
+  // Dosya ve Yardım menülerinde tekrarlanmaz
+  const digerleri = sablon.slice(1).flatMap((u) => u.submenu);
+  assert.ok(!digerleri.some((a) => a.role === 'quit'));
+  assert.ok(!digerleri.some((a) => /^Hakkında$/.test(a.label || '')));
+  assert.equal(digerleri.filter((a) => /Güncellemeleri denetle/.test(a.label || '')).length, 0);
+});
+
+test('Windows menüsü değişmedi: uygulama menüsü yok, Çıkış Dosya menüsünde', () => {
+  const sablon = menuSablonu({}, '9.9.9', 'win32');
+  assert.equal(sablon[0].label, 'Dosya');
+  assert.ok(sablon[0].submenu.some((a) => a.role === 'quit'));
+});
+
+test('macOS kendini güncellemez, indirme sayfasına yönlendirir', () => {
+  assert.equal(kendiGuncellenebilir('darwin'), false);
+  assert.equal(kendiGuncellenebilir('win32'), true);
+  assert.match(SON_SURUM_SAYFASI, /github\.com\/aligokten\/SAGG-Akustik_Rapor\/releases\/latest$/);
 });

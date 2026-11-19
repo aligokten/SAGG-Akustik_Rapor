@@ -1,4 +1,12 @@
-# Windows kurulum dosyasını (.exe) üretir ve GitHub Releases'e yayınlar.
+# Windows kurulum dosyasını (.exe) ve macOS disk görüntüsünü (.dmg) üretir,
+# ikisini de GitHub Releases'te aynı sürüme koyar. (Dosya adı tarihsel olarak
+# windows-yayin.yml kaldı; CLAUDE.md ve README bu adla anar.)
+#
+# macOS işi Windows yayını YAYIMLANDIKTAN sonra koşar ve dosyalarını o sürüme
+# ekler: sürümü taslaktan yayımlama ve ikiz taslak temizliği tek bir yerde
+# (Windows işinde) kalsın diye. Bu yüzden kısa bir an için sürümde yalnızca
+# Windows dosyaları görünür; macOS uygulaması yeni sürümü ancak
+# latest-mac.yml yüklendiğinde fark eder, yani yarım sürüm görmez.
 #
 # Neden bir Windows koşucusu? NSIS kurulum sihirbazı ve imzalanabilir bir .exe
 # ancak Windows üzerinde güvenilir biçimde üretilir. GitHub'ın ücretsiz
@@ -21,7 +29,7 @@
 #  Etiketi elle oluşturmak da çözüm değildi: o zaman electron-builder'ın iki
 #  yükleyicisi aynı anda "sürüm yok" görüp yarışa giriyor, kaybeden yükleme
 #  sessizce düşüyordu.
-name: Windows kurulum dosyası yayını
+name: Masaüstü yayını (Windows + macOS)
 
 on:
   push:
@@ -47,6 +55,7 @@ jobs:
     outputs:
       surum: ${{ steps.bilgi.outputs.surum }}
       yayinla: ${{ steps.bilgi.outputs.yayinla }}
+      mac_eksik: ${{ steps.bilgi.outputs.mac_eksik }}
     steps:
       - uses: actions/checkout@v4
       - id: bilgi
@@ -68,6 +77,16 @@ jobs:
           else
             echo "v$SURUM yayımlanmamış (durum: $TASLAK_MI) → yayınlanacak."
             echo "yayinla=true" >> "$GITHUB_OUTPUT"
+          fi
+          # Yayımlanmış sürümde macOS paketi yoksa (ör. önceki deneme macOS
+          # adımında düştüyse) yalnızca macOS işi yeniden koşar.
+          MAC=$(gh release view "v$SURUM" --repo "$GITHUB_REPOSITORY" --json assets \
+            --jq '[.assets[].name | select(endswith("-mac.dmg"))] | length' 2>/dev/null || echo 0)
+          if [ "$TASLAK_MI" = "false" ] && [ "$MAC" = "0" ]; then
+            echo "v$SURUM yayımlanmış ama macOS paketi yok → macOS eklenecek."
+            echo "mac_eksik=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "mac_eksik=false" >> "$GITHUB_OUTPUT"
           fi
 
   testler:
@@ -210,4 +229,76 @@ jobs:
           path: |
             dist/*.exe
             dist/latest.yml
+          if-no-files-found: error
+
+  macos:
+    name: macOS .dmg derle ve sürüme ekle
+    needs: [hazirlik, testler, kurulum]
+    # Windows yayını bu koşuda yayımlandıysa ya da sürüm zaten yayımlanmış
+    # ama macOS paketi eksikse koşar.
+    if: >-
+      ${{ !cancelled() && needs.testler.result == 'success' && (
+          needs.kurulum.result == 'success' ||
+          (needs.kurulum.result == 'skipped' && needs.hazirlik.outputs.mac_eksik == 'true')) }}
+    runs-on: macos-latest
+    env:
+      SURUM: ${{ needs.hazirlik.outputs.surum }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Bağımlılıkları kur
+        run: npm ci
+
+      # --publish never: dosyalar yalnızca dist/ içine yazılır. Sürüme
+      # yükleme aşağıda gh ile, Windows işinin yayımladığı sürüme yapılır.
+      - name: Universal (Apple Silicon + Intel) paketi derle
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run paketle-mac
+
+      # Ad-hoc imza eksik ya da bozuksa Apple Silicon Mac uygulamayı
+      # "hasarlı" diye açmaz. Yayına çıkmadan burada yakalanır.
+      - name: İmzayı ve mimarileri doğrula
+        run: |
+          UYG=$(find dist -maxdepth 2 -name '*.app' -type d | head -1)
+          echo "Uygulama: $UYG"
+          test -n "$UYG"
+          codesign --verify --deep --strict --verbose=2 "$UYG"
+          codesign -dv "$UYG" 2>&1 | grep -E 'Signature|Identifier|flags'
+          IKILI="$UYG/Contents/MacOS/$(defaults read "$PWD/$UYG/Contents/Info" CFBundleExecutable)"
+          lipo -archs "$IKILI" | tee /dev/stderr | grep -q arm64
+          lipo -archs "$IKILI" | grep -q x86_64
+          ls -la dist
+
+      - name: Dosyaları sürüme ekle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DMG="dist/SAGG-Akustik-Hesap-$SURUM-mac.dmg"
+          ZIP="dist/SAGG-Akustik-Hesap-$SURUM-mac.zip"
+          test -f "$DMG" && test -f "$ZIP" && test -f dist/latest-mac.yml
+          gh release upload "v$SURUM" "$DMG" "$ZIP" dist/latest-mac.yml \
+            --repo "$GITHUB_REPOSITORY" --clobber
+
+      - name: Sürümde macOS dosyalarının bulunduğunu doğrula
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VARLIKLAR=$(gh release view "v$SURUM" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
+          echo "$VARLIKLAR"
+          echo "$VARLIKLAR" | grep -qx "SAGG-Akustik-Hesap-$SURUM-mac.dmg" || { echo "HATA: .dmg yok"; exit 1; }
+          echo "$VARLIKLAR" | grep -qx "latest-mac.yml" || { echo "HATA: latest-mac.yml yok"; exit 1; }
+          echo "$VARLIKLAR" | grep -qx "latest.yml" || { echo "HATA: Windows beslemesi kaybolmuş"; exit 1; }
+          echo "macOS yayını eksiksiz."
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SAGG-Akustik-Hesap-${{ needs.hazirlik.outputs.surum }}-mac
+          path: |
+            dist/*.dmg
+            dist/latest-mac.yml
           if-no-files-found: error

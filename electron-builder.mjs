@@ -77,6 +77,38 @@ export default {
     //   certificatePassword: process.env.WIN_SERTIFIKA_PAROLASI,
   },
 
+  // macOS: tek bir "universal" paket hem Apple Silicon (M1–M4) hem Intel
+  // Mac'te doğal çalışır; kullanıcının işlemcisini bilmesi gerekmez.
+  //   - dmg: kullanıcının indirip açtığı disk görüntüsü (sürükle → Uygulamalar)
+  //   - zip: electron-builder `latest-mac.yml` beslemesini bununla üretir;
+  //     uygulama yeni sürümü bu dosyadan öğrenir.
+  mac: {
+    target: [
+      { target: 'dmg', arch: ['universal'] },
+      { target: 'zip', arch: ['universal'] },
+    ],
+    icon: 'assets/favicon-512.png',
+    category: 'public.app-category.productivity',
+    artifactName: 'SAGG-Akustik-Hesap-${version}-mac.${ext}',
+    darkModeSupport: true,
+    // AD-HOC İMZA ('-'). Apple Developer sertifikası olmadan da Apple Silicon
+    // Mac'te uygulamanın açılabilmesi için zorunludur: arm64 ikili dosyaları
+    // hiç imzasızsa macOS onları "hasarlı" sayıp çalıştırmaz. Ad-hoc imza
+    // Gatekeeper onayı (notarization) sağlamaz; kullanıcı ilk açılışta bir kez
+    // "Yine de aç" der (bkz. README → macOS uygulaması).
+    // hardenedRuntime kapalı: ad-hoc imzayla birlikte açık kalırsa kütüphane
+    // doğrulaması Electron çerçevesini yüklemeyi reddedebilir.
+    // Sertifika alındığında: identity kaldırılır (otomatik bulunur),
+    // hardenedRuntime açılır ve notarize ayarı eklenir.
+    identity: '-',
+    hardenedRuntime: false,
+    gatekeeperAssess: false,
+  },
+
+  dmg: {
+    title: 'SAGG Akustik Hesap ${version}',
+  },
+
   nsis: {
     oneClick: false,                        // kurulum sihirbazı gösterilsin
     perMachine: false,                      // yönetici hakkı gerekmesin

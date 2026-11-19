@@ -11,6 +11,10 @@ değişik: 01/07/2018 – 30465) ve eklerine göre bina akustiği hesabı yapan 
 kurulabilir masaüstü sürümü. Çevrimdışı çalışır, açılışta kendi güncellemesini denetler ve
 kullanıcıyı yeni sürüme yönlendirir; bkz. [Windows uygulaması](#windows-uygulaması-exe).
 
+**▶ macOS uygulaması (.dmg):** aynı [Releases](https://github.com/aligokten/SAGG-Akustik_Rapor/releases/latest)
+sayfasında `…-mac.dmg` dosyası. Apple Silicon (M1–M4) ve Intel Mac'te çalışır; ilk açılışta bir
+kez onay ister, bkz. [macOS uygulaması](#macos-uygulaması-dmg).
+
 Alman *KS-Schallschutzrechner*'ın (Kalksandstein, DIN 4109) yaptığı işi Türkiye mevzuatı için
 karşılayacak biçimde tasarlanmıştır: yapı elemanlarının ses yalıtım başarımını **yan yol iletimini de
 içerecek şekilde** hesaplar, sonucu yönetmeliğin eklerindeki sınır değerlerle karşılaştırır ve
@@ -586,6 +590,35 @@ npm run paketle           # dist/ içine kurulum .exe'si üretir, yayınlamaz
 > "Bilinmeyen yayımcı" uyarısı gösterebilir; **Daha fazla bilgi → Yine de çalıştır** ile geçilir.
 > Uyarıyı tümüyle kaldırmak için ücretli bir kod imzalama sertifikası gerekir; sertifika alındığında
 > `electron-builder.mjs` içine `win.certificateFile`/`certificatePassword` eklenmesi yeterlidir.
+
+### macOS uygulaması (.dmg)
+
+Releases sayfasındaki **`SAGG-Akustik-Hesap-<sürüm>-mac.dmg`** dosyası, hem Apple Silicon
+(M1–M4) hem Intel Mac'te doğal çalışan tek ("universal") bir pakettir. Windows sürümüyle aynı
+iş akışında (`.github/workflows/windows-yayin.yml`) derlenir ve aynı sürüme eklenir.
+
+**Kurulum:** `.dmg`'yi açın, uygulamayı **Uygulamalar** klasörüne sürükleyin.
+
+**İlk açılış (bir kez):** Uygulama henüz Apple Developer sertifikasıyla imzalanmadığı ve Apple
+onayından (notarization) geçmediği için macOS ilk açılışta uyarı verir:
+
+- **macOS 15 (Sequoia) ve sonrası:** Uygulamayı açmayı deneyin, çıkan uyarıyı kapatın. Sonra
+  **Sistem Ayarları → Gizlilik ve Güvenlik**'e gidin, aşağıdaki "SAGG Akustik Hesap Aracı
+  engellendi" satırında **Yine de Aç**'a basın ve parolanızı girin.
+- **macOS 14 ve öncesi:** Uygulamaya **Control tuşuyla tıklayın (sağ tık) → Aç → Aç**.
+
+Bu onay her Mac'te yalnızca bir kez istenir.
+
+**Güncelleme:** Uygulama açılışta yeni sürümü denetler ve haber verir. Windows'tan farklı olarak
+kendini kuramaz: macOS bunu yalnızca sertifikayla imzalı uygulamalara izin verir. Bunun yerine
+**İndirme sayfasını aç** düğmesi yeni `.dmg`'nin sayfasını açar; yeni sürümü Uygulamalar'a
+sürüklemek eskisinin yerine geçirir. Kayıtlı projeler ve hazır görseller korunur.
+
+**Teknik notlar:** Paket ad-hoc imzalıdır (`identity: '-'`); bu olmadan Apple Silicon imzasız
+ikili dosyaları "hasarlı" sayıp hiç açmaz. İş akışı yayından önce imzayı (`codesign --verify`) ve
+iki mimarinin de pakette olduğunu (`lipo`) doğrular. Apple Developer hesabı alındığında
+`electron-builder.mjs` → `mac` bölümündeki not izlenerek imza ve notarization eklenir; o zaman
+ilk açılış uyarısı kalkar ve uygulama kendini güncelleyebilir.
 
 ## Kapak ve arka kapak
 

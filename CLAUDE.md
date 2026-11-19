@@ -11,7 +11,8 @@ Proje sahibi, her işin sonunda ayrıca komut beklenmeden şunların yapılması
    `claude/ks-schallschutzrechner-turkish-lgtwfl` ile birleştir ve gönder. Bu dala yapılan push:
    - `.github/workflows/pages.yml` ile web sürümünü GitHub Pages'e yayınlar,
    - `.github/workflows/windows-yayin.yml` ile, sürüm yeni ise Windows kurulum dosyasını
-     derleyip Releases'e koyar. Kurulu uygulamalar bu güncellemeyi kendiliğinden bulur.
-4. **Denetle:** İki iş akışının sonucunu kontrol et. Kırmızıysa düzelt ve yeniden gönder.
+     (.exe) ve macOS paketini (.dmg) derleyip Releases'e koyar. Kurulu uygulamalar bu
+     güncellemeyi kendiliğinden bulur (macOS indirme sayfasına yönlendirir).
+4. **Denetle:** İki iş akışının (Windows ve macOS işleri dahil) sonucunu kontrol et. Kırmızıysa düzelt ve yeniden gönder.
 
 Geçmişi yeniden yazma (force-push yok). Birleştirme commit'i kullan.

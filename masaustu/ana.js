@@ -62,7 +62,11 @@ function kur() {
     guncellemeyiBaslat(pencere);
   });
 
-  app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+  // Tek pencereli bir araç: pencere kapanınca uygulama macOS'ta da kapanır.
+  // (macOS geleneği Dock'ta açık kalmaktır; ama menü eylemleri ve güncelleyici
+  // ilk pencereye bağlı olduğundan, pencere yeniden açıldığında kopmuş
+  // pencereye işaret ederlerdi.)
+  app.on('window-all-closed', () => app.quit());
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) pencereAc(); });
 }
 
@@ -209,5 +213,5 @@ function menuKur(pencere) {
       ].join('\n'),
       buttons: ['Tamam'],
     }),
-  }, app.getVersion())));
+  }, app.getVersion(), process.platform)));
 }

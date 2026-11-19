@@ -14,12 +14,19 @@
  * indirmeyi electron-updater yapar; beslemesi electron-builder'ın yayınladığı
  * `latest.yml` dosyasıdır.
  *
+ * macOS'ta 2. adımdan sonrası farklıdır: uygulama Apple sertifikasıyla
+ * imzalanmadığı için kendini güncelleyemez (bkz. kendiGuncellenebilir).
+ * Yeni sürüm yine bildirilir, "İndirme sayfasını aç" düğmesi yeni .dmg'nin
+ * bulunduğu sayfayı tarayıcıda açar.
+ *
  * Geliştirme sırasında (paketlenmemiş uygulama) denetim hiç yapılmaz.
  */
 
-import { app, dialog } from 'electron';
+import { app, dialog, shell } from 'electron';
 import elektronGuncelleyici from 'electron-updater';
-import { surumNotu, yuzde } from './yardimcilar.js';
+import { surumNotu, yuzde, kendiGuncellenebilir, SON_SURUM_SAYFASI } from './yardimcilar.js';
+
+const KENDI_KURAR = kendiGuncellenebilir(process.platform);
 
 const { autoUpdater } = elektronGuncelleyici;
 
@@ -47,13 +54,19 @@ function olaylariBagla(pencere) {
       detail: [
         `Kullandığınız sürüm: ${app.getVersion()}`,
         not ? `\nBu sürümde:\n${not}` : '',
-        '\nGüncelleme arka planda indirilir; çalışmanız kesilmez.',
+        KENDI_KURAR
+          ? '\nGüncelleme arka planda indirilir; çalışmanız kesilmez.'
+          : '\nYeni .dmg dosyasını indirip uygulamayı Uygulamalar klasörüne '
+            + 'sürükleyin; eski sürümün yerine geçer, projeleriniz korunur.',
       ].join('\n').trim(),
-      buttons: ['Şimdi indir', 'Daha sonra'],
+      buttons: [KENDI_KURAR ? 'Şimdi indir' : 'İndirme sayfasını aç', 'Daha sonra'],
       defaultId: 0,
       cancelId: 1,
     });
-    if (secim.response === 0) {
+    if (secim.response === 0 && !KENDI_KURAR) {
+      surerken = false;
+      shell.openExternal(SON_SURUM_SAYFASI);
+    } else if (secim.response === 0) {
       autoUpdater.downloadUpdate().catch((h) => hataBildir(pencere, h));
     } else {
       surerken = false;
@@ -144,7 +157,7 @@ export function guncellemeyiElleDenetle(pencere) {
       type: 'info',
       title: 'Güncelleme denetimi',
       message: 'Geliştirme kopyasında güncelleme denetlenmez.',
-      detail: 'Otomatik güncelleme yalnızca kurulmuş (.exe ile yüklenmiş) sürümde çalışır.',
+      detail: 'Otomatik güncelleme yalnızca kurulmuş sürümde çalışır.',
       buttons: ['Tamam'],
     });
     return;
