@@ -269,7 +269,10 @@ jobs:
           test -n "$UYG"
           codesign --verify --deep --strict --verbose=2 "$UYG"
           codesign -dv "$UYG" 2>&1 | grep -E 'Signature|Identifier|flags'
-          IKILI="$UYG/Contents/MacOS/$(defaults read "$PWD/$UYG/Contents/Info" CFBundleExecutable)"
+          # Çalıştırılabilir dosya MacOS/ altındaki tek dosyadır. (Adı Info.plist'ten
+          # `defaults read` ile okunamaz: araç "ı" harfini \u0131 diye kaçışlıyor.)
+          IKILI=$(find "$UYG/Contents/MacOS" -maxdepth 1 -type f | head -1)
+          echo "İkili: $IKILI"
           lipo -archs "$IKILI" | tee /dev/stderr | grep -q arm64
           lipo -archs "$IKILI" | grep -q x86_64
           ls -la dist
